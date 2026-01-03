@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lab Report System - Login</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="card">
+    <h2>Lab Report System</h2>
+    <div class="subtitle">Secure access for laboratory staff</div>
+
+    <form id="loginForm">
+        <label>Username</label>
+        <input type="text" name="username" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <div id="error" class="error"></div>
+</div>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const formData = new URLSearchParams(new FormData(this));
+
+    fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: formData
+    })
+    .then(res => {
+        if (res.status === 200) {
+            window.location.href = "/secure-test";
+        } else {
+            document.getElementById("error").innerText = "Invalid credentials";
+        }
+    });
+});
+</script>
+
+</body>
+</html>
