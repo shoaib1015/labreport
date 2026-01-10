@@ -1,5 +1,6 @@
 package labreport.db;
 
+import labreport.config.AppConfig;
 import labreport.logging.AppLogger;
 
 import java.nio.file.Files;
@@ -12,7 +13,7 @@ import java.util.logging.Level;
 
 public class DatabaseManager {
 
-    private static final String DATA_DIR = "data";
+    private static String DATA_DIR = "data";
     private static final String DB_FILE = "labreport.db";
     private static Connection connection;
 
@@ -47,11 +48,29 @@ public class DatabaseManager {
      * Ensures the data directory exists.
      */
     private static void ensureDataDirectory() throws Exception {
+
+        // Try to get data directory from AppConfig
+        try {
+            String configDir = AppConfig.getDataDir();
+            if (configDir != null && !configDir.trim().isEmpty()) {
+                DATA_DIR = configDir;
+            }
+        } catch (Exception ignored) {
+            // Ignore and fall back to existing DATA_DIR
+        }
+
+        // Final safety fallback
+        if (DATA_DIR == null || DATA_DIR.trim().isEmpty()) {
+            DATA_DIR = "data";
+        }
+
         Path dataPath = Paths.get(DATA_DIR);
+
         if (!Files.exists(dataPath)) {
             Files.createDirectories(dataPath);
         }
     }
+
 
     /**
      * Opens a single SQLite connection.

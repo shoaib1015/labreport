@@ -9,11 +9,13 @@ import com.sun.net.httpserver.HttpContext;
 import labreport.auth.AuthHandler;
 import labreport.auth.LogoutHandler;
 import labreport.auth.UserService;
+import labreport.config.AppConfig;
 import labreport.db.DatabaseManager;
 import labreport.logging.AppLogger;
 import labreport.server.AuthFilter;
 import labreport.server.CorsFilter;
 import labreport.server.SecureTestHandler;
+import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
 
 import java.io.OutputStream;
@@ -26,6 +28,10 @@ public class Main {
 
     public static void main(String[] args) {
         try {
+            
+            // Load application configuration
+            AppConfig.load();
+            
             // Initialize logging
             AppLogger.init();
             Logger log = AppLogger.getLogger();
@@ -47,6 +53,11 @@ public class Main {
             server.createContext("/login", new AuthHandler())
                     .getFilters().add(new CorsFilter());
             server.createContext("/", new HealthHandler());
+
+            HttpContext appContext =
+             server.createContext("/app.html",
+                new StaticFileHandler("/web/app.html"));
+            appContext.getFilters().add(new CorsFilter());
             
             HttpContext secureContext =
                     server.createContext("/secure-test", new SecureTestHandler());
@@ -60,10 +71,12 @@ public class Main {
             styles.getFilters().add(new CorsFilter());
 
 
+           
+            // Login page
             HttpContext loginPage =
-            server.createContext("/login.html",
-                    new StaticFileHandler("/web/login.html"));
-             loginPage.getFilters().add(new CorsFilter());
+                    server.createContext("/login.html",
+                            new StaticFileHandler("/web/login.html"));
+            loginPage.getFilters().add(new CorsFilter());
 
              HttpContext logoutContext =
             server.createContext("/logout", new LogoutHandler());
@@ -87,6 +100,15 @@ public class Main {
                 server.stop(0);
                 log.info("*** SERVER STOPPED ***");
             }));
+
+            server.createContext("/shutdown",
+            new ShutdownHandler(() -> {
+                System.out.println("Shutting down application...");
+                server.stop(0);
+                System.exit(0);
+            })
+            ).getFilters().add(new CorsFilter());
+
 
             // 5. Block forever (until JVM is killed)
             Thread.sleep(Long.MAX_VALUE);

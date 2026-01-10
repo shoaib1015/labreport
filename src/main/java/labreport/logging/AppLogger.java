@@ -8,6 +8,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.*;
 
+import labreport.config.AppConfig;
+
 public class AppLogger {
 
     private static final Logger LOGGER = Logger.getLogger("LabReportLogger");
@@ -17,11 +19,17 @@ public class AppLogger {
         if (initialized) return;
 
         try {
-            // Create logs directory
-            Path logDir = Paths.get("logs");
-            if (!Files.exists(logDir)) {
-                Files.createDirectories(logDir);
-            }
+        // Create logs directory using AppConfig
+        String baseDir = AppConfig.getDataDir();
+        if (baseDir == null || baseDir.trim().isEmpty()) {
+            baseDir = "data"; // safety fallback
+        }
+
+        Path logDir = Paths.get(baseDir, "logs");
+
+        if (!Files.exists(logDir)) {
+            Files.createDirectories(logDir);
+        }
 
             // Per-run log file
             String runId = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
