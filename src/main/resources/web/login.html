@@ -37,7 +37,10 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
     })
     .then(res => {
         if (res.status === 200) {
-            window.parent.document.getElementById("appFrame").src = "/secure-test";
+            // window.parent.document.getElementById("appFrame").src = "/secure-test";
+            window.parent.showDashboard();
+            window.parent.document.getElementById("appFrame").src = "/dashboard.html";
+
         } else {
             document.getElementById("error").innerText = "Invalid credentials";
         }

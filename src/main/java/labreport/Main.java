@@ -17,6 +17,7 @@ import labreport.server.CorsFilter;
 import labreport.server.SecureTestHandler;
 import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
+import labreport.web.StaticRouteRegistry;
 
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -52,7 +53,6 @@ public class Main {
             server.setExecutor(null);
             server.createContext("/login", new AuthHandler())
                     .getFilters().add(new CorsFilter());
-            server.createContext("/", new HealthHandler());
 
             HttpContext appContext =
              server.createContext("/app.html",
@@ -108,6 +108,12 @@ public class Main {
                 System.exit(0);
             })
             ).getFilters().add(new CorsFilter());
+
+            // Dashboard page
+            server.createContext("/dashboard.html",
+                 new StaticFileHandler("/web/dashboard.html"));
+
+                 StaticRouteRegistry.register(server);
 
 
             // 5. Block forever (until JVM is killed)

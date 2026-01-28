@@ -7,15 +7,60 @@
 </head>
 <body>
 
-<div id="app-root" style="height:100vh;">
-    <iframe id="appFrame"
+<!-- App Root -->
+<div id="app-root" style="height:100vh; width:100%;">
+
+    <!-- Dashboard Header (hidden until login) -->
+    <div id="dashboard-header" class="navbar hidden">
+        <div class="menu-item" onclick="loadPage('/dashboard.html')">Dashboard</div>
+
+        <div class="menu-item">
+            Masters
+            <div class="dropdown">
+                <div onclick="loadPage('/master/lab.html')">Lab Profile</div>
+                <div onclick="loadPage('/master/test-list.html')">Tests</div>
+                <div onclick="loadPage('/master/doctor.html')">Doctors</div>
+            </div>
+        </div>
+
+        <div class="menu-item">
+            Patients
+            <div class="dropdown">
+                <div onclick="loadPage('/patient/patient-edit.html')">New Patient</div>
+                <div onclick="loadPage('/patient/patient-list.html')">Search Patient</div>
+            </div>
+        </div>
+
+        <div class="menu-item">
+            Reports
+            <div class="dropdown">
+                <div onclick="loadPage('/report/preview.html')">Preview</div>
+                <div onclick="loadPage('/report/print.html')">Print / PDF</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Iframe -->
+        <iframe id="appFrame"
             src="/login.html"
-            style="width:100%; height:100%; border:none;">
-    </iframe>
+            style="width:100%; height:100%; border:none; background:transparent;"
+            allowTransparency="true">
+        </iframe>
 </div>
 
 <script>
-/* This runs ONLY once, bound to the Chrome window */
+function loadPage(page) {
+    document.getElementById("appFrame").src = page;
+}
+
+/* Called after successful login */
+function showDashboard() {
+    document.getElementById("dashboard-header").classList.remove("hidden");
+    document.getElementById("appFrame").style.height = "calc(100vh - 50px)";
+}
+
+
+/* Shutdown safety */
 window.addEventListener("beforeunload", function () {
     navigator.sendBeacon("/shutdown");
 });

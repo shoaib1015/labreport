@@ -9,6 +9,8 @@
     --border-color: #e5e7eb;
     --radius: 10px;
     --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    --navbar-bg: #104b9d;
+    --navbar-text: #ffffff;
 }
 
 * {
@@ -96,3 +98,107 @@ button:hover {
     font-size: 14px;
     text-align: center;
 }
+
+/* Dashboard navbar */
+.navbar {
+    height: 50px;
+    background-color: var(--navbar-bg);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+/* Hide utility */
+.hidden {
+    display: none;
+}
+
+/* Menu items */
+.menu-item {
+    color: var(--navbar-text);
+    padding: 0 15px;
+    cursor: pointer;
+    line-height: 50px;
+    position: relative;
+    user-select: none;
+}
+
+.menu-item:hover {
+    background-color: #374151;
+}
+
+/* Exit button */
+.menu-item.exit {
+    margin-left: auto;
+    background-color: #991b1b;
+}
+
+.menu-item.exit:hover {
+    background-color: #7f1d1d;
+}
+
+/* Dropdown menu */
+.dropdown {
+    display: none;
+    position: absolute;
+    top: 50px;
+    left: 0;
+    background-color: #ffffff;
+    min-width: 180px;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+}
+
+.menu-item:hover .dropdown {
+    display: block;
+}
+
+.dropdown div {
+    padding: 10px 15px;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.dropdown div:hover {
+    background-color: var(--background-color);
+}
+
+/* Dashboard / app layout helpers */
+.transparent-body {
+    background: transparent;
+}
+
+.dashboard-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    background: var(--card-background);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 30px;
+}
+
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.dash-card {
+    border-radius: 10px;
+    padding: 20px;
+    background: #f9fafb;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.dash-card h4 {
+    margin: 0 0 8px 0;
+    color: var(--text-color);
+}
+
+.dash-card p {
+    margin: 0;
+    color: var(--muted-text);
+    font-size: 13px;
+}
+
