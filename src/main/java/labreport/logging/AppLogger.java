@@ -33,7 +33,8 @@ public class AppLogger {
 
             // Per-run log file
             String runId = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
-            String logFile = "logs/run-" + runId + ".log";
+            Path logFilePath = logDir.resolve("run-" + runId + ".log");
+            String logFile = logFilePath.toString();
 
             FileHandler fileHandler = new FileHandler(logFile, true);
             fileHandler.setFormatter(new SimpleFormatter());
