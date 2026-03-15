@@ -7,6 +7,7 @@ import java.util.Properties;
 public class AppConfig {
 
     private static String dataDir;
+    private static String reportPath;
 
     public static void load() {
         try {
@@ -19,11 +20,15 @@ public class AppConfig {
                     props.load(fis);
                 }
                 dataDir = props.getProperty("data.dir");
+                reportPath = props.getProperty("report.path");
             }
 
             // Fallback to local ./data if config missing or empty
             if (dataDir == null || dataDir.trim().isEmpty()) {
                 dataDir = "data";
+            }
+            if (reportPath == null || reportPath.trim().isEmpty()) {
+                reportPath = dataDir;
             }
 
             // Ensure base directory exists
@@ -35,11 +40,16 @@ public class AppConfig {
         } catch (Exception e) {
             // Absolute last-resort fallback
             dataDir = "data";
+            reportPath = "data";
         }
     }
 
     public static String getDataDir() {
         return dataDir;
+    }
+
+    public static String getReportPath() {
+        return reportPath;
     }
 
     public static File getDataSubDir(String name) {

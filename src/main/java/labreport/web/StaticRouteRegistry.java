@@ -2,11 +2,13 @@ package labreport.web;
 
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpContext;
+import labreport.config.AppConfig;
 import labreport.server.AuthFilter;
 import labreport.server.CorsFilter;
+import labreport.server.ExternalFileHandler;
 import labreport.server.StaticFileHandler;
 
-
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,6 +44,15 @@ public final class StaticRouteRegistry {
                 "/report/preview.html",
                 "/report/print.html"
         ));
+
+        // Report template is served from an external file (not bundled in the JAR)
+        File templateFile = new File(AppConfig.getReportPath(), "report-preview.html");
+        HttpContext templateCtx = server.createContext(
+                "/report-preview.html",
+                new ExternalFileHandler(templateFile)
+        );
+        templateCtx.getFilters().add(new CorsFilter());
+        templateCtx.getFilters().add(new AuthFilter());
     }
 
     /* ---------------- INTERNAL HELPERS ---------------- */
