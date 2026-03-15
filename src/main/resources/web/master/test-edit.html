@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Test</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="full-page">
+
+<div class="page-content">
+    <h2>Edit Test</h2>
+    <div class="subtitle">Add or modify test details</div>
+
+    <form>
+        <label>Test Name</label>
+        <input type="text" name="name" required>
+
+        <label>Category</label>
+        <select name="category">
+            <option value="">Select Category</option>
+            <option value="Hematology">Hematology</option>
+            <option value="Biochemistry">Biochemistry</option>
+        </select>
+
+        <label>Price</label>
+        <input type="number" name="price" required>
+
+        <button type="submit">Save Test</button>
+    </form>
+</div>
+
+<script>
+function loadPage(page) {
+    window.parent.loadPage(page);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor / Referral Master</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="full-page">
+
+<div class="page-content">
+    <h2>Doctor / Referral Master</h2>
+    <div class="subtitle">Manage referral doctors</div>
+
+    <button onclick="loadPage('/master/doctor-edit.html')">Add New Doctor</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Dr. A. Kalam</td>
+                <td>+91-9876543210</td>
+                <td><button>Edit</button> <button>Delete</button></td>
+            </tr>
+            <tr>
+                <td>Dr. Self</td>
+                <td>N/A</td>
+                <td><button>Edit</button> <button>Delete</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadPage(page) {
+    window.parent.loadPage(page);
+}
+</script>
+
+</body>
+</html>

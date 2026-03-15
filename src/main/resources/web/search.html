@@ -1,64 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Search Reports</title>
     <meta charset="UTF-8">
-    <title>Search</title>
     <link rel="stylesheet" href="/styles.css">
-    <style>
-        .search-container { text-align: center; margin: 20px; }
-        .search-input { padding: 10px; font-size: 16px; width: 300px; }
-        .results { margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: space-around; }
-        .doctor-card { border: 1px solid #ccc; padding: 10px; margin: 10px; width: calc(33.33% - 20px); height: auto; border-radius: 15px; font-size: 11px; }
-    </style>
 </head>
-<body class="transparent-body">
-    <div class="dashboard-container">
-        <h2 style="text-align: center;">Search Doctor/Patient</h2>
-        <div class="search-container">
-            <div style="display: flex; justify-content: center;">
-                <div style="position: relative;">
-                    <input type="text" class="search-input" id="searchInput" pattern="[a-zA-Z ]+" title="Only alphabets and spaces allowed" placeholder="Search by doctor/patient name">
-                </div>
-            </div>
-        </div>
-        <div class="results" id="results">
-            <div class="doctor-card">
-                <h4>Dr. John Doe</h4>
-                <p>Specialty: Cardiology</p>
-                <p>Phone: 123-456-7890</p>
-                <p>Email: john.doe@example.com</p>
-            </div>
-            <div class="doctor-card">
-                <h4>Dr. Jane Smith</h4>
-                <p>Specialty: Neurology</p>
-                <p>Phone: 987-654-3210</p>
-                <p>Email: jane.smith@example.com</p>
-            </div>
-            <div class="doctor-card">
-                <h4>Dr. Alice Johnson</h4>
-                <p>Specialty: Pediatrics</p>
-                <p>Phone: 555-123-4567</p>
-                <p>Email: alice.johnson@example.com</p>
-            </div>
-        </div>
-        <br><br>
-    </div>
-    <script>
-        const searchInput = document.getElementById('searchInput');
-        const results = document.getElementById('results');
-        const doctors = Array.from(results.children);
+<body class="full-page">
 
-        searchInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            doctors.forEach(doctor => {
-                const name = doctor.querySelector('h4').textContent.toLowerCase();
-                if (name.includes(query)) {
-                    doctor.style.display = 'inline-block';
-                } else {
-                    doctor.style.display = 'none';
-                }
-            });
-        });
-    </script>
+<div class="page-content">
+    <h2>Search Reports</h2>
+    <div class="subtitle">Find reports by date, patient, or doctor</div>
+
+    <form>
+        <label>Start Date</label>
+        <input type="date" name="startDate">
+
+        <label>End Date</label>
+        <input type="date" name="endDate">
+
+        <label>Patient Name</label>
+        <input type="text" name="patientName">
+
+        <label>Doctor Name</label>
+        <input type="text" name="doctorName">
+
+        <button type="submit">Search</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Report ID</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>RPT001</td>
+                <td>MRS. SAMINA</td>
+                <td>Dr. A. Kalam</td>
+                <td>2026-03-15</td>
+                <td><button>View</button> <button>Print</button></td>
+            </tr>
+            <tr>
+                <td>RPT002</td>
+                <td>MR. RAHUL</td>
+                <td>Dr. Self</td>
+                <td>2026-03-14</td>
+                <td><button>View</button> <button>Print</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
 </body>
 </html>

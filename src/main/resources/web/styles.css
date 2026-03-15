@@ -27,6 +27,126 @@ body {
     align-items: center;
     justify-content: center;
     color: var(--text-color);
+    line-height: 1.5;
+}
+
+body.full-page {
+    display: block;
+}
+
+.page-content {
+    max-width: 960px;
+    margin: 0 auto;
+    background: var(--card-background);
+    padding: 32px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 16px;
+}
+
+label {
+    font-size: 14px;
+    margin-bottom: 4px;
+    display: block;
+    color: var(--text-color);
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    background: #fff;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+button {
+    padding: 12px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 120ms ease;
+}
+
+button:hover {
+    background: var(--primary-hover);
+}
+
+button.secondary {
+    background: #6b7280;
+}
+
+button.secondary:hover {
+    background: #4b5563;
+}
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+    background: #fff;
+}
+
+th, td {
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+th {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+tbody tr:nth-child(even) {
+    background: rgba(37, 99, 235, 0.05);
+}
+
+tbody tr:hover {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.out-of-range {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Utility */
+.hidden {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .page-content {
+        padding: 24px;
+    }
+
+    table {
+        font-size: 13px;
+    }
 }
 
 /* Card container */
@@ -97,6 +217,53 @@ button:hover {
     color: var(--error-color);
     font-size: 14px;
     text-align: center;
+}
+
+/* Full page layout for non-login pages */
+.full-page {
+    display: block !important;
+    align-items: initial !important;
+    justify-content: initial !important;
+    padding: 20px;
+}
+
+.page-content {
+    padding: 20px;
+}
+
+/* Card content for display */
+.card p {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    background: var(--card-background);
+}
+
+/* Table styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+th {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.out-of-range {
+    font-weight: 700;
+    color: var(--primary-color);
 }
 
 /* Dashboard navbar */

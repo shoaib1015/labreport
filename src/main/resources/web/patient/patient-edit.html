@@ -2,80 +2,124 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Patient Edit</title>
+    <title>New Patient</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="transparent-body">
-    <div class="dashboard-container" style="max-width: 700px;">
-        <h2 style="text-align: center;">Patient Details</h2>
-        <form action="/patient/save" method="post">
-            <label for="referredBy">Referred By <span style="color: red;">*</span>:</label>
-            <select id="referredBy" name="referredBy" required style="width: 500px;">
-                <option value="">Select</option>
-                <option value="Self">Self</option>
-            </select><br><br>
+<body class="full-page">
 
-            <label for="name">Name <span style="color: red;">*</span>:</label>
-            <input type="text" id="name" name="name" required style="width: 500px;"><br><br>
+<div class="page-content">
+    <h2>New Patient</h2>
+    <div class="subtitle">Add patient details</div>
 
-            <label for="dob">Date of Birth <span style="color: red;">*</span>:</label>
-            <input type="date" id="dob" name="dob" required style="width: 500px;"><br><br>
+    <form id="patientForm">
+        <label>Referred By</label>
+        <select name="referredBy" required>
+            <option value="">Select</option>
+            <option value="Self">Self</option>
+            <option value="Dr. A. Kalam">Dr. A. Kalam</option>
+        </select>
 
-            <label for="gender">Gender <span style="color: red;">*</span>:</label>
-            <select id="gender" name="gender" required style="width: 500px;">
-                <option value="">Select</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-            </select><br><br>
+        <label>Name</label>
+        <input type="text" name="name" required>
 
-            <label for="phone">Phone <span style="color: red;">*</span>:</label>
-            <input type="tel" id="phone" name="phone" required pattern="^\d{10}$" maxlength="10" inputmode="numeric" title="Please enter exactly 10 digits" style="width: 500px;" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10);"><br><br>
+        <label>Date of Birth</label>
+        <input type="date" name="dob" required>
 
-            <label for="address">Address:</label>
-            <textarea id="address" name="address" style="width: 500px;"></textarea><br><br>
+        <label>Gender</label>
+        <select name="gender" required>
+            <option value="">Select</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
 
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" style="width: 500px;"><br><br>
-        </form>
-        <div style="text-align: center; display: flex; justify-content: center; gap: 10px;">
-            <button onclick="showModal()" style="width: 120px;">Save</button>
-        </div>
+        <label>Phone</label>
+        <input type="tel" name="phone" required pattern="^\d{10}$" maxlength="10">
+
+        <label>Address</label>
+        <textarea name="address"></textarea>
+
+        <label>Email</label>
+        <input type="email" name="email">
+
+        <button type="submit">Save Patient</button>
+    </form>
+
+    <h3 style="margin-top: 40px;">Tests Performed</h3>
+    <div style="margin-bottom: 12px;">
+        <button type="button" onclick="addTestRow()">Add Test</button>
     </div>
-    <div id="saveModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; width: 300px;">
-            <h3 style="color: green; text-align: center;">Details Saved</h3>
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
-                <tr>
-                    <td style="border: 1px solid #000; padding: 4px;"><strong>Patient ID:</strong></td>
-                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalPatientId"></span></td>
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #000; padding: 4px;"><strong>Patient Name:</strong></td>
-                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalPatientName"></span></td>
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #000; padding: 4px;"><strong>Patient Phone:</strong></td>
-                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalPatientPhone"></span></td>
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #000; padding: 4px;"><strong>Created Timestamp:</strong></td>
-                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalTimestamp"></span></td>
-                </tr>
-            </table>
-            <div style="text-align: center; margin-top: 20px;">
-                <button onclick="window.location.href='/master/lab.html'" style="width: 80px;">Close</button>
-            </div>
-        </div>
-    </div>
-    <script>
-        function showModal() {
-            document.getElementById('modalPatientId').textContent = 'Auto-generated';
-            document.getElementById('modalPatientName').textContent = document.getElementById('name').value;
-            document.getElementById('modalPatientPhone').textContent = document.getElementById('phone').value;
-            document.getElementById('modalTimestamp').textContent = new Date().toLocaleString();
-            document.getElementById('saveModal').style.display = 'block';
+
+    <table id="testTable">
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Result</th>
+                <th>Normal Range</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><input type="text" value="Complete Blood Count"></td>
+                <td><input type="text" value="8.1" oninput="evaluateRange(this)"></td>
+                <td><input type="text" value="12-18" oninput="evaluateRange(this)"></td>
+                <td><button type="button" onclick="removeRow(this)">Remove</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function parseRange(range) {
+    const match = range.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+    if (!match) return null;
+    return { min: parseFloat(match[1]), max: parseFloat(match[2]) };
+}
+
+function evaluateRange(input) {
+    const row = input.closest('tr');
+    const resultInput = row.querySelector('td:nth-child(2) input');
+    const rangeInput = row.querySelector('td:nth-child(3) input');
+
+    const result = parseFloat(resultInput.value);
+    const range = parseRange(rangeInput.value);
+
+    row.classList.remove('out-of-range');
+    if (!isNaN(result) && range) {
+        if (result < range.min || result > range.max) {
+            row.classList.add('out-of-range');
         }
-    </script>
+    }
+}
+
+function addTestRow() {
+    const tbody = document.getElementById('testTable').querySelector('tbody');
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+        <td><input type="text"></td>
+        <td><input type="text" oninput="evaluateRange(this)"></td>
+        <td><input type="text" oninput="evaluateRange(this)"></td>
+        <td><button type="button" onclick="removeRow(this)">Remove</button></td>
+    `;
+
+    tbody.appendChild(row);
+}
+
+function removeRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+}
+
+// Attach handler to patient form to prevent real submission for demo
+document.getElementById('patientForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    alert('Patient saved (demo)');
+});
+</script>
+</body>
+</html>
+
 </body>
 </html>

@@ -1,31 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Reference Settlement</title>
     <meta charset="UTF-8">
-    <title>Settlement</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="transparent-body">
-    <div class="dashboard-container">
-        <h2>Download Reports</h2>
-        <form action="/settlement/download" method="post">
-            <table style="width: 90%; border-collapse: collapse; margin: 0 auto;">
-                <tr>
-                    <td style="padding: 8px;"><label for="fromDate">From Date <span style="color: red;">*</span>:</label></td>
-                    <td style="padding: 8px;"><input type="date" id="fromDate" name="fromDate" required></td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px;"><label for="toDate">To Date <span style="color: red;">*</span>:</label></td>
-                    <td style="padding: 8px;"><input type="date" id="toDate" name="toDate" required></td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px;"><label for="referredBy">Referred By <span style="color: red;">*</span>:</label></td>
-                    <td style="padding: 8px;"><input type="text" id="referredBy" name="referredBy" required></td>
-                </tr>
-            </table>
-            <br>
-            <button type="submit">Submit</button>
-        </form>
-    </div>
+<body class="full-page">
+
+<div class="page-content">
+    <h2>Reference Settlement</h2>
+    <div class="subtitle">Generate settlement reports for doctors</div>
+
+    <form>
+        <label>Doctor</label>
+        <select name="doctor">
+            <option value="">Select Doctor</option>
+            <option value="Dr. A. Kalam">Dr. A. Kalam</option>
+            <option value="Dr. Self">Dr. Self</option>
+        </select>
+
+        <label>Start Date</label>
+        <input type="date" name="startDate">
+
+        <label>End Date</label>
+        <input type="date" name="endDate">
+
+        <button type="submit">Generate Report</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Complete Blood Count</td>
+                <td>500</td>
+                <td>1</td>
+                <td>500</td>
+            </tr>
+            <tr>
+                <td>Serum Creatinine</td>
+                <td>200</td>
+                <td>1</td>
+                <td>200</td>
+            </tr>
+            <tr>
+                <td colspan="3"><strong>Total</strong></td>
+                <td><strong>700</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
 </body>
 </html>

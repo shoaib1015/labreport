@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Doctor</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="full-page">
+
+<div class="page-content">
+    <h2>Edit Doctor</h2>
+    <div class="subtitle">Add or modify doctor details</div>
+
+    <form>
+        <label>Name</label>
+        <input type="text" name="name" required>
+
+        <label>Contact</label>
+        <input type="text" name="contact">
+
+        <button type="submit">Save Doctor</button>
+    </form>
+</div>
+
+<script>
+function loadPage(page) {
+    window.parent.loadPage(page);
+}
+</script>
+
+</body>
+</html>

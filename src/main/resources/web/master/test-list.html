@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Master</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="full-page">
+
+<div class="page-content">
+    <h2>Test Master</h2>
+    <div class="subtitle">Manage laboratory tests and categories</div>
+
+    <button onclick="loadPage('/master/test-edit.html')">Add New Test</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Complete Blood Count</td>
+                <td>Hematology</td>
+                <td>500</td>
+                <td><button>Edit</button> <button>Delete</button></td>
+            </tr>
+            <tr>
+                <td>Serum Creatinine</td>
+                <td>Biochemistry</td>
+                <td>200</td>
+                <td><button>Edit</button> <button>Delete</button></td>
+            </tr>
+            <tr>
+                <td>SGPT</td>
+                <td>Biochemistry</td>
+                <td>250</td>
+                <td><button>Edit</button> <button>Delete</button></td>
+            </tr>
+            <tr>
+                <td>Uric Acid</td>
+                <td>Biochemistry</td>
+                <td>150</td>
+                <td><button>Edit</button> <button>Delete</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadPage(page) {
+    window.parent.loadPage(page);
+}
+</script>
+
+</body>
+</html>
