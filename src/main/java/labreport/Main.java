@@ -5,7 +5,6 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpContext;
 
-
 import labreport.auth.AuthHandler;
 import labreport.auth.LogoutHandler;
 import labreport.auth.UserService;
@@ -24,21 +23,21 @@ import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 public class Main {
 
     public static void main(String[] args) {
         try {
-            
+
             // Load application configuration
             AppConfig.load();
+
             ensureReportPreviewExists();
 
             // Initialize logging
             AppLogger.init();
             Logger log = AppLogger.getLogger();
             log.info("Logger Initialization Complete");
-            
+
             log.fine("*** DB STARTING ***");
             // 1. Initialize database (creates DB if missing)
             DatabaseManager.initialize();
@@ -55,41 +54,32 @@ public class Main {
             server.createContext("/login", new AuthHandler())
                     .getFilters().add(new CorsFilter());
 
-            HttpContext appContext =
-             server.createContext("/app.html",
-                new StaticFileHandler("/web/app.html"));
+            HttpContext appContext = server.createContext("/app.html",
+                    new StaticFileHandler("/web/app.html"));
             appContext.getFilters().add(new CorsFilter());
-            
-            HttpContext secureContext =
-                    server.createContext("/secure-test", new SecureTestHandler());
+
+            HttpContext secureContext = server.createContext("/secure-test", new SecureTestHandler());
 
             secureContext.getFilters().add(new CorsFilter());
             secureContext.getFilters().add(new AuthFilter());
 
-            HttpContext styles =
-            server.createContext("/styles.css",
+            HttpContext styles = server.createContext("/styles.css",
                     new StaticFileHandler("/web/styles.css"));
             styles.getFilters().add(new CorsFilter());
 
-
-           
             // Login page
-            HttpContext loginPage =
-                    server.createContext("/login.html",
-                            new StaticFileHandler("/web/login.html"));
+            HttpContext loginPage = server.createContext("/login.html",
+                    new StaticFileHandler("/web/login.html"));
             loginPage.getFilters().add(new CorsFilter());
 
-             HttpContext logoutContext =
-            server.createContext("/logout", new LogoutHandler());
+            HttpContext logoutContext = server.createContext("/logout", new LogoutHandler());
             logoutContext.getFilters().add(new CorsFilter());
             logoutContext.getFilters().add(new AuthFilter());
 
-
-
             // server.createContext("/patients", new PatientsHandler())
-            //     .getFilters().add(new AuthFilter());
+            // .getFilters().add(new AuthFilter());
             // server.createContext("/reports", new ReportsHandler())
-            //     .getFilters().add(new AuthFilter());
+            // .getFilters().add(new AuthFilter());
 
             server.start();
 
@@ -103,19 +93,15 @@ public class Main {
             }));
 
             server.createContext("/shutdown",
-            new ShutdownHandler(() -> {
-                System.out.println("Shutting down application...");
-                server.stop(0);
-                System.exit(0);
-            })
-            ).getFilters().add(new CorsFilter());
+                    new ShutdownHandler(() -> {
+                        System.out.println("Shutting down application...");
+                        server.stop(0);
+                        System.exit(0);
+                    })).getFilters().add(new CorsFilter());
 
             // Dashboard page
-            server.createContext("/dashboard.html",
-                 new StaticFileHandler("/web/dashboard.html"));
 
-                 StaticRouteRegistry.register(server);
-
+            StaticRouteRegistry.register(server);
 
             // 5. Block forever (until JVM is killed)
             Thread.sleep(Long.MAX_VALUE);
@@ -154,10 +140,12 @@ public class Main {
                         "  <p>Place a report template at: " + templateFile.getAbsolutePath() + "</p>\n" +
                         "</body>\n" +
                         "</html>\n";
-                java.nio.file.Files.write(templateFile.toPath(), defaultTemplate.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                java.nio.file.Files.write(templateFile.toPath(),
+                        defaultTemplate.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
         } catch (Exception ignored) {
-            // If we cannot ensure the file exists, let the server continue; it will return 404 for /report-preview.html
+            // If we cannot ensure the file exists, let the server continue; it will return
+            // 404 for /report-preview.html
         }
     }
 
@@ -176,4 +164,3 @@ public class Main {
         }
     }
 }
-    

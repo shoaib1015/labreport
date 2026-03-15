@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Settlement</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="transparent-body">
+    <div class="dashboard-container">
+        <h2>Download Reports</h2>
+        <form action="/settlement/download" method="post">
+            <table style="width: 90%; border-collapse: collapse; margin: 0 auto;">
+                <tr>
+                    <td style="padding: 8px;"><label for="fromDate">From Date <span style="color: red;">*</span>:</label></td>
+                    <td style="padding: 8px;"><input type="date" id="fromDate" name="fromDate" required></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><label for="toDate">To Date <span style="color: red;">*</span>:</label></td>
+                    <td style="padding: 8px;"><input type="date" id="toDate" name="toDate" required></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><label for="referredBy">Referred By <span style="color: red;">*</span>:</label></td>
+                    <td style="padding: 8px;"><input type="text" id="referredBy" name="referredBy" required></td>
+                </tr>
+            </table>
+            <br>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</body>
+</html>

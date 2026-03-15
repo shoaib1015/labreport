@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Edit</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="transparent-body">
+    <div class="dashboard-container" style="max-width: 700px;">
+        <h2 style="text-align: center;">Patient Details</h2>
+        <form action="/patient/save" method="post">
+            <label for="referredBy">Referred By <span style="color: red;">*</span>:</label>
+            <select id="referredBy" name="referredBy" required style="width: 500px;">
+                <option value="">Select</option>
+                <option value="Self">Self</option>
+            </select><br><br>
+
+            <label for="name">Name <span style="color: red;">*</span>:</label>
+            <input type="text" id="name" name="name" required style="width: 500px;"><br><br>
+
+            <label for="dob">Date of Birth <span style="color: red;">*</span>:</label>
+            <input type="date" id="dob" name="dob" required style="width: 500px;"><br><br>
+
+            <label for="gender">Gender <span style="color: red;">*</span>:</label>
+            <select id="gender" name="gender" required style="width: 500px;">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+
+            <label for="phone">Phone <span style="color: red;">*</span>:</label>
+            <input type="tel" id="phone" name="phone" required pattern="^\d{10}$" maxlength="10" inputmode="numeric" title="Please enter exactly 10 digits" style="width: 500px;" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10);"><br><br>
+
+            <label for="address">Address:</label>
+            <textarea id="address" name="address" style="width: 500px;"></textarea><br><br>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" style="width: 500px;"><br><br>
+        </form>
+        <div style="text-align: center; display: flex; justify-content: center; gap: 10px;">
+            <button onclick="showModal()" style="width: 120px;">Save</button>
+        </div>
+    </div>
+    <div id="saveModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; width: 300px;">
+            <h3 style="color: green; text-align: center;">Details Saved</h3>
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+                <tr>
+                    <td style="border: 1px solid #000; padding: 4px;"><strong>Patient ID:</strong></td>
+                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalPatientId"></span></td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 4px;"><strong>Patient Name:</strong></td>
+                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalPatientName"></span></td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 4px;"><strong>Patient Phone:</strong></td>
+                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalPatientPhone"></span></td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 4px;"><strong>Created Timestamp:</strong></td>
+                    <td style="border: 1px solid #000; padding: 4px;"><span id="modalTimestamp"></span></td>
+                </tr>
+            </table>
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="window.location.href='/master/lab.html'" style="width: 80px;">Close</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function showModal() {
+            document.getElementById('modalPatientId').textContent = 'Auto-generated';
+            document.getElementById('modalPatientName').textContent = document.getElementById('name').value;
+            document.getElementById('modalPatientPhone').textContent = document.getElementById('phone').value;
+            document.getElementById('modalTimestamp').textContent = new Date().toLocaleString();
+            document.getElementById('saveModal').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
