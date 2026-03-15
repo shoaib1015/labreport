@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lab Report Preview</title>
+  <style>
+    :root{--accent:#0b5ca5;--muted:#666;--border:#ddd;--bg:#fff;font-family: Arial, Helvetica, sans-serif;color:#111}
+    html,body{height:100%;margin:0;background:#f4f6f8}
+    .container{max-width:900px;margin:18px auto;padding:18px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+    /* Top controls (hidden on print) */
+    .controls{display:flex;gap:8px;margin-bottom:12px}
+    .controls button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:3px;cursor:pointer}
+    .controls button.secondary{background:#4a90a4}
+    .no-print{display:block}
+
+    /* Report page */
+    .report{padding:18px;background:var(--bg)}
+    header.lab-header{display:flex;align-items:flex-start;gap:16px;background:#0b5ca5;color:#fff;padding:22px 18px 18px;border-radius:4px 4px 0 0;position:relative;z-index:2;}
+    .logo{width:92px;height:72px;border:2px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+    .lab-meta h1{margin:0;font-size:18px;color:#fff}
+    .lab-meta p{margin:2px 0;color:rgba(255,255,255,0.85);font-size:13px}
+    .lab-team{margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.85);line-height:1.3}
+    .lab-team strong{font-weight:700}
+
+    .report-meta{margin-left:auto;text-align:right;min-width:220px;display:flex;flex-direction:column;justify-content:space-between;height:70px;}
+    .report-meta .meta-row{display:flex;justify-content:space-between;font-size:12px;color:#fff;}
+    .report-meta .meta-label{font-weight:700;color:rgba(255,255,255,0.85);}
+    .report-meta .meta-value{color:#fff;}
+
+    /* Patient info */
+    .patient{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 8px}
+    .patient .field{background:#fafafa;border:1px solid var(--border);padding:8px;font-size:13px}
+    .patient .field label{display:block;font-weight:700;font-size:11px;color:var(--muted);margin-bottom:6px}
+
+    .report-summary{display:flex;gap:8px;align-items:center;margin:0;padding:0;border:none;background:none}
+    .report-summary-label{font-weight:700;color:var(--muted);white-space:nowrap}
+    .report-summary-value{flex:1;font-weight:700}
+
+    /* Results table */
+    table.tests{width:100%;border-collapse:collapse;font-size:13px}
+    table.tests thead th{background:#f7fbff;text-align:left;padding:8px;border:1px solid var(--border);font-weight:700;color:#0b3f66}
+    table.tests tbody td{padding:8px;border:1px solid var(--border)}
+    table.tests tbody tr.section-header td{background:#e9f2ff;font-weight:700;text-align:center}
+    table.tests tbody tr.subsection-header td{background:#f5f9ff;font-weight:700;text-align:left;padding-left:12px}
+    table.tests tbody tr.subtest td:first-child{padding-left:20px}
+    table.tests tbody tr.subtest td{font-weight:400}
+    .muted{color:var(--muted);font-size:12px}
+
+    /* Main report table */
+    table.main-report{width:100%;border-collapse:collapse;}
+    table.main-report thead th, table.main-report thead td{padding:8px;border:1px solid var(--border);}
+    table.main-report tbody td{border:1px solid var(--border);}
+    table.main-report tfoot td{border:1px solid var(--border);}
+    .lab-header-row .lab-header{display:flex;align-items:flex-start;gap:16px;background:#0b5ca5;color:#fff;padding:22px 18px;border-radius:4px 4px 0 0;}
+    .patient-row{background:#fafafa;}
+    .test-header-row th{background:#f7fbff;text-align:left;padding:8px;border:1px solid var(--border);font-weight:700;color:#0b3f66}
+
+    /* Category blocks */
+    .category{margin-bottom:18px;padding:10px;border:1px solid var(--border);border-radius:4px;background:#fff} 
+    .category h3{margin:0 0 6px;font-size:15px;color:var(--accent)}
+    .category p.desc{margin:0 0 8px;color:var(--muted);font-size:13px}
+
+    table.tests{width:100%;border-collapse:collapse;font-size:13px}
+    table.tests thead th{background:#f7fbff;text-align:left;padding:8px;border-bottom:1px solid var(--border);font-weight:700;color:#0b3f66}
+    table.tests tbody td{padding:8px;border-bottom:1px solid #f0f0f0}
+    table.tests tbody tr:nth-child(even) td{background:#fff}
+    .subtest{padding-left:14px;color:#333;font-size:13px}
+    .muted{color:var(--muted);font-size:12px}
+
+    footer.report-footer{border-top:1px solid var(--border);margin-top:18px;padding-top:10px;display:flex;justify-content:space-between;align-items:center}
+    .signature{width:240px;border-top:1px solid var(--border);text-align:center;padding-top:8px;color:var(--muted);font-size:13px}
+    .signature-block{display:flex;justify-content:flex-end;margin-top:60px;margin-right:10px}
+    .signature-label{font-weight:700;color:var(--muted);margin-bottom:6px}
+    .signature-line{width:250px;border-bottom:1px solid var(--border);height:18px;margin-left:12px}
+
+    /* Print footer (repeated every page) */
+    .print-footer{display:none}
+
+    @media print {
+      .print-footer{display:block;position:fixed;bottom:0;left:0;right:0;background:#0b5ca5;color:#fff;padding:10px 18px;font-size:12px;}
+      .print-footer .line{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+      .print-footer .line span{flex:1 1 auto}
+      .print-footer .line span:first-child{flex:2 1 auto}
+    }
+    /* Print rules */
+    @page{size:A4;margin:20mm}
+    @media print{
+      html,body{background:transparent;margin:0;padding:0}
+      .container{box-shadow:none;margin:0;padding:0;max-width:100%;padding-bottom:40px}
+      .no-print{display:none !important}
+      .controls{display:none}
+
+      /* Keep header/footer on every printed page */
+      .print-footer { position: fixed; bottom: 0; left: 0; right: 0; }
+
+      /* Ensure report content doesn't overlap fixed header/footer */
+      .report { margin: 0; padding: 0; }
+
+      /* Prevent splitting category blocks across pages */
+      .category{page-break-inside:avoid;break-inside:avoid;}
+      table.tests thead{display:table-header-group}
+      table.main-report thead{display:table-header-group}
+      table.main-report tfoot{display:table-footer-group}
+      .print-footer{page-break-inside:avoid;break-inside:avoid}
+      /* Force consistent text color when printing */
+      *{color-adjust:exact; -webkit-print-color-adjust:exact}
+    }
+
+    /* Prevent awkward breaks inside table rows for older browsers */
+    tr,td,th{page-break-inside:avoid}
+
+    /* Responsive preview tweaks */
+    @media (max-width:700px){.patient{grid-template-columns:1fr}header.lab-header{flex-direction:column;align-items:flex-start}.logo{width:72px;height:56px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <table class="main-report">
+      <thead>
+        <tr class="lab-header-row">
+          <td colspan="3">
+            <div class="lab-header">
+              <div class="logo" aria-hidden="true">LOGO</div>
+              <div class="lab-meta">
+                <h1>BHARAT PATHOLOGY</h1>
+                <p><strong>FAST | ACCURATE | AFFORDABLE</strong></p>
+                <p>Authorised Collection Centre: DEORIA CC3</p>
+                <p>Dr. A. Kalam, M.B.B.S., D.C.P.</p>
+                <p>Reg. No: 30606 (Luck)</p>
+              </div>
+              <div class="report-meta" aria-label="Report metadata">
+                <div class="meta-row"><span class="meta-label">Reg. No.</span><span class="meta-value">RMEE2113532</span></div>
+                <div class="meta-row"><span class="meta-label">Date</span><span class="meta-value">11/12/25 04:50 PM</span></div>
+                <div class="meta-row"><span class="meta-label">Sample</span><span class="meta-value">IN LAB</span></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr class="patient-row">
+          <td><strong>Pt. ID:</strong> 26-15C1</td>
+          <td><strong>Name:</strong> MRS. SAMINA</td>
+          <td><strong>Age:</strong> 40 yrs / F <strong>Ref. By:</strong> DR. SELF</td>
+        </tr>
+        <tr class="patient-row">
+          <td colspan="3">
+            <div class="report-summary">
+              <div class="report-summary-label">REPORT(S):</div>
+              <div class="report-summary-value">CBC, CREATININE, SGPT, URIC ACID</div>
+            </div>
+          </td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="3">
+            <table class="tests">
+              <thead>
+                <tr class="test-header-row">
+                  <th>TEST NAME</th>
+                  <th>RESULT</th>
+                  <th>NORMAL RANGE</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="section-header"><td colspan="3">HAEMOGLOBIN</td></tr>
+                <tr class="subsection-header"><td colspan="3">COMPLETE BLOOD COUNT</td></tr>
+                <tr class="subtest"><td>HB (Cyanmeth Method)</td><td>8.1 gm/dl</td><td>[12-18]</td></tr>
+                <tr class="subtest"><td>Total Leukocytes Count</td><td>11000 cells/cu.mm.</td><td>[4000-11,000]</td></tr>
+
+                <tr class="subsection-header"><td colspan="3">DIFF. LEUKOCYTES COUNT</td></tr>
+                <tr><td>Polymorphs</td><td>66 %</td><td>[40-70]</td></tr>
+                <tr><td>Lymphocytes</td><td>32 %</td><td>[20-40]</td></tr>
+                <tr><td>Eosinophils</td><td>02 %</td><td>[0-6]</td></tr>
+                <tr><td>Monocytes</td><td>00 %</td><td>[0-6]</td></tr>
+                <tr><td>Basophils</td><td>00 %</td><td>[0-1]</td></tr>
+                <tr><td>P. C. V.</td><td>27.6 %</td><td>[40-54]</td></tr>
+                <tr><td>M. C. V.</td><td>79.5 %</td><td>[82-92]</td></tr>
+                <tr><td>M. C. H.</td><td>22.2 Pg.</td><td>[27-32]</td></tr>
+                <tr><td>M. C. H. C.</td><td>29.4 %</td><td>[32-36]</td></tr>
+                <tr><td>R. B. C. Count</td><td>3.65 millions /cu.mm.</td><td>[4-6]</td></tr>
+                <tr><td>Platelet count</td><td>82000 Lac/cu.mm.</td><td>[150000-400000]</td></tr>
+
+                <tr class="section-header"><td colspan="3">CLINICAL BIO-CHEMISTRY</td></tr>
+                <tr><td>Serum Creatinine</td><td>0.83 mg/dl</td><td>[0.50-1.4]</td></tr>
+                <tr><td>S.G.P.T (ALT)</td><td>16.92 IU/L</td><td>[10-40]</td></tr>
+                <tr><td colspan="3" style="font-size:12px;padding:10px 8px;">Serum Glutamate pyruvic transaminase is present in high concentrations in the liver and to lesser extent in kidney, heart and skeletal muscle, pancreas, spleen and lungs. ALT is more sensitive for the detection of hepatocyte injury than for biliary obstruction.</td></tr>
+                <tr><td>S.Uric Acid</td><td>4.19 mg/dl</td><td>[2.5-7.0]</td></tr>
+              </tbody>
+            </table>
+            <div class="signature-block">
+              <div class="signature-label">Pathologist</div>
+              <div class="signature-line"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">
+            <div class="print-footer">
+              <div class="line">
+                <span>Add: Near LIC. BO-2, Raghav Nagar, Deoria (U.P.)</span>
+                <span>Timing: 7:30AM to 7:00PM - Sunday 7:00 AM to 2:00 PM</span>
+                <span>Mob.: 9455143494</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</body>
+</html>

@@ -32,7 +32,8 @@ public class Main {
             
             // Load application configuration
             AppConfig.load();
-            
+            ensureReportPreviewExists();
+
             // Initialize logging
             AppLogger.init();
             Logger log = AppLogger.getLogger();
@@ -126,8 +127,40 @@ public class Main {
     }
 
     /**
-     * Simple health endpoint for sanity check
+     * Ensure a report preview template exists on disk.
+     *
+     * The UI uses `report-preview.html` served from the external report path.
      */
+    private static void ensureReportPreviewExists() {
+        try {
+            java.io.File templateFile = new java.io.File(AppConfig.getReportPath(), "report-preview.html");
+            if (!templateFile.exists()) {
+                // Create parent directory if needed
+                java.io.File parent = templateFile.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
+                }
+
+                // Minimal fallback template (fallback for missing external file)
+                String defaultTemplate = "<!doctype html>\n" +
+                        "<html lang=\"en\">\n" +
+                        "<head>\n" +
+                        "  <meta charset=\"utf-8\">\n" +
+                        "  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n" +
+                        "  <title>Lab Report Preview</title>\n" +
+                        "</head>\n" +
+                        "<body>\n" +
+                        "  <h1>Report preview template not found</h1>\n" +
+                        "  <p>Place a report template at: " + templateFile.getAbsolutePath() + "</p>\n" +
+                        "</body>\n" +
+                        "</html>\n";
+                java.nio.file.Files.write(templateFile.toPath(), defaultTemplate.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        } catch (Exception ignored) {
+            // If we cannot ensure the file exists, let the server continue; it will return 404 for /report-preview.html
+        }
+    }
+
     static class HealthHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) {
@@ -143,3 +176,4 @@ public class Main {
         }
     }
 }
+    
