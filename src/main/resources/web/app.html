@@ -12,10 +12,8 @@
 
     <!-- Dashboard Header (hidden until login) -->
     <div id="dashboard-header" class="navbar hidden">
-        <div class="menu-item" onclick="loadPage('/dashboard.html')">Dashboard</div>
-
         <div class="menu-item">
-            Masters
+            Master
             <div class="dropdown">
                 <div onclick="loadPage('/master/lab.html')">Lab Profile</div>
                 <div onclick="loadPage('/master/test-list.html')">Tests</div>
@@ -34,8 +32,16 @@
         <div class="menu-item">
             Reports
             <div class="dropdown">
-                <div onclick="loadPage('/report/preview.html')">Preview</div>
                 <div onclick="loadPage('/report/print.html')">Print / PDF</div>
+            </div>
+        </div>
+
+        <div class="menu-item" onclick="loadPage('/search.html')">Search</div>
+
+        <div class="menu-item">
+            Settlement
+            <div class="dropdown">
+                <div onclick="loadPage('/settlement.html')">Reference Settlement</div>
             </div>
         </div>
     </div>

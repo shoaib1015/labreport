@@ -6,7 +6,6 @@ import labreport.server.AuthFilter;
 import labreport.server.CorsFilter;
 import labreport.server.StaticFileHandler;
 
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,13 +21,10 @@ public final class StaticRouteRegistry {
         registerPublic(server, Arrays.asList(
                 "/app.html",
                 "/login.html",
-                "/styles.css"
-        ));
+                "/styles.css"));
 
         // 2️⃣ Protected routes (authentication required)
         registerProtected(server, Arrays.asList(
-                "/dashboard.html",
-
                 // Masters
                 "/master/lab.html",
                 "/master/test-list.html",
@@ -40,8 +36,13 @@ public final class StaticRouteRegistry {
 
                 // Reports
                 "/report/preview.html",
-                "/report/print.html"
-        ));
+                "/report/print.html",
+
+                // Search
+                "/search.html",
+
+                // Settlement
+                "/settlement.html"));
     }
 
     /* ---------------- INTERNAL HELPERS ---------------- */
@@ -50,8 +51,7 @@ public final class StaticRouteRegistry {
         for (String route : routes) {
             HttpContext ctx = server.createContext(
                     route,
-                    new StaticFileHandler("/web" + route)
-            );
+                    new StaticFileHandler("/web" + route));
             ctx.getFilters().add(new CorsFilter());
         }
     }
@@ -60,8 +60,7 @@ public final class StaticRouteRegistry {
         for (String route : routes) {
             HttpContext ctx = server.createContext(
                     route,
-                    new StaticFileHandler("/web" + route)
-            );
+                    new StaticFileHandler("/web" + route));
             ctx.getFilters().add(new CorsFilter());
             ctx.getFilters().add(new AuthFilter());
         }
