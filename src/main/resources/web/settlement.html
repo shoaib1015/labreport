@@ -1,62 +1,290 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reference Settlement</title>
+    <title>Settlement & Billing</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="full-page">
 
 <div class="page-content">
-    <h2>Reference Settlement</h2>
-    <div class="subtitle">Generate settlement reports for doctors</div>
+    <h2>Settlement & Billing</h2>
+    <div class="subtitle">Generate settlement reports for referral doctors per date range or doctor</div>
 
-    <form>
-        <label>Doctor</label>
-        <select name="doctor">
-            <option value="">Select Doctor</option>
-            <option value="Dr. A. Kalam">Dr. A. Kalam</option>
-            <option value="Dr. Self">Dr. Self</option>
-        </select>
+    <!-- Settlement Criteria Form -->
+    <form id="settlementForm" class="single-column">
+        <div class="form-section">
+            <h4>Settlement Criteria</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Settlement Type</label>
+                    <select name="settlementType" id="settlementType" onchange="updateSettlementMode()" required>
+                        <option value="">Select Type</option>
+                        <option value="ByDoctor">By Doctor</option>
+                        <option value="ByDateRange">By Date Range</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Doctor Name</label>
+                    <select name="doctor" id="doctorSelect" style="display: none;">
+                        <option value="">Select Doctor</option>
+                        <option value="Dr. A. Kalam">Dr. A. Kalam</option>
+                        <option value="Dr. Self">Self</option>
+                    </select>
+                </div>
+            </div>
 
-        <label>Start Date</label>
-        <input type="date" name="startDate">
+            <div class="form-row" id="dateRangeRow" style="display: none;">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" name="startDate" id="startDate">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="endDate" id="endDate">
+                </div>
+            </div>
 
-        <label>End Date</label>
-        <input type="date" name="endDate">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Include GST</label>
+                    <select name="includeGst" id="includeGst" onchange="calculateTotal()">
+                        <option value="false">No - Amount Before Tax</option>
+                        <option value="true">Yes - Include GST</option>
+                    </select>
+                </div>
+            </div>
 
-        <button type="submit">Generate Report</button>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                <button type="submit">Generate Report</button>
+            </div>
+        </div>
     </form>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Test</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Complete Blood Count</td>
-                <td>500</td>
-                <td>1</td>
-                <td>500</td>
-            </tr>
-            <tr>
-                <td>Serum Creatinine</td>
-                <td>200</td>
-                <td>1</td>
-                <td>200</td>
-            </tr>
-            <tr>
-                <td colspan="3"><strong>Total</strong></td>
-                <td><strong>700</strong></td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- Settlement Details (shown after report generation) -->
+    <div id="settlementDetails" style="display: none; margin-top: 28px;">
+        
+        <div class="form-section">
+            <h4>Settlement Summary</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Doctor / Settlement For</label>
+                    <input type="text" id="summaryDoctor" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Settlement Period</label>
+                    <input type="text" id="summaryPeriod" disabled>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Number of Reports</label>
+                    <input type="number" id="summaryReports" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Number of Tests</label>
+                    <input type="number" id="summaryTests" disabled>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Details Table -->
+        <h3 style="margin-top: 28px; margin-bottom: 16px;">Test Details</h3>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Test Name</th>
+                    <th>Category</th>
+                    <th>Count</th>
+                    <th>Unit Price (₹)</th>
+                    <th>Total (₹)</th>
+                </tr>
+            </thead>
+            <tbody id="testTableBody">
+                <tr>
+                    <td>Complete Blood Count</td>
+                    <td>Hematology</td>
+                    <td class="text-center">2</td>
+                    <td class="text-right">500</td>
+                    <td class="text-right"><strong>1,000</strong></td>
+                </tr>
+                <tr>
+                    <td>Serum Creatinine</td>
+                    <td>Biochemistry</td>
+                    <td class="text-center">3</td>
+                    <td class="text-right">200</td>
+                    <td class="text-right"><strong>600</strong></td>
+                </tr>
+                <tr>
+                    <td>SGPT (ALT)</td>
+                    <td>Biochemistry</td>
+                    <td class="text-center">2</td>
+                    <td class="text-right">250</td>
+                    <td class="text-right"><strong>500</strong></td>
+                </tr>
+                <tr>
+                    <td>Uric Acid</td>
+                    <td>Biochemistry</td>
+                    <td class="text-center">1</td>
+                    <td class="text-right">150</td>
+                    <td class="text-right"><strong>150</strong></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background: #f0f5fb; font-weight: 700;">
+                    <td colspan="4" style="text-align: right; padding-right: 12px;">Subtotal</td>
+                    <td style="text-align: right; padding-right: 12px;">
+                        <span id="subtotalAmount">2,250</span> ₹
+                    </td>
+                </tr>
+                <tr id="gstRow" style="background: #fff8dc;" style="display: none;">
+                    <td colspan="4" style="text-align: right; padding-right: 12px;">GST (18%)</td>
+                    <td style="text-align: right; padding-right: 12px;">
+                        <span id="gstAmount">0</span> ₹
+                    </td>
+                </tr>
+                <tr style="background: #e9f2ff; font-weight: 700; font-size: 15px;">
+                    <td colspan="4" style="text-align: right; padding-right: 12px;">Total Amount Due</td>
+                    <td style="text-align: right; padding-right: 12px;">
+                        <span id="totalAmount">2,250</span> ₹
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Payment Status -->
+        <div class="form-section" style="margin-top: 24px;">
+            <h4>Payment Status</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Payment Status</label>
+                    <select name="paymentStatus">
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                        <option value="PartiallyPaid">Partially Paid (Not Allowed)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount Received (₹)</label>
+                    <input type="number" name="amountReceived" placeholder="0" step="0.01">
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Payment Notes</label>
+                    <textarea name="paymentNotes" placeholder="Payment method, reference number, etc." rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settlement Actions -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="button" class="secondary" onclick="resetSettlement()">Reset</button>
+            <button type="button" class="outline" onclick="printSettlement()">🖨️ Print Settlement</button>
+            <button type="button" class="success" onclick="saveSettlement()">✓ Save Settlement</button>
+        </div>
+    </div>
 </div>
+
+<style>
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+#gstRow { display: none; }
+</style>
+
+<script>
+function updateSettlementMode() {
+    const type = document.getElementById('settlementType').value;
+    
+    if (type === 'ByDoctor') {
+        document.getElementById('doctorSelect').style.display = 'block';
+        document.getElementById('dateRangeRow').style.display = 'none';
+        document.getElementById('doctorSelect').parentElement.style.display = 'block';
+    } else if (type === 'ByDateRange') {
+        document.getElementById('doctorSelect').style.display = 'none';
+        document.getElementById('doctorSelect').parentElement.style.display = 'none';
+        document.getElementById('dateRangeRow').style.display = 'flex';
+    } else {
+        document.getElementById('doctorSelect').style.display = 'none';
+        document.getElementById('dateRangeRow').style.display = 'none';
+    }
+}
+
+function calculateTotal() {
+    const includeGst = document.getElementById('includeGst').value === 'true';
+    const subtotal = 2250; // TODO: Calculate from actual data
+    
+    const gstAmount = includeGst ? (subtotal * 0.18) : 0;
+    const total = subtotal + gstAmount;
+    
+    document.getElementById('subtotalAmount').innerText = subtotal.toFixed(2);
+    document.getElementById('gstAmount').innerText = gstAmount.toFixed(2);
+    document.getElementById('totalAmount').innerText = total.toFixed(2);
+    
+    document.getElementById('gstRow').style.display = includeGst ? '' : 'none';
+}
+
+document.getElementById('settlementForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Show settlement details
+    document.getElementById('settlementDetails').style.display = 'block';
+    
+    // Populate summary
+    const type = document.getElementById('settlementType').value;
+    if (type === 'ByDoctor') {
+        document.getElementById('summaryDoctor').value = document.getElementById('doctorSelect').value;
+        document.getElementById('summaryPeriod').value = 'As per selection';
+    } else {
+        document.getElementById('summaryDoctor').value = 'All Doctors';
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        document.getElementById('summaryPeriod').value = start + ' to ' + end;
+    }
+    
+    document.getElementById('summaryReports').value = '4';
+    document.getElementById('summaryTests').value = '8';
+    
+    calculateTotal();
+    
+    // Scroll to results
+    document.getElementById('settlementDetails').scrollIntoView({ behavior: 'smooth' });
+});
+
+function resetSettlement() {
+    if (confirm('Are you sure you want to reset the settlement?')) {
+        document.getElementById('settlementForm').reset();
+        document.getElementById('settlementDetails').style.display = 'none';
+        document.getElementById('doctorSelect').style.display = 'none';
+        document.getElementById('dateRangeRow').style.display = 'none';
+    }
+}
+
+function printSettlement() {
+    window.print();
+}
+
+function saveSettlement() {
+    const formData = new FormData(document.getElementById('settlementForm'));
+    const data = Object.fromEntries(formData);
+    
+    // TODO: Send to backend
+    console.log('Settlement saved:', data);
+    alert('Settlement report saved successfully!');
+}
+
+@media print {
+    .form-section { break-inside: avoid; }
+    table { break-inside: avoid; margin-bottom: 20px; }
+    button { display: none; }
+}
+</script>
 
 </body>
 </html>

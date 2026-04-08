@@ -1,53 +1,226 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Search Reports</title>
+    <title>Search & History</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="full-page">
 
 <div class="page-content">
-    <h2>Search Reports</h2>
-    <div class="subtitle">Find reports by date, patient, or doctor</div>
+    <h2>Search & Report History</h2>
+    <div class="subtitle">Find reports by date range, patient name, or doctor referral</div>
 
-    <form>
-        <label>Start Date</label>
-        <input type="date" name="startDate">
+    <!-- Search Form -->
+    <form id="searchForm" class="single-column" onsubmit="performSearch(event)">
+        <div class="form-section">
+            <h4>Search Filters</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" name="startDate" id="startDate">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="endDate" id="endDate">
+                </div>
+            </div>
 
-        <label>End Date</label>
-        <input type="date" name="endDate">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Patient Name</label>
+                    <input type="text" name="patientName" id="patientName" placeholder="Search by patient name...">
+                </div>
+                <div class="form-group">
+                    <label>Doctor Name</label>
+                    <input type="text" name="doctorName" id="doctorName" placeholder="Search by doctor/referral...">
+                </div>
+            </div>
 
-        <label>Patient Name</label>
-        <input type="text" name="patientName">
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Report Status</label>
+                    <select name="status" id="status">
+                        <option value="">All Reports</option>
+                        <option value="Saved">Saved</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Printed">Printed</option>
+                    </select>
+                </div>
+            </div>
 
-        <label>Doctor Name</label>
-        <input type="text" name="doctorName">
-
-        <button type="submit">Search</button>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                <button type="button" class="secondary" onclick="resetSearch()">Reset Filters</button>
+                <button type="submit">Search Reports</button>
+            </div>
+        </div>
     </form>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Report ID</th>
-                <th>Patient</th>
-                <th>Doctor</th>
-                <th>Date</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>RPT001</td>
-                <td>MRS. SAMINA</td>
-                <td>Dr. A. Kalam</td>
-                <td>2026-03-15</td>
-                <td><button>View</button> <button>Print</button></td>
-            </tr>
-            <tr>
-                <td>RPT002</td>
-                <td>MR. RAHUL</td>
+    <!-- Search Results -->
+    <div style="margin-top: 28px;">
+        <h3 style="margin-bottom: 16px;">Report Results <span id="resultCount" style="font-size: 14px; color: var(--muted-text);">(0 reports found)</span></h3>
+        
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Patient Name</th>
+                    <th>Age / Gender</th>
+                    <th>Doctor / Referral</th>
+                    <th>Report Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="report-row" data-patient="MRS. SAMINA" data-doctor="Self" data-date="2026-03-28">
+                    <td><strong>REP-2025-001523</strong></td>
+                    <td>MRS. SAMINA</td>
+                    <td>32 / Female</td>
+                    <td>Self</td>
+                    <td>28-Mar-2025</td>
+                    <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Saved</span></td>
+                    <td>
+                        <button class="secondary" onclick="viewReport(1)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                        <button class="secondary" onclick="editReport(1)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                        <button class="secondary" onclick="printReport(1)" style="padding: 6px 12px; font-size: 13px;">Print</button>
+                    </td>
+                </tr>
+                <tr class="report-row" data-patient="MR. RAHUL SHARMA" data-doctor="Dr. A. Kalam" data-date="2026-03-25">
+                    <td><strong>REP-2025-001522</strong></td>
+                    <td>MR. RAHUL SHARMA</td>
+                    <td>45 / Male</td>
+                    <td>Dr. A. Kalam</td>
+                    <td>25-Mar-2025</td>
+                    <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Saved</span></td>
+                    <td>
+                        <button class="secondary" onclick="viewReport(2)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                        <button class="secondary" onclick="editReport(2)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                        <button class="secondary" onclick="printReport(2)" style="padding: 6px 12px; font-size: 13px;">Print</button>
+                    </td>
+                </tr>
+                <tr class="report-row" data-patient="MS. PRIYA VERMA" data-doctor="Self" data-date="2026-03-20">
+                    <td><strong>REP-2025-001521</strong></td>
+                    <td>MS. PRIYA VERMA</td>
+                    <td>28 / Female</td>
+                    <td>Self</td>
+                    <td>20-Mar-2025</td>
+                    <td><span style="background: #dbeafe; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #1e3a5f;">Pending</span></td>
+                    <td>
+                        <button class="secondary" onclick="viewReport(3)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                        <button class="secondary" onclick="editReport(3)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                        <button class="danger" onclick="deleteReport(3)" style="padding: 6px 12px; font-size: 13px;">Delete</button>
+                    </td>
+                </tr>
+                <tr class="report-row" data-patient="MR. ARUN KUMAR" data-doctor="Self" data-date="2026-03-18">
+                    <td><strong>REP-2025-001520</strong></td>
+                    <td>MR. ARUN KUMAR</td>
+                    <td>52 / Male</td>
+                    <td>Self</td>
+                    <td>18-Mar-2025</td>
+                    <td><span style="background: #fef3c7; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #78350f;">Printed</span></td>
+                    <td>
+                        <button class="secondary" onclick="viewReport(4)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                        <button class="secondary" onclick="printReport(4)" style="padding: 6px 12px; font-size: 13px;">Print</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function performSearch(event) {
+    event.preventDefault();
+    
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const patientName = document.getElementById('patientName').value.toLowerCase();
+    const doctorName = document.getElementById('doctorName').value.toLowerCase();
+    const status = document.getElementById('status').value;
+    
+    let visibleCount = 0;
+    
+    document.querySelectorAll('.report-row').forEach(row => {
+        const rowPatient = row.getAttribute('data-patient').toLowerCase();
+        const rowDoctor = row.getAttribute('data-doctor').toLowerCase();
+        const rowDate = row.getAttribute('data-date');
+        const rowStatus = row.querySelector('span').innerText.trim();
+        
+        const matchesPatient = !patientName || rowPatient.includes(patientName);
+        const matchesDoctor = !doctorName || rowDoctor.includes(doctorName);
+        const matchesStatus = !status || rowStatus === status;
+        
+        let matchesDate = true;
+        if (startDate || endDate) {
+            const [year, month, day] = rowDate.split('-');
+            const reportDate = new Date(year, month - 1, day);
+            if (startDate) {
+                const [sYear, sMonth, sDay] = startDate.split('-');
+                const start = new Date(sYear, sMonth - 1, sDay);
+                if (reportDate < start) matchesDate = false;
+            }
+            if (endDate) {
+                const [eYear, eMonth, eDay] = endDate.split('-');
+                const end = new Date(eYear, eMonth - 1, eDay);
+                if (reportDate > end) matchesDate = false;
+            }
+        }
+        
+        const isVisible = matchesPatient && matchesDoctor && matchesStatus && matchesDate;
+        row.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
+    });
+    
+    document.getElementById('resultCount').innerText = `(${visibleCount} report(s) found)`;
+}
+
+function resetSearch() {
+    document.getElementById('searchForm').reset();
+    document.querySelectorAll('.report-row').forEach(row => {
+        row.style.display = '';
+    });
+    document.getElementById('resultCount').innerText = '(' + document.querySelectorAll('.report-row').length + ' reports found)';
+}
+
+function viewReport(id) {
+    console.log('View report:', id);
+    // TODO: Navigate to report preview
+    // window.parent.loadPage('/report/preview.html?id=' + id);
+    alert('Viewing report ID: ' + id);
+}
+
+function editReport(id) {
+    console.log('Edit report:', id);
+    // TODO: Navigate to edit report page
+    // window.parent.loadPage('/report/report-create.html?id=' + id);
+    alert('Editing report ID: ' + id);
+}
+
+function printReport(id) {
+    console.log('Print report:', id);
+    // TODO: Navigate to print page
+    // window.parent.loadPage('/report/print.html?id=' + id);
+    alert('Printing report ID: ' + id);
+}
+
+function deleteReport(id) {
+    if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+        console.log('Delete report:', id);
+        alert('Report deleted successfully');
+        // TODO: Refresh table
+    }
+}
+
+// Show all reports on initial load
+window.addEventListener('load', function() {
+    resetSearch();
+});
+</script>
+
+</body>
+</html>
                 <td>Dr. Self</td>
                 <td>2026-03-14</td>
                 <td><button>View</button> <button>Print</button></td>

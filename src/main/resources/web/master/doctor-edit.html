@@ -1,31 +1,272 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Edit Doctor</title>
+    <title>Doctor / Referral Master - Edit</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="full-page">
 
 <div class="page-content">
-    <h2>Edit Doctor</h2>
-    <div class="subtitle">Add or modify doctor details</div>
+    <h2>Doctor / Referral Master</h2>
+    <div class="subtitle">Add or modify doctor referral details</div>
 
-    <form>
-        <label>Name</label>
-        <input type="text" name="name" required>
+    <form id="doctorForm" class="single-column">
+        <!-- Basic Information -->
+        <div class="form-section">
+            <h4>Doctor Information</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Doctor Name</label>
+                    <input type="text" name="doctorName" required placeholder="Full name of doctor">
+                </div>
+                <div class="form-group">
+                    <label>Specialization</label>
+                    <input type="text" name="specialization" placeholder="e.g., General Practitioner, Cardiologist">
+                </div>
+            </div>
 
-        <label>Contact</label>
-        <input type="text" name="contact">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Qualification</label>
+                    <input type="text" name="qualification" placeholder="e.g., MBBS, MD">
+                </div>
+                <div class="form-group">
+                    <label>Experience (Years)</label>
+                    <input type="number" name="experience" placeholder="Years of experience" min="0">
+                </div>
+            </div>
 
-        <button type="submit">Save Doctor</button>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Registration Number</label>
+                    <input type="text" name="registrationNumber" placeholder="Medical registration number">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="form-section">
+            <h4>Contact Details</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Primary Phone</label>
+                    <input type="tel" name="primaryPhone" required placeholder="Phone number" maxlength="15">
+                </div>
+                <div class="form-group">
+                    <label>Secondary Phone</label>
+                    <input type="tel" name="secondaryPhone" placeholder="Alternate phone" maxlength="15">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="doctor@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Fax</label>
+                    <input type="tel" name="fax" placeholder="Fax number" maxlength="15">
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Details -->
+        <div class="form-section">
+            <h4>Professional Details</h4>
+            
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Clinic/Hospital Name</label>
+                    <input type="text" name="clinicName" placeholder="Name of clinic or hospital">
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Clinic Address</label>
+                    <textarea name="clinicAddress" placeholder="Complete clinic address (optional)"></textarea>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Clinic City</label>
+                    <input type="text" name="clinicCity" placeholder="City">
+                </div>
+                <div class="form-group">
+                    <label>Clinic State</label>
+                    <input type="text" name="clinicState" placeholder="State">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Clinic Phone</label>
+                    <input type="tel" name="clinicPhone" placeholder="Clinic contact number" maxlength="15">
+                </div>
+                <div class="form-group">
+                    <label>Clinic Email</label>
+                    <input type="email" name="clinicEmail" placeholder="clinic@example.com">
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="form-section">
+            <h4>Additional Information</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Commission Rate (%)</label>
+                    <input type="number" name="defaultCommissionRate" placeholder="Commission or discount rate" min="0" max="100" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Settlement Type</label>
+                    <select name="settlementType">
+                        <option value="">Select...</option>
+                        <option value="Monthly">Monthly Settlement</option>
+                        <option value="Quarterly">Quarterly Settlement</option>
+                        <option value="As-per-test">As per Test</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" placeholder="Any special instructions or notes"></textarea>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="button" class="secondary" onclick="goBack()">Cancel</button>
+            <button type="submit" class="success">Save Doctor</button>
+        </div>
     </form>
 </div>
 
 <script>
-function loadPage(page) {
-    window.parent.loadPage(page);
+let doctorId = null;
+
+// Load doctor ID from URL params
+window.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    doctorId = params.get('id');
+    
+    if (doctorId) {
+        loadDoctorData(doctorId);
+    }
+});
+
+function loadDoctorData(id) {
+    fetch('/api/doctors/' + id)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load doctor');
+            return response.json();
+        })
+        .then(data => {
+            populateForm(data);
+        })
+        .catch(error => {
+            console.error('Error loading doctor:', error);
+            alert('Failed to load doctor data');
+        });
 }
+
+function populateForm(doctor) {
+    const form = document.getElementById('doctorForm');
+    
+    form.doctorName.value = doctor.doctorName || '';
+    form.specialization.value = doctor.specialization || '';
+    form.qualification.value =doctor.qualification || '';
+    form.experience.value = doctor.experience || '';
+    form.registrationNumber.value = doctor.registrationNumber || '';
+    form.primaryPhone.value = doctor.primaryPhone || '';
+    form.secondaryPhone.value = doctor.secondaryPhone || '';
+    form.email.value = doctor.email || '';
+    form.fax.value = doctor.fax || '';
+    form.clinicName.value = doctor.clinicName || '';
+    form.clinicAddress.value = doctor.clinicAddress || '';
+    form.clinicCity.value = doctor.clinicCity || '';
+    form.clinicState.value = doctor.clinicState || '';
+    form.clinicPhone.value = doctor.clinicPhone || '';
+    form.clinicEmail.value = doctor.clinicEmail || '';
+    form.defaultCommissionRate.value = doctor.defaultCommissionRate || '';
+    form.settlementType.value = doctor.settlementType || '';
+    form.notes.value = doctor.notes || '';
+    form.status.value = doctor.status || 'Active';
+}
+
+function goBack() {
+    window.parent.loadPage('/master/doctor.html');
+}
+
+document.getElementById('doctorForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect form data
+    const formData = new FormData(this);
+    const data = {
+        doctorName: formData.get('doctorName'),
+        specialization: formData.get('specialization'),
+        qualification: formData.get('qualification'),
+        experience: formData.get('experience') ? parseInt(formData.get('experience')) : null,
+        registrationNumber: formData.get('registrationNumber'),
+        primaryPhone: formData.get('primaryPhone'),
+        secondaryPhone: formData.get('secondaryPhone'),
+        email: formData.get('email'),
+        fax: formData.get('fax'),
+        clinicName: formData.get('clinicName'),
+        clinicAddress: formData.get('clinicAddress'),
+        clinicCity: formData.get('clinicCity'),
+        clinicState: formData.get('clinicState'),
+        clinicPhone: formData.get('clinicPhone'),
+        clinicEmail: formData.get('clinicEmail'),
+        defaultCommissionRate: formData.get('defaultCommissionRate') ? parseFloat(formData.get('defaultCommissionRate')) : null,
+        settlementType: formData.get('settlementType'),
+        notes: formData.get('notes'),
+        status: formData.get('status')
+    };
+    
+    // Send to backend
+    const url = doctorId ? '/api/doctors/' + doctorId : '/api/doctors';
+    const method = doctorId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to save doctor');
+        return response.json();
+    })
+    .then(result => {
+        alert('Doctor details saved successfully!');
+        goBack();
+    })
+    .catch(error => {
+        console.error('Error saving doctor:', error);
+        alert('Error saving doctor: ' + error.message);
+    });
+});
 </script>
 
 </body>

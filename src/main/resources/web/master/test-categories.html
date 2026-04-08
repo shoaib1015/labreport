@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Categories</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="full-page">
+
+<div class="page-content">
+    <h2>Test Categories</h2>
+    <div class="subtitle">Manage laboratory test categories and their descriptions</div>
+
+    <div style="margin-bottom: 20px;">
+        <button onclick="showCategoryForm()">+ Add New Category</button>
+    </div>
+
+    <!-- Category Form (Hidden by default) -->
+    <div id="categoryFormSection" class="form-section" style="display: none; margin-bottom: 24px;">
+        <h4>Add / Edit Test Category</h4>
+        
+        <form id="categoryForm" class="single-column" style="gap: 16px; margin-top: 16px;">
+            <div class="form-row full">
+                <div class="form-group">
+                    <label class="required">Category Name</label>
+                    <input type="text" name="categoryName" required placeholder="e.g., Hematology, Biochemistry, Microbiology">
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Category Description</label>
+                    <textarea name="categoryDescription" placeholder="Optional description for how to interpret results in this category" rows="4"></textarea>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Display Order</label>
+                    <input type="number" name="displayOrder" placeholder="Order of appearance in reports" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="secondary" onclick="hideCategoryForm()">Cancel</button>
+                <button type="submit" class="success">Save Category</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Categories Table -->
+    <table>
+        <thead>
+            <tr>
+                <th>Category Name</th>
+                <th>Description</th>
+                <th>Tests Count</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Hematology</strong></td>
+                <td>Blood count and related tests</td>
+                <td>5</td>
+                <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Active</span></td>
+                <td>
+                    <button class="secondary" onclick="editCategory(1)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                    <button class="danger" onclick="deleteCategory(1)" style="padding: 6px 12px; font-size: 13px;">Delete</button>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Biochemistry</strong></td>
+                <td>Liver, kidney, and metabolic function tests</td>
+                <td>8</td>
+                <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Active</span></td>
+                <td>
+                    <button class="secondary" onclick="editCategory(2)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                    <button class="danger" onclick="deleteCategory(2)" style="padding: 6px 12px; font-size: 13px;">Delete</button>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Microbiology</strong></td>
+                <td>Culture and sensitivity tests</td>
+                <td>3</td>
+                <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Active</span></td>
+                <td>
+                    <button class="secondary" onclick="editCategory(3)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                    <button class="danger" onclick="deleteCategory(3)" style="padding: 6px 12px; font-size: 13px;">Delete</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadPage(page) {
+    window.parent.loadPage(page);
+}
+
+function showCategoryForm() {
+    document.getElementById('categoryFormSection').style.display = 'block';
+    document.getElementById('categoryForm').reset();
+}
+
+function hideCategoryForm() {
+    document.getElementById('categoryFormSection').style.display = 'none';
+}
+
+function editCategory(id) {
+    showCategoryForm();
+    // TODO: Load category data and populate form
+    console.log('Edit category:', id);
+}
+
+function deleteCategory(id) {
+    if (confirm('Are you sure you want to delete this category? Tests without a category will remain.')) {
+        // TODO: Delete category via backend
+        console.log('Delete category:', id);
+        alert('Category deleted successfully!');
+    }
+}
+
+document.getElementById('categoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // TODO: Send to backend
+    console.log('Category form submitted:', data);
+    alert('Category saved successfully!');
+    hideCategoryForm();
+});
+</script>
+
+</body>
+</html>

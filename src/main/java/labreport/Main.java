@@ -16,6 +16,12 @@ import labreport.server.CorsFilter;
 import labreport.server.SecureTestHandler;
 import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
+import labreport.server.LabProfileController;
+import labreport.server.DoctorController;
+import labreport.server.PatientController;
+import labreport.server.TestController;
+import labreport.server.ReportController;
+import labreport.server.SettlementController;
 import labreport.web.StaticRouteRegistry;
 
 import java.io.OutputStream;
@@ -99,8 +105,16 @@ public class Main {
                         System.exit(0);
                     })).getFilters().add(new CorsFilter());
 
-            // Dashboard page
+            // Register API controllers
+            server.createContext("/api/lab", new LabProfileController(new DatabaseManager())).getFilters().add(new CorsFilter());
+            server.createContext("/api/doctors", new DoctorController(new DatabaseManager())).getFilters().add(new CorsFilter());
+            server.createContext("/api/patients", new PatientController(new DatabaseManager())).getFilters().add(new CorsFilter());
+            server.createContext("/api/tests", new TestController(new DatabaseManager())).getFilters().add(new CorsFilter());
+            server.createContext("/api/reports", new ReportController(new DatabaseManager())).getFilters().add(new CorsFilter());
+            server.createContext("/api/settlements", new SettlementController(new DatabaseManager())).getFilters().add(new CorsFilter());
+            server.createContext("/api/commissions", new SettlementController(new DatabaseManager())).getFilters().add(new CorsFilter());
 
+            // Dashboard page
             StaticRouteRegistry.register(server);
 
             // 5. Block forever (until JVM is killed)

@@ -7,22 +7,359 @@
 </head>
 <body class="full-page">
 
-<div class="page-content" style=" text-align: center; height: initial;">
-    <h2>Bharat Pathology</h2>
-    <div class="subtitle">FAST | ACCURATE | AFFORDABLE</div>
+<div class="page-content">
+    <h2>Lab Profile</h2>
+    <div class="subtitle">Manage laboratory profile information. All changes will be reflected in future reports.</div>
 
-    <div>
-        <label>Address:</label>
-        <p>Near LIC. BO-2, Raghav Nagar, Deoria(U.P.)</p>
+    <form id="labForm" class="single-column">
+        <!-- Basic Information -->
+        <div class="form-section">
+            <h4>Basic Information</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Lab Name</label>
+                    <input type="text" name="labName" required placeholder="Enter lab name">
+                </div>
+                <div class="form-group">
+                    <label>Registration Number</label>
+                    <input type="text" name="registrationNumber" placeholder="e.g., CLIA123456">
+                </div>
+            </div>
 
-        <label>Timings:</label>
-        <p>Monday to Saturday | 7:30 A.M. to 7:00 P.M.</p>
-        <p>Sunday | 7:00 A.M. to 2:00 P.M.</p>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label class="required">Address</label>
+                    <textarea name="address" required placeholder="Enter complete address"></textarea>
+                </div>
+            </div>
 
-        <label>Contact Us:</label>
-        <p>+91-9455143494</p>
-    </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">City</label>
+                    <input type="text" name="city" required placeholder="City">
+                </div>
+                <div class="form-group">
+                    <label class="required">State</label>
+                    <input type="text" name="state" required placeholder="State">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Postal Code</label>
+                    <input type="text" name="postalCode" required placeholder="Postal Code">
+                </div>
+                <div class="form-group">
+                    <label class="required">Country</label>
+                    <input type="text" name="country" required placeholder="Country" value="India">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="form-section">
+            <h4>Contact Details</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Primary Phone</label>
+                    <input type="tel" name="primaryPhone" required placeholder="Phone number" maxlength="15">
+                </div>
+                <div class="form-group">
+                    <label>Secondary Phone</label>
+                    <input type="tel" name="secondaryPhone" placeholder="Alternate phone number" maxlength="15">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="lab@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Website</label>
+                    <input type="url" name="website" placeholder="https://example.com">
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Operating Hours</label>
+                    <textarea name="operatingHours" placeholder="e.g., Monday to Saturday | 7:30 A.M. to 7:00 P.M.; Sunday | 7:00 A.M. to 2:00 P.M."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Franchise/Owner Details -->
+        <div class="form-section">
+            <h4>Franchise / Owner Details (Optional)</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Owner Name</label>
+                    <input type="text" name="ownerName" placeholder="Lab owner name">
+                </div>
+                <div class="form-group">
+                    <label>Owner Phone</label>
+                    <input type="tel" name="ownerPhone" placeholder="Owner contact number" maxlength="15">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Owner Email</label>
+                    <input type="email" name="ownerEmail" placeholder="owner@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Franchise Type</label>
+                    <select name="franchiseType">
+                        <option value="">Select...</option>
+                        <option value="Standalone">Standalone Lab</option>
+                        <option value="Franchise">Franchise of Network</option>
+                        <option value="Chain">Chain Lab</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Branding -->
+        <div class="form-section">
+            <h4>Report Branding</h4>
+            
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Lab Logo</label>
+                    <div class="file-input-wrapper" id="logoUpload">
+                        <p>📁 Click to upload or drag logo here</p>
+                        <input type="file" name="logoFile" accept="image/*" id="logoFileInput">
+                        <small style="display: block; margin-top: 8px; color: var(--muted-text);">Recommended: 200x100px, PNG or JPG</small>
+                    </div>
+                    <div id="logoPreview" style="margin-top: 12px; display: none;">
+                        <img id="logoImage" src="" style="max-height: 80px; border-radius: var(--radius); border: 1px solid var(--border-color); padding: 4px;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Report Header</label>
+                    <textarea name="reportHeader" placeholder="Header text that appears at the top of reports. Can include taglines or mottos."></textarea>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Report Footer</label>
+                    <textarea name="reportFooter" placeholder="Footer text that appears at the bottom of reports. Can include disclaimer, terms, etc."></textarea>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Report Disclaimer</label>
+                    <textarea name="reportDisclaimer" placeholder="Legal disclaimer or terms that appear on reports."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- GST Settings -->
+        <div class="form-section">
+            <h4>Tax & Billing Settings</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>GST Registration Number</label>
+                    <input type="text" name="gstNumber" placeholder="15-digit GST number" maxlength="15">
+                </div>
+                <div class="form-group">
+                    <label>GST Rate (%)</label>
+                    <input type="number" name="gstRate" placeholder="e.g., 18" min="0" max="100" step="0.01">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Enable GST in Reports</label>
+                    <select name="enableGst">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Currency</label>
+                    <select name="currency">
+                        <option value="INR">Indian Rupee (₹)</option>
+                        <option value="USD">US Dollar ($)</option>
+                        <option value="EUR">Euro (€)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="button" class="secondary" onclick="resetForm()">Reset</button>
+            <button type="submit" class="success">Save Lab Profile</button>
+        </div>
+    </form>
 </div>
+
+<script>
+// Load lab profile on page load
+window.addEventListener('DOMContentLoaded', function() {
+    loadLabProfile();
+});
+
+function loadLabProfile() {
+    fetch('/api/lab')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.labName) {
+                populateForm(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading lab profile:', error);
+        });
+}
+
+function populateForm(profile) {
+    const form = document.getElementById('labForm');
+    
+    form.labName.value = profile.labName || '';
+    form.registrationNumber.value = profile.registrationNumber || '';
+    form.address.value = profile.address || '';
+    form.city.value = profile.city || '';
+    form.state.value = profile.state || '';
+    form.postalCode.value = profile.postalCode || '';
+    form.country.value = profile.country || 'India';
+    form.primaryPhone.value = profile.primaryPhone || '';
+    form.secondaryPhone.value = profile.secondaryPhone || '';
+    form.email.value = profile.email || '';
+    form.website.value = profile.website || '';
+    form.operatingHours.value = profile.operatingHours || '';
+    form.ownerName.value = profile.ownerName || '';
+    form.ownerPhone.value = profile.ownerPhone || '';
+    form.ownerEmail.value = profile.ownerEmail || '';
+    form.franchiseType.value = profile.franchiseType || '';
+    form.reportHeader.value = profile.reportHeader || '';
+    form.reportFooter.value = profile.reportFooter || '';
+    form.reportDisclaimer.value = profile.reportDisclaimer || '';
+    form.gstNumber.value = profile.gstNumber || '';
+    form.gstRate.value = profile.gstRate || '';
+    form.enableGst.value = profile.enableGst ? 'true' : 'false';
+    form.currency.value = profile.currency || 'INR';
+    
+    // Show logo if exists
+    if (profile.logoData) {
+        document.getElementById('logoImage').src = 'data:image/png;base64,' + profile.logoData;
+        document.getElementById('logoPreview').style.display = 'block';
+    }
+}
+
+// Logo upload handling
+document.getElementById('logoUpload').addEventListener('click', function() {
+    document.getElementById('logoFileInput').click();
+});
+
+document.getElementById('logoUpload').addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.style.borderColor = 'var(--primary-color)';
+    this.style.background = '#f0f7ff';
+});
+
+document.getElementById('logoUpload').addEventListener('dragleave', function() {
+    this.style.borderColor = 'var(--border-color)';
+    this.style.background = '';
+});
+
+document.getElementById('logoUpload').addEventListener('drop', function(e) {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        document.getElementById('logoFileInput').files = files;
+        handleLogoChange();
+    }
+    this.style.borderColor = 'var(--border-color)';
+    this.style.background = '';
+});
+
+document.getElementById('logoFileInput').addEventListener('change', handleLogoChange);
+
+function handleLogoChange() {
+    const file = document.getElementById('logoFileInput').files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('logoImage').src = e.target.result;
+            document.getElementById('logoPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to discard changes?')) {
+        document.getElementById('labForm').reset();
+        document.getElementById('logoPreview').style.display = 'none';
+        loadLabProfile();
+    }
+}
+
+document.getElementById('labForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect form data
+    const formData = new FormData(this);
+    const data = {
+        labName: formData.get('labName'),
+        registrationNumber: formData.get('registrationNumber'),
+        address: formData.get('address'),
+        city: formData.get('city'),
+        state: formData.get('state'),
+        postalCode: formData.get('postalCode'),
+        country: formData.get('country'),
+        primaryPhone: formData.get('primaryPhone'),
+        secondaryPhone: formData.get('secondaryPhone'),
+        email: formData.get('email'),
+        website: formData.get('website'),
+        operatingHours: formData.get('operatingHours'),
+        ownerName: formData.get('ownerName'),
+        ownerPhone: formData.get('ownerPhone'),
+        ownerEmail: formData.get('ownerEmail'),
+        franchiseType: formData.get('franchiseType'),
+        reportHeader: formData.get('reportHeader'),
+        reportFooter: formData.get('reportFooter'),
+        reportDisclaimer: formData.get('reportDisclaimer'),
+        gstNumber: formData.get('gstNumber'),
+        gstRate: formData.get('gstRate') ? parseFloat(formData.get('gstRate')) : null,
+        enableGst: formData.get('enableGst') === 'true',
+        currency: formData.get('currency')
+    };
+    
+    // Send to backend
+    fetch('/api/lab', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to save lab profile');
+        return response.json();
+    })
+    .then(result => {
+        alert('Lab profile saved successfully!');
+        loadLabProfile();
+    })
+    .catch(error => {
+        console.error('Error saving lab profile:', error);
+        alert('Error saving lab profile: ' + error.message);
+    });
+});
+</script>
 
 </body>
 </html>

@@ -9,52 +9,157 @@
 
 <div class="page-content">
     <h2>Test Master</h2>
-    <div class="subtitle">Manage laboratory tests and categories</div>
+    <div class="subtitle">Manage laboratory tests, categories, and sub-tests</div>
 
-    <button onclick="loadPage('/master/test-edit.html')">Add New Test</button>
+    <div style="margin-bottom: 20px; display: flex; gap: 12px;">
+        <button onclick="loadPage('/master/test-edit.html')">+ Add New Test</button>
+        <button class="outline" onclick="loadPage('/master/test-categories.html')">Manage Categories</button>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="form-row full" style="margin-bottom: 20px;">
+        <div class="form-group">
+            <input type="text" id="searchInput" placeholder="Search by test name..." onkeyup="filterTests()">
+        </div>
+        <div class="form-group">
+            <select id="categoryFilter" onchange="filterTests()">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+    </div>
 
     <table>
         <thead>
             <tr>
                 <th>Test Name</th>
                 <th>Category</th>
-                <th>Price</th>
+                <th>Price (₹)</th>
+                <th>Commission (%)</th>
+                <th>Sub-Tests</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>Complete Blood Count</td>
-                <td>Hematology</td>
-                <td>500</td>
-                <td><button>Edit</button> <button>Delete</button></td>
-            </tr>
-            <tr>
-                <td>Serum Creatinine</td>
-                <td>Biochemistry</td>
-                <td>200</td>
-                <td><button>Edit</button> <button>Delete</button></td>
-            </tr>
-            <tr>
-                <td>SGPT</td>
-                <td>Biochemistry</td>
-                <td>250</td>
-                <td><button>Edit</button> <button>Delete</button></td>
-            </tr>
-            <tr>
-                <td>Uric Acid</td>
-                <td>Biochemistry</td>
-                <td>150</td>
-                <td><button>Edit</button> <button>Delete</button></td>
-            </tr>
+        <tbody id="testTableBody">
+            <!-- Populated by JavaScript -->
         </tbody>
     </table>
 </div>
 
 <script>
+let allTests = [];
+
 function loadPage(page) {
     window.parent.loadPage(page);
 }
+
+// Load tests from backend
+function loadTests() {
+    fetch('/api/tests')
+        .then(response => response.json())
+        .then(tests => {
+            allTests = tests;
+            populateTestTable(tests);
+            populateCategoryFilter();
+        })
+        .catch(error => {
+            console.error('Error loading tests:', error);
+            alert('Failed to load tests');
+        });
+}
+
+function populateTestTable(tests) {
+    const tbody = document.getElementById('testTableBody');
+    tbody.innerHTML = '';
+    
+    if (tests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No tests found. Click "Add New Test" to create one.</td></tr>';
+        return;
+    }
+    
+    tests.forEach(test => {
+        const subTestCount = (test.subTests && test.subTests.length) || 0;
+        const row = document.createElement('tr');
+        row.className = 'test-row';
+        row.setAttribute('data-category', test.category?.id || '');
+        row.innerHTML = `
+            <td><strong>${test.testName || '-'}</strong></td>
+            <td>${test.category?.name || '-'}</td>
+            <td>${test.basePrice || '-'}</td>
+            <td>${test.commissionPercentage ? test.commissionPercentage + '%' : '-'}</td>
+            <td><span style="background: #dbeafe; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${subTestCount}</span></td>
+            <td><span style="background: ${test.status === 'Active' ? '#d1fae5' : '#fee2e2'}; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: ${test.status === 'Active' ? '#065f46' : '#991b1b'};">${test.status || 'Active'}</span></td>
+            <td>
+                <button class="secondary" onclick="editTest(${test.id})" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                <button class="danger" onclick="deleteTest(${test.id})" style="padding: 6px 12px; font-size: 13px;">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function populateCategoryFilter() {
+    const categoryFilter = document.getElementById('categoryFilter');
+    const categories = new Set();
+    
+    allTests.forEach(test => {
+        if (test.category) {
+            categories.add(test.category.name);
+        }
+    });
+    
+    // Keep "All Categories" option
+    while (categoryFilter.options.length > 1) {
+        categoryFilter.remove(1);
+    }
+    
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+}
+
+function editTest(id) {
+    loadPage('/master/test-edit.html?id=' + id);
+}
+
+function deleteTest(id) {
+    if (confirm('Are you sure you want to delete this test? This cannot be undone.')) {
+        fetch('/api/tests/' + id, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to delete test');
+            alert('Test deleted successfully!');
+            loadTests();
+        })
+        .catch(error => {
+            console.error('Error deleting test:', error);
+            alert('Error deleting test: ' + error.message);
+        });
+    }
+}
+
+function filterTests() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const categoryTerm = document.getElementById('categoryFilter').value;
+    
+    const rows = document.querySelectorAll('.test-row');
+    rows.forEach(row => {
+        const testName = row.cells[0].textContent.toLowerCase();
+        const category = row.cells[1].textContent;
+        
+        const matchesSearch = testName.includes(searchTerm);
+        const matchesCategory = !categoryTerm || category === categoryTerm;
+        
+        row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
+    });
+}
+
+// Load tests on page load
+window.addEventListener('DOMContentLoaded', loadTests);
 </script>
 
 </body>

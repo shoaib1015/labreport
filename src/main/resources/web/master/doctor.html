@@ -9,29 +9,25 @@
 
 <div class="page-content">
     <h2>Doctor / Referral Master</h2>
-    <div class="subtitle">Manage referral doctors</div>
+    <div class="subtitle">Manage and maintain referral doctor information</div>
 
-    <button onclick="loadPage('/master/doctor-edit.html')">Add New Doctor</button>
+    <div style="margin-bottom: 20px;">
+        <button onclick="loadPage('/master/doctor-edit.html')">+ Add New Doctor</button>
+    </div>
 
     <table>
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Contact</th>
+                <th>Doctor Name</th>
+                <th>Specialization</th>
+                <th>Phone</th>
+                <th>Commission (%)</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>Dr. A. Kalam</td>
-                <td>+91-9876543210</td>
-                <td><button>Edit</button> <button>Delete</button></td>
-            </tr>
-            <tr>
-                <td>Dr. Self</td>
-                <td>N/A</td>
-                <td><button>Edit</button> <button>Delete</button></td>
-            </tr>
+        <tbody id="doctorTableBody">
+            <!-- Populated by JavaScript -->
         </tbody>
     </table>
 </div>
@@ -40,6 +36,69 @@
 function loadPage(page) {
     window.parent.loadPage(page);
 }
+
+// Load doctors from backend
+function loadDoctors() {
+    fetch('/api/doctors')
+        .then(response => response.json())
+        .then(doctors => {
+            populateDoctorTable(doctors);
+        })
+        .catch(error => {
+            console.error('Error loading doctors:', error);
+            alert('Failed to load doctors');
+        });
+}
+
+function populateDoctorTable(doctors) {
+    const tbody = document.getElementById('doctorTableBody');
+    tbody.innerHTML = '';
+    
+    if (doctors.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No doctors found. Click "Add New Doctor" to create one.</td></tr>';
+        return;
+    }
+    
+    doctors.forEach(doctor => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${doctor.doctorName || '-'}</td>
+            <td>${doctor.specialization || '-'}</td>
+            <td>${doctor.primaryPhone || '-'}</td>
+            <td>${doctor.defaultCommissionRate ? doctor.defaultCommissionRate + '%' : '-'}</td>
+            <td><span style="background: ${doctor.status === 'Active' ? '#d1fae5' : '#fee2e2'}; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: ${doctor.status === 'Active' ? '#065f46' : '#991b1b'};">${doctor.status || 'Active'}</span></td>
+            <td>
+                <button class="secondary" onclick="editDoctor(${doctor.id})" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                <button class="danger" onclick="deleteDoctor(${doctor.id})" style="padding: 6px 12px; font-size: 13px;">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function editDoctor(id) {
+    loadPage('/master/doctor-edit.html?id=' + id);
+}
+
+function deleteDoctor(id) {
+    if (confirm('Are you sure you want to delete this doctor? This cannot be undone.')) {
+        fetch('/api/doctors/' + id, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to delete doctor');
+            alert('Doctor deleted successfully!');
+            loadDoctors();
+        })
+        .catch(error => {
+            console.error('Error deleting doctor:', error);
+            alert('Error deleting doctor: ' + error.message);
+        });
+    }
+}
+
+// Load doctors on page load
+window.addEventListener('DOMContentLoaded', loadDoctors);
 </script>
 
 </body>

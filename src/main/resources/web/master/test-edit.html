@@ -1,38 +1,427 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Edit Test</title>
+    <title>Test Master - Edit</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="full-page">
 
 <div class="page-content">
-    <h2>Edit Test</h2>
-    <div class="subtitle">Add or modify test details</div>
+    <h2>Test Master - Edit</h2>
+    <div class="subtitle">Add or modify test details with sub-tests and normal ranges</div>
 
-    <form>
-        <label>Test Name</label>
-        <input type="text" name="name" required>
+    <form id="testForm" class="single-column">
+        <!-- Basic Test Information -->
+        <div class="form-section">
+            <h4>Test Information</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Test Name</label>
+                    <input type="text" name="testName" required placeholder="e.g., Complete Blood Count">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="categoryId">
+                        <option value="">No Category</option>
+                        <option value="1">Hematology</option>
+                        <option value="2">Biochemistry</option>
+                        <option value="3">Microbiology</option>
+                    </select>
+                </div>
+            </div>
 
-        <label>Category</label>
-        <select name="category">
-            <option value="">Select Category</option>
-            <option value="Hematology">Hematology</option>
-            <option value="Biochemistry">Biochemistry</option>
-        </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Base Price (₹)</label>
+                    <input type="number" name="basePrice" required placeholder="Test price" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Commission Percentage (%)</label>
+                    <input type="number" name="commissionPercentage" placeholder="Commission % (overrides doctor default)" min="0" max="100" step="0.01">
+                </div>
+            </div>
 
-        <label>Price</label>
-        <input type="number" name="price" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" name="unit" placeholder="e.g., mg/dL, cells/μL">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
 
-        <button type="submit">Save Test</button>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" placeholder="Test description or notes" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formatting Rules -->
+        <div class="form-section">
+            <h4>Formatting Rules (for Report)</h4>
+            
+            <div class="form-row">
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="boldFormat" id="boldFormat">
+                    <label for="boldFormat" style="margin: 0;">Make Bold in Report</label>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="borderFormat" id="borderFormat">
+                    <label for="borderFormat" style="margin: 0;">Add Border in Report</label>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="highlightFormat" id="highlightFormat">
+                    <label for="highlightFormat" style="margin: 0;">Highlight Abnormal Values</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub-Tests Section -->
+        <div class="form-section">
+            <h4>Sub-Tests</h4>
+            <p style="color: var(--muted-text); font-size: 13px; margin: 0 0 16px 0;">Define individual components for this test (e.g., RBC, WBC, Platelet for CBC). Each sub-test can have age/gender-specific normal ranges and associated cost.</p>
+            
+            <div id="subTestsContainer">
+                <div class="sub-test-item" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px; margin-bottom: 12px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required">Sub-Test Name</label>
+                            <input type="text" class="subTestName" placeholder="e.g., RBC Count" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit</label>
+                            <input type="text" class="subTestUnit" placeholder="e.g., million/μL">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cost (₹)</label>
+                            <input type="number" class="subTestPrice" placeholder="Cost for this sub-test" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Display Order</label>
+                            <input type="number" class="displayOrder" placeholder="Order in report" min="0" step="1" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Normal Range (Min)</label>
+                            <input type="number" class="normalRangeMin" placeholder="Minimum value" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Normal Range (Max)</label>
+                            <input type="number" class="normalRangeMax" placeholder="Maximum value" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Age/Gender Specific Ranges (JSON)</label>
+                            <textarea class="ageRanges" placeholder='Example: {"Adult":{"Male":"4.5-5.5","Female":"4.0-5.0"},"Child":"3.5-4.5"}' rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Instructions</label>
+                            <textarea class="instructions" placeholder="e.g., Fasting required, Empty bladder before test" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" class="printInstructions" id="printInstructions">
+                            <label for="printInstructions" style="margin: 0;">Print Instructions in Report</label>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+                        <button type="button" class="danger" onclick="removeSubTest(this)" style="padding: 6px 12px; font-size: 13px;">Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="secondary" onclick="addSubTest()" style="width: auto; margin-top: 12px;">+ Add Sub-Test</button>
+        </div>
+
+        <!-- Form Actions -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="button" class="secondary" onclick="goBack()">Cancel</button>
+            <button type="submit" class="success">Save Test</button>
+        </div>
     </form>
 </div>
 
 <script>
-function loadPage(page) {
-    window.parent.loadPage(page);
+let testId = null;
+
+// Load test ID from URL params
+window.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    testId = params.get('id');
+    
+    if (testId) {
+        loadTestData(testId);
+    }
+});
+
+function loadTestData(id) {
+    fetch('/api/tests/' + id)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load test');
+            return response.json();
+        })
+        .then(data => {
+            populateForm(data);
+        })
+        .catch(error => {
+            console.error('Error loading test:', error);
+            alert('Failed to load test data');
+        });
 }
+
+function populateForm(test) {
+    const form = document.getElementById('testForm');
+    
+    // Set basic fields
+    form.testName.value = test.testName || '';
+    form.categoryId.value = test.categoryId || '';
+    form.basePrice.value = test.basePrice || '';
+    form.commissionPercentage.value = test.commissionPercentage || '';
+    form.unit.value = test.unit || '';
+    form.status.value = test.status || 'Active';
+    form.description.value = test.description || '';
+    form.boldFormat.checked = test.boldFormat || false;
+    form.borderFormat.checked = test.borderFormat || false;
+    form.highlightFormat.checked = test.highlightFormat || false;
+    
+    // Clear default sub-test and load real ones
+    document.getElementById('subTestsContainer').innerHTML = '';
+    
+    if (test.subTests && test.subTests.length > 0) {
+        test.subTests.forEach(subTest => {
+            addSubTestWithData(subTest);
+        });
+    } else {
+        addSubTest(); // Add one empty sub-test form if none exist
+    }
+}
+
+function addSubTestWithData(subTest) {
+    const container = document.getElementById('subTestsContainer');
+    const newItem = document.createElement('div');
+    newItem.className = 'sub-test-item';
+    newItem.style.cssText = 'background: white; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px; margin-bottom: 12px;';
+    newItem.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label class="required">Sub-Test Name</label>
+                <input type="text" class="subTestName" placeholder="e.g., RBC Count" required value="${subTest.subTestName || ''}">
+            </div>
+            <div class="form-group">
+                <label>Unit</label>
+                <input type="text" class="subTestUnit" placeholder="e.g., million/μL" value="${subTest.unit || ''}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Cost (₹)</label>
+                <input type="number" class="subTestPrice" placeholder="Cost for this sub-test" min="0" step="0.01" value="${subTest.price || ''}">
+            </div>
+            <div class="form-group">
+                <label>Display Order</label>
+                <input type="number" class="displayOrder" placeholder="Order in report" min="0" step="1" value="${subTest.displayOrder || '0'}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Normal Range (Min)</label>
+                <input type="number" class="normalRangeMin" placeholder="Minimum value" step="0.01" value="${subTest.normalRangeMin || ''}">
+            </div>
+            <div class="form-group">
+                <label>Normal Range (Max)</label>
+                <input type="number" class="normalRangeMax" placeholder="Maximum value" step="0.01" value="${subTest.normalRangeMax || ''}">
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Age/Gender Specific Ranges (JSON)</label>
+                <textarea class="ageRanges" placeholder='Example: {"Adult":{"Male":"4.5-5.5","Female":"4.0-5.0"},"Child":"3.5-4.5"}' rows="2">${subTest.ageRanges || ''}</textarea>
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Instructions</label>
+                <textarea class="instructions" placeholder="e.g., Fasting required, Empty bladder before test" rows="2">${subTest.instructions || ''}</textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" class="printInstructions" ${subTest.printInstructions ? 'checked' : ''}>
+                <label style="margin: 0;">Print Instructions in Report</label>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+            <button type="button" class="danger" onclick="removeSubTest(this)" style="padding: 6px 12px; font-size: 13px;">Remove</button>
+        </div>
+    `;
+    container.appendChild(newItem);
+}
+
+function goBack() {
+    window.parent.loadPage('/master/test-list.html');
+}
+
+function addSubTest() {
+    const container = document.getElementById('subTestsContainer');
+    const newItem = document.createElement('div');
+    newItem.className = 'sub-test-item';
+    newItem.style.cssText = 'background: white; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px; margin-bottom: 12px;';
+    newItem.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label class="required">Sub-Test Name</label>
+                <input type="text" class="subTestName" placeholder="e.g., RBC Count" required>
+            </div>
+            <div class="form-group">
+                <label>Unit</label>
+                <input type="text" class="subTestUnit" placeholder="e.g., million/μL">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Cost (₹)</label>
+                <input type="number" class="subTestPrice" placeholder="Cost for this sub-test" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Display Order</label>
+                <input type="number" class="displayOrder" placeholder="Order in report" min="0" step="1" value="0">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Normal Range (Min)</label>
+                <input type="number" class="normalRangeMin" placeholder="Minimum value" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Normal Range (Max)</label>
+                <input type="number" class="normalRangeMax" placeholder="Maximum value" step="0.01">
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Age/Gender Specific Ranges (JSON)</label>
+                <textarea class="ageRanges" placeholder='Example: {"Adult":{"Male":"4.5-5.5","Female":"4.0-5.0"},"Child":"3.5-4.5"}' rows="2"></textarea>
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Instructions</label>
+                <textarea class="instructions" placeholder="e.g., Fasting required, Empty bladder before test" rows="2"></textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" class="printInstructions">
+                <label style="margin: 0;">Print Instructions in Report</label>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+            <button type="button" class="danger" onclick="removeSubTest(this)" style="padding: 6px 12px; font-size: 13px;">Remove</button>
+        </div>
+    `;
+    container.appendChild(newItem);
+}
+
+function removeSubTest(button) {
+    button.closest('.sub-test-item').remove();
+}
+
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect main form data
+    const formData = new FormData(this);
+    const data = {
+        testName: formData.get('testName'),
+        categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId')) : null,
+        basePrice: parseFloat(formData.get('basePrice')),
+        commissionPercentage: formData.get('commissionPercentage') ? parseFloat(formData.get('commissionPercentage')) : null,
+        unit: formData.get('unit'),
+        description: formData.get('description'),
+        boldFormat: formData.get('boldFormat') ? true : false,
+        borderFormat: formData.get('borderFormat') ? true : false,
+        highlightFormat: formData.get('highlightFormat') ? true : false,
+        status: formData.get('status'),
+        subTests: []
+    };
+    
+    // Collect sub-tests
+    Array.from(document.querySelectorAll('.sub-test-item')).forEach(item => {
+        const printCheckbox = item.querySelector('.printInstructions');
+        data.subTests.push({
+            subTestName: item.querySelector('.subTestName').value,
+            unit: item.querySelector('.subTestUnit').value,
+            price: item.querySelector('.subTestPrice').value ? parseFloat(item.querySelector('.subTestPrice').value) : null,
+            displayOrder: parseInt(item.querySelector('.displayOrder').value) || 0,
+            normalRangeMin: item.querySelector('.normalRangeMin').value ? parseFloat(item.querySelector('.normalRangeMin').value) : null,
+            normalRangeMax: item.querySelector('.normalRangeMax').value ? parseFloat(item.querySelector('.normalRangeMax').value) : null,
+            ageRanges: item.querySelector('.ageRanges').value,
+            instructions: item.querySelector('.instructions').value,
+            printInstructions: printCheckbox ? printCheckbox.checked : false
+        });
+    });
+    
+    // Send to backend
+    const url = testId ? '/api/tests/' + testId : '/api/tests';
+    const method = testId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to save test');
+        return response.json();
+    })
+    .then(result => {
+        alert('Test saved successfully!');
+        goBack();
+    })
+    .catch(error => {
+        console.error('Error saving test:', error);
+        alert('Error saving test: ' + error.message);
+    });
+});
 </script>
 
 </body>

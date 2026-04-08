@@ -8,41 +8,112 @@
 <body class="full-page">
 
 <div class="page-content">
-    <h2>Search Patient</h2>
-    <div class="subtitle">Find and manage patients</div>
+    <h2>Patient Management</h2>
+    <div class="subtitle">Find and manage patient information</div>
 
-    <form>
-        <label>Search by Name</label>
-        <input type="text" name="name">
+    <div style="margin-bottom: 20px;">
+        <button onclick="loadPage('/patient/patient-edit.html')">+ Add New Patient</button>
+    </div>
 
-        <button type="submit">Search</button>
-    </form>
+    <!-- Search Form -->
+    <div class="form-section" style="margin-bottom: 24px;">
+        <h4>Search Patients</h4>
+        <div class="form-row full">
+            <div class="form-group">
+                <input type="text" id="searchInput" placeholder="Search by patient name or phone..." onkeyup="filterPatients()">
+            </div>
+        </div>
+    </div>
 
     <table>
         <thead>
             <tr>
                 <th>Patient ID</th>
                 <th>Name</th>
+                <th>Age</th>
+                <th>Gender</th>
                 <th>Phone</th>
+                <th>Referred By</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <tr>
+            <tr class="patient-row">
                 <td>26-15C1</td>
-                <td>MRS. SAMINA</td>
+                <td><strong>MRS. SAMINA</strong></td>
+                <td>32</td>
+                <td>Female</td>
                 <td>9876543210</td>
-                <td><button>View</button> <button>Edit</button></td>
+                <td>Self</td>
+                <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Active</span></td>
+                <td>
+                    <button class="secondary" onclick="viewPatient(1)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                    <button class="secondary" onclick="editPatient(1)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                    <button class="secondary" onclick="createReport(1)" style="padding: 6px 12px; font-size: 13px;">Report</button>
+                </td>
             </tr>
-            <tr>
+            <tr class="patient-row">
                 <td>26-15C2</td>
-                <td>MR. RAHUL</td>
+                <td><strong>MR. RAHUL SHARMA</strong></td>
+                <td>45</td>
+                <td>Male</td>
                 <td>9876543211</td>
-                <td><button>View</button> <button>Edit</button></td>
+                <td>Dr. A. Kalam</td>
+                <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Active</span></td>
+                <td>
+                    <button class="secondary" onclick="viewPatient(2)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                    <button class="secondary" onclick="editPatient(2)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                    <button class="secondary" onclick="createReport(2)" style="padding: 6px 12px; font-size: 13px;">Report</button>
+                </td>
+            </tr>
+            <tr class="patient-row">
+                <td>26-15C3</td>
+                <td><strong>MS. PRIYA VERMA</strong></td>
+                <td>28</td>
+                <td>Female</td>
+                <td>9876543212</td>
+                <td>Self</td>
+                <td><span style="background: #d1fae5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #065f46;">Active</span></td>
+                <td>
+                    <button class="secondary" onclick="viewPatient(3)" style="padding: 6px 12px; font-size: 13px;">View</button>
+                    <button class="secondary" onclick="editPatient(3)" style="padding: 6px 12px; font-size: 13px;">Edit</button>
+                    <button class="secondary" onclick="createReport(3)" style="padding: 6px 12px; font-size: 13px;">Report</button>
+                </td>
             </tr>
         </tbody>
     </table>
 </div>
+
+<script>
+function loadPage(page) {
+    window.parent.loadPage(page);
+}
+
+function viewPatient(id) {
+    // TODO: View patient details (read-only mode)
+    console.log('View patient:', id);
+    alert('Viewing patient details for ID: ' + id);
+}
+
+function editPatient(id) {
+    loadPage('/patient/patient-edit.html?id=' + id);
+}
+
+function createReport(id) {
+    loadPage('/report/report-create.html?patientId=' + id);
+}
+
+function filterPatients() {
+    const searchText = document.getElementById('searchInput').value.toLowerCase();
+    
+    document.querySelectorAll('.patient-row').forEach(row => {
+        const patientInfo = row.innerText.toLowerCase();
+        const matches = patientInfo.includes(searchText);
+        row.style.display = matches ? '' : 'none';
+    });
+}
+</script>
 
 </body>
 </html>
