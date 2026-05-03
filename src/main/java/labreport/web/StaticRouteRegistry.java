@@ -32,7 +32,9 @@ public final class StaticRouteRegistry {
                 // Masters
                 "/master/lab.html",
                 "/master/test-list.html",
+                "/master/test-edit.html",
                 "/master/doctor.html",
+                "/master/doctor-edit.html",
 
                 // Patients
                 "/patient/patient-edit.html",
