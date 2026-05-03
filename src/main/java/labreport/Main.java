@@ -13,6 +13,8 @@ import labreport.db.DatabaseManager;
 import labreport.logging.AppLogger;
 import labreport.server.AuthFilter;
 import labreport.server.CorsFilter;
+import labreport.server.LabProfileHandler;
+import labreport.server.LabProfilePageHandler;
 import labreport.server.SecureTestHandler;
 import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
@@ -46,6 +48,10 @@ public class Main {
             // 2. Ensure default admin user exists
             UserService.ensureDefaultAdmin();
 
+            log.info("*** Ensuring Default Lab Profile ***");
+            // 2b. Ensure default lab profile exists
+            UserService.ensureDefaultLabProfile();
+
             // 3. Start HTTP server
             int port = 8080;
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -76,6 +82,10 @@ public class Main {
             logoutContext.getFilters().add(new CorsFilter());
             logoutContext.getFilters().add(new AuthFilter());
 
+            HttpContext labProfileContext = server.createContext("/api/lab-profile", new LabProfileHandler());
+            labProfileContext.getFilters().add(new CorsFilter());
+            labProfileContext.getFilters().add(new AuthFilter());
+
             // server.createContext("/patients", new PatientsHandler())
             // .getFilters().add(new AuthFilter());
             // server.createContext("/reports", new ReportsHandler())
@@ -102,6 +112,11 @@ public class Main {
             // Dashboard page
 
             StaticRouteRegistry.register(server);
+
+            // Override /master/lab.html with dynamic handler
+            HttpContext labPageContext = server.createContext("/master/lab.html", new LabProfilePageHandler());
+            labPageContext.getFilters().add(new CorsFilter());
+            labPageContext.getFilters().add(new AuthFilter());
 
             // 5. Block forever (until JVM is killed)
             Thread.sleep(Long.MAX_VALUE);

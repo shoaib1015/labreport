@@ -4,25 +4,189 @@
     <meta charset="UTF-8">
     <title>Lab Profile</title>
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        .form-container {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body class="full-page">
 
-<div class="page-content" style=" text-align: center; height: initial;">
-    <h2>Bharat Pathology</h2>
+<div class="page-content" style="text-align: center; height: initial;">
+    <h2>Bharat Pathology - Lab Profile</h2>
     <div class="subtitle">FAST | ACCURATE | AFFORDABLE</div>
 
-    <div>
-        <label>Address:</label>
-        <p>Near LIC. BO-2, Raghav Nagar, Deoria(U.P.)</p>
+    <div id="loading" class="loading">Loading lab profile...</div>
 
-        <label>Timings:</label>
-        <p>Monday to Saturday | 7:30 A.M. to 7:00 P.M.</p>
-        <p>Sunday | 7:00 A.M. to 2:00 P.M.</p>
+    <div class="form-container" id="formContainer" style="display: none;">
+        <form id="labForm">
+            <div class="form-group">
+                <label for="labName">Lab Name:</label>
+                <input type="text" id="labName" name="lab_name" required>
+            </div>
 
-        <label>Contact Us:</label>
-        <p>+91-9455143494</p>
+            <div class="form-group">
+                <label for="address">Address:</label>
+                <textarea id="address" name="address"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="contactNumber">Contact Number:</label>
+                <input type="text" id="contactNumber" name="contact_number">
+            </div>
+
+            <button type="submit">Save Details</button>
+        </form>
+
+        <div id="message" class="message"></div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadLabProfile();
+
+        document.getElementById('labForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveLabProfile();
+        });
+    });
+
+    function loadLabProfile() {
+        fetch('/api/lab-profile', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch lab profile');
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('labName').value = data.lab_name || '';
+            document.getElementById('address').value = data.address || '';
+            document.getElementById('contactNumber').value = data.contact_number || '';
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('formContainer').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error loading lab profile:', error);
+            document.getElementById('loading').textContent = 'Error loading lab profile. Please refresh the page.';
+        });
+    }
+
+    function saveLabProfile() {
+        const labName = document.getElementById('labName').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const contactNumber = document.getElementById('contactNumber').value.trim();
+
+        if (!labName) {
+            showMessage('Lab Name is required', 'error');
+            return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('lab_name', labName);
+        formData.append('address', address);
+        formData.append('contact_number', contactNumber);
+
+        fetch('/api/lab-profile', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save lab profile');
+            }
+            return response.json();
+        })
+        .then(data => {
+            showMessage('Lab profile saved successfully!', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error saving lab profile. Please try again.', 'error');
+        });
+    }
+
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = 'message ' + type;
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    }
+</script>
 
 </body>
 </html>
