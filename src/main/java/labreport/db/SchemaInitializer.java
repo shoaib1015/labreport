@@ -74,7 +74,7 @@ public class SchemaInitializer {
 
             stmt.execute(
                 "CREATE TABLE IF NOT EXISTS ReferringDoctors (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "doctor_id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "full_name TEXT NOT NULL," +
                 "contact_number TEXT," +
                 "license_number TEXT," +

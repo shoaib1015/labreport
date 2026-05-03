@@ -22,14 +22,14 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT id, full_name, contact_number, license_number, status FROM ReferringDoctors ORDER BY full_name");
+                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM ReferringDoctors ORDER BY full_name");
 
             ResultSet rs = stmt.executeQuery();
 
             List<Map<String, String>> doctors = new ArrayList<>();
             while (rs.next()) {
                 Map<String, String> doctor = new HashMap<>();
-                doctor.put("id", String.valueOf(rs.getInt("id")));
+                doctor.put("id", String.valueOf(rs.getInt("doctor_id")));
                 doctor.put("full_name", rs.getString("full_name"));
                 doctor.put("contact_number", rs.getString("contact_number"));
                 doctor.put("license_number", rs.getString("license_number"));
@@ -51,14 +51,14 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT id, full_name, contact_number, license_number, status FROM ReferringDoctors WHERE id = ?");
+                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM ReferringDoctors WHERE doctor_id = ?");
 
             stmt.setInt(1, doctorId);
             ResultSet rs = stmt.executeQuery();
 
             Map<String, String> doctor = new HashMap<>();
             if (rs.next()) {
-                doctor.put("id", String.valueOf(rs.getInt("id")));
+                doctor.put("id", String.valueOf(rs.getInt("doctor_id")));
                 doctor.put("full_name", rs.getString("full_name"));
                 doctor.put("contact_number", rs.getString("contact_number"));
                 doctor.put("license_number", rs.getString("license_number"));
@@ -101,7 +101,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE ReferringDoctors SET full_name = ?, contact_number = ?, license_number = ?, status = ? WHERE id = ?");
+                    "UPDATE ReferringDoctors SET full_name = ?, contact_number = ?, license_number = ?, status = ? WHERE doctor_id = ?");
 
             stmt.setString(1, fullName);
             stmt.setString(2, contactNumber);
@@ -123,7 +123,7 @@ public class ReferringDoctorService {
         try {
             Connection conn = DatabaseManager.getConnection();
 
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM ReferringDoctors WHERE id = ?");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM ReferringDoctors WHERE doctor_id = ?");
             stmt.setInt(1, doctorId);
 
             int rowsAffected = stmt.executeUpdate();
