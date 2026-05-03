@@ -52,6 +52,22 @@ public class SchemaInitializer {
                 "value TEXT" +
                 ")"
             );
+            
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS LabProfile (" +
+                "lab_id INTEGER PRIMARY KEY," +
+                "lab_name TEXT NOT NULL," +
+                "registration_number TEXT UNIQUE," +
+                "address TEXT," +
+                "contact_number TEXT," +
+                "email TEXT," +
+                "website TEXT," +
+                "director_name TEXT," +
+                "license_number TEXT," +
+                "accreditation TEXT," +
+                "status TEXT DEFAULT 'Active'" +
+                ")"
+            );
         }
     }
 }
