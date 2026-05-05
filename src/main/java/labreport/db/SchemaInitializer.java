@@ -33,7 +33,10 @@ public class SchemaInitializer {
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "test_name TEXT NOT NULL," +
                 "unit TEXT," +
-                "normal_range TEXT" +
+                "normal_range TEXT," +
+                "category TEXT," +
+                "price DECIMAL(10, 2)," +
+                "created_at TEXT DEFAULT CURRENT_TIMESTAMP" +
                 ")"
             );
 
@@ -66,6 +69,17 @@ public class SchemaInitializer {
                 "license_number TEXT," +
                 "accreditation TEXT," +
                 "status TEXT DEFAULT 'Active'" +
+                ")"
+            );
+
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS ReferringDoctors (" +
+                "doctor_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "full_name TEXT NOT NULL," +
+                "contact_number TEXT," +
+                "license_number TEXT," +
+                "status TEXT DEFAULT 'Active'," +
+                "created_at TEXT DEFAULT CURRENT_TIMESTAMP" +
                 ")"
             );
         }

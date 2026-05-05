@@ -13,11 +13,13 @@ import labreport.db.DatabaseManager;
 import labreport.logging.AppLogger;
 import labreport.server.AuthFilter;
 import labreport.server.CorsFilter;
+import labreport.server.DoctorHandler;
 import labreport.server.LabProfileHandler;
 import labreport.server.LabProfilePageHandler;
 import labreport.server.SecureTestHandler;
 import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
+import labreport.server.TestCatalogHandler;
 import labreport.web.StaticRouteRegistry;
 
 import java.io.OutputStream;
@@ -85,6 +87,14 @@ public class Main {
             HttpContext labProfileContext = server.createContext("/api/lab-profile", new LabProfileHandler());
             labProfileContext.getFilters().add(new CorsFilter());
             labProfileContext.getFilters().add(new AuthFilter());
+
+            HttpContext testCatalogContext = server.createContext("/api/tests", new TestCatalogHandler());
+            testCatalogContext.getFilters().add(new CorsFilter());
+            testCatalogContext.getFilters().add(new AuthFilter());
+
+            HttpContext doctorContext = server.createContext("/api/doctors", new DoctorHandler());
+            doctorContext.getFilters().add(new CorsFilter());
+            doctorContext.getFilters().add(new AuthFilter());
 
             // server.createContext("/patients", new PatientsHandler())
             // .getFilters().add(new AuthFilter());
