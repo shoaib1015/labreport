@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title id="pageTitle">Add Category</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button.save-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button.save-btn:hover {
+            background-color: #45a049;
+        }
+        button.cancel-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button.cancel-btn:hover {
+            background-color: #da190b;
+        }
+        .error {
+            color: #d9534f;
+            padding: 10px;
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .success {
+            color: #3c763d;
+            padding: 10px;
+            background-color: #dff0d8;
+            border: 1px solid #d6e9c6;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body class="full-page">
+
+<div class="page-content">
+    <h2 id="pageHeading">Add Category</h2>
+    <div class="subtitle">Add or modify category details</div>
+
+    <div id="error" class="error"></div>
+    <div id="success" class="success"></div>
+
+    <form id="categoryForm">
+        <div class="form-group">
+            <label>Category Name *</label>
+            <input type="text" name="category_name" id="categoryName" required>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" id="description"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status" id="status">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="save-btn" onclick="saveCategory()">Save Category</button>
+            <button type="button" class="cancel-btn" onclick="cancelForm()">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let currentCategoryId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        currentCategoryId = params.get('id');
+        if (currentCategoryId) {
+            document.getElementById('pageTitle').textContent = 'Edit Category';
+            document.getElementById('pageHeading').textContent = 'Edit Category';
+            loadCategoryData(currentCategoryId);
+        }
+    });
+
+    function loadCategoryData(categoryId) {
+        fetch(`/api/categories/${categoryId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch category');
+            }
+            return response.json();
+        })
+        .then(category => {
+            document.getElementById('categoryName').value = category.category_name || '';
+            document.getElementById('description').value = category.description || '';
+            document.getElementById('status').value = category.status || 'Active';
+        })
+        .catch(error => {
+            console.error('Error loading category:', error);
+            showError('Error loading category data');
+        });
+    }
+
+    function saveCategory() {
+        const categoryName = document.getElementById('categoryName').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const status = document.getElementById('status').value;
+
+        // Validation
+        if (!categoryName) {
+            showError('Category Name is required');
+            return;
+        }
+
+        // Prepare data as URL-encoded form data
+        const params = new URLSearchParams();
+        params.append('category_name', categoryName);
+        params.append('description', description);
+        params.append('status', status);
+
+        // Determine if we're adding or updating
+        const isEdit = currentCategoryId !== null;
+        const url = isEdit ? `/api/categories/${currentCategoryId}` : '/api/categories';
+        const method = isEdit ? 'POST' : 'POST';
+        const successMessage = isEdit ? 'Category updated successfully!' : 'Category added successfully!';
+
+        // Send to API
+        fetch(url, {
+            method: method,
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save category');
+            }
+            return response.json();
+        })
+        .then(data => {
+            showSuccess(successMessage);
+            setTimeout(() => {
+                cancelForm();
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error saving category:', error);
+            showError('Error saving category. Please try again.');
+        });
+    }
+
+    function cancelForm() {
+        // Go back to panel list
+        window.parent.loadPage('/master/test-list.html');
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        document.getElementById('success').style.display = 'none';
+    }
+
+    function showSuccess(message) {
+        const successDiv = document.getElementById('success');
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        document.getElementById('error').style.display = 'none';
+    }
+
+    function loadPage(page) {
+        window.parent.loadPage(page);
+    }
+</script>
+
+</body>
+</html>

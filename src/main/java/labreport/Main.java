@@ -12,10 +12,12 @@ import labreport.config.AppConfig;
 import labreport.db.DatabaseManager;
 import labreport.logging.AppLogger;
 import labreport.server.AuthFilter;
+import labreport.server.CategoryHandler;
 import labreport.server.CorsFilter;
 import labreport.server.DoctorHandler;
 import labreport.server.LabProfileHandler;
 import labreport.server.LabProfilePageHandler;
+import labreport.server.PanelHandler;
 import labreport.server.SecureTestHandler;
 import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
@@ -92,9 +94,21 @@ public class Main {
             testCatalogContext.getFilters().add(new CorsFilter());
             testCatalogContext.getFilters().add(new AuthFilter());
 
+            HttpContext panelContext = server.createContext("/api/panels", new PanelHandler());
+            panelContext.getFilters().add(new CorsFilter());
+            panelContext.getFilters().add(new AuthFilter());
+
+            HttpContext categoryContext = server.createContext("/api/categories", new CategoryHandler());
+            categoryContext.getFilters().add(new CorsFilter());
+            categoryContext.getFilters().add(new AuthFilter());
+
             HttpContext doctorContext = server.createContext("/api/doctors", new DoctorHandler());
             doctorContext.getFilters().add(new CorsFilter());
             doctorContext.getFilters().add(new AuthFilter());
+
+            HttpContext componentContext = server.createContext("/api/components", new PanelHandler());
+            componentContext.getFilters().add(new CorsFilter());
+            componentContext.getFilters().add(new AuthFilter());
 
             // server.createContext("/patients", new PatientsHandler())
             // .getFilters().add(new AuthFilter());

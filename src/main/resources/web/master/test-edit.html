@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title id="pageTitle">Add Test</title>
+    <title id="pageTitle">Add Panel</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/styles.css">
     <style>
@@ -80,38 +80,32 @@
 <body class="full-page">
 
 <div class="page-content">
-    <h2 id="pageHeading">Add Test</h2>
-    <div class="subtitle">Add or modify test details</div>
+    <h2 id="pageHeading">Add Panel</h2>
+    <div class="subtitle">Add or modify panel details</div>
 
     <div id="error" class="error"></div>
     <div id="success" class="success"></div>
 
-    <form id="testForm">
+    <form id="panelForm">
         <div class="form-group">
-            <label>Test Name *</label>
-            <input type="text" name="test_name" id="testName" required>
+            <label>Panel Name *</label>
+            <input type="text" name="panel_name" id="panelName" required>
+            <div id="panelNameLink" style="margin-top: 8px; display: none;">
+                <a href="#" id="panelDetailsLink" style="color: #007bff; text-decoration: none; font-size: 14px;" onclick="openTestDetails(event)">View Test Details</a>
+            </div>
         </div>
 
         <div class="form-group">
-            <label>Unit</label>
-            <input type="text" name="unit" id="unit">
-        </div>
-
-        <div class="form-group">
-            <label>Normal Range</label>
-            <textarea name="normal_range" id="normalRange"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>Category</label>
-            <select name="category" id="category">
+            <label>Category *</label>
+            <select name="category_id" id="categoryId" required>
                 <option value="">Select Category</option>
-                <option value="Hematology">Hematology</option>
-                <option value="Biochemistry">Biochemistry</option>
-                <option value="Immunology">Immunology</option>
-                <option value="Microbiology">Microbiology</option>
-                <option value="Chemistry">Chemistry</option>
             </select>
+            <input type="hidden" id="categoryName" name="category_name">
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" id="description"></textarea>
         </div>
 
         <div class="form-group">
@@ -119,29 +113,38 @@
             <input type="number" name="price" id="price" step="0.01" required>
         </div>
 
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status" id="status">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+        </div>
+
         <div class="button-group">
-            <button type="button" class="save-btn" onclick="saveTest()">Save Test</button>
+            <button type="button" class="save-btn" onclick="savePanel()">Save Panel</button>
             <button type="button" class="cancel-btn" onclick="cancelForm()">Cancel</button>
         </div>
     </form>
 </div>
 
 <script>
-    let currentTestId = null;
+    let currentPanelId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if we're editing an existing test (pass test ID if needed)
+        loadCategories();
+        
         const params = new URLSearchParams(window.location.search);
-        currentTestId = params.get('id');
-        if (currentTestId) {
-            document.getElementById('pageTitle').textContent = 'Edit Test';
-            document.getElementById('pageHeading').textContent = 'Edit Test';
-            loadTestData(currentTestId);
+        currentPanelId = params.get('id');
+        if (currentPanelId) {
+            document.getElementById('pageTitle').textContent = 'Edit Panel';
+            document.getElementById('pageHeading').textContent = 'Edit Panel';
+            loadPanelData(currentPanelId);
         }
     });
 
-    function loadTestData(testId) {
-        fetch(`/api/tests/${testId}`, {
+    function loadCategories() {
+        fetch('/api/categories', {
             method: 'GET',
             credentials: 'include',
             headers: {
@@ -150,33 +153,76 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to fetch test');
+                throw new Error('Failed to fetch categories');
             }
             return response.json();
         })
-        .then(test => {
-            document.getElementById('testName').value = test.test_name || '';
-            document.getElementById('unit').value = test.unit || '';
-            document.getElementById('normalRange').value = test.normal_range || '';
-            document.getElementById('category').value = test.category || '';
-            document.getElementById('price').value = test.price || '';
+        .then(categories => {
+            const select = document.getElementById('categoryId');
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.category_name;
+                select.appendChild(option);
+            });
         })
         .catch(error => {
-            console.error('Error loading test:', error);
-            showError('Error loading test data');
+            console.error('Error loading categories:', error);
+            showError('Error loading categories');
         });
     }
 
-    function saveTest() {
-        const testName = document.getElementById('testName').value.trim();
-        const unit = document.getElementById('unit').value.trim();
-        const normalRange = document.getElementById('normalRange').value.trim();
-        const category = document.getElementById('category').value;
-        const price = document.getElementById('price').value.trim();
+    function loadPanelData(panelId) {
+        fetch(`/api/panels/${panelId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch panel');
+            }
+            return response.json();
+        })
+        .then(panel => {
+            document.getElementById('panelName').value = panel.panel_name || '';
+            document.getElementById('categoryId').value = panel.category_id || '';
+            document.getElementById('description').value = panel.description || '';
+            document.getElementById('price').value = panel.price || '';
+            document.getElementById('status').value = panel.status || 'Active';
+            document.getElementById('categoryName').value = panel.category_name || '';
+            // Show the test details link when editing
+            document.getElementById('panelNameLink').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error loading panel:', error);
+            showError('Error loading panel data');
+        });
+    }
 
+    function savePanel() {
+        const panelName = document.getElementById('panelName').value.trim();
+        const categoryId = document.getElementById('categoryId').value;
+        const description = document.getElementById('description').value.trim();
+        const price = document.getElementById('price').value.trim();
+        const status = document.getElementById('status').value;
+        console.log('Saving panel with data:', {
+            panelName,
+            categoryId,
+            description,
+            price,
+            status
+        });
         // Validation
-        if (!testName) {
-            showError('Test Name is required');
+        if (!panelName) {
+            showError('Panel Name is required');
+            return;
+        }
+
+        if (!categoryId) {
+            showError('Category is required');
             return;
         }
 
@@ -185,19 +231,24 @@
             return;
         }
 
+        // Get the category name from the dropdown
+        const categorySelect = document.getElementById('categoryId');
+        const categoryName = categorySelect.options[categorySelect.selectedIndex].textContent;
+
         // Prepare data as URL-encoded form data
         const params = new URLSearchParams();
-        params.append('test_name', testName);
-        params.append('unit', unit);
-        params.append('normal_range', normalRange);
-        params.append('category', category);
+        params.append('panel_name', panelName);
+        params.append('category_id', categoryId);
+        params.append('category_name', categoryName);
+        params.append('description', description);
         params.append('price', price);
+        params.append('status', status);
 
         // Determine if we're adding or updating
-        const isEdit = currentTestId !== null;
-        const url = isEdit ? `/api/tests/${currentTestId}` : '/api/tests';
+        const isEdit = currentPanelId !== null;
+        const url = isEdit ? `/api/panels/${currentPanelId}` : '/api/panels';
         const method = isEdit ? 'POST' : 'POST';
-        const successMessage = isEdit ? 'Test updated successfully!' : 'Test added successfully!';
+        const successMessage = isEdit ? 'Panel updated successfully!' : 'Panel added successfully!';
 
         // Send to API
         fetch(url, {
@@ -210,7 +261,7 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to save test');
+                throw new Error('Failed to save panel');
             }
             return response.json();
         })
@@ -221,13 +272,13 @@
             }, 1500);
         })
         .catch(error => {
-            console.error('Error saving test:', error);
-            showError('Error saving test. Please try again.');
+            console.error('Error saving panel:', error);
+            showError('Error saving panel. Please try again.');
         });
     }
 
     function cancelForm() {
-        // Go back to test list
+        // Go back to panel list
         window.parent.loadPage('/master/test-list.html');
     }
 
@@ -248,7 +299,20 @@
     function loadPage(page) {
         window.parent.loadPage(page);
     }
+
+    function openTestDetails(event) {
+        event.preventDefault();
+        const panelName = document.getElementById('panelName').value.trim();
+        if (panelName) {
+            window.parent.loadPage(`/master/test-details.html?panel_name=${encodeURIComponent(panelName)}`);
+        } else {
+            showError('Please enter or load a panel name first');
+        }
+    }
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
