@@ -39,6 +39,7 @@ public final class StaticRouteRegistry {
                 "/master/test-details.html",
 
                 // Patients
+                "/patient/patient-dashboard.html",
                 "/patient/patient-edit.html",
                 "/patient/patient-list.html",
 
