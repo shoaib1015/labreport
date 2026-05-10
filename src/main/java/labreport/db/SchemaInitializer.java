@@ -22,9 +22,34 @@ public class SchemaInitializer {
             {"patients", "CREATE TABLE IF NOT EXISTS patients (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "name TEXT NOT NULL," +
-                "age INTEGER," +
+                "dob TEXT," +
                 "gender TEXT," +
-                "phone TEXT" +
+                "contact_phone TEXT," +
+                "contact_email TEXT," +
+                "address TEXT," +
+                "referring_doctor_id INTEGER," +
+                "created_by INTEGER NOT NULL," +
+                "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
+                "updated_at TEXT" +
+                ")"},
+            {"test_order", "CREATE TABLE IF NOT EXISTS test_order (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "patient_id INTEGER NOT NULL," +
+                "priority TEXT DEFAULT 'Routine'," +
+                "notes TEXT," +
+                "sample_collected_at TEXT," +
+                "created_by INTEGER NOT NULL," +
+                "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
+                "updated_at TEXT," +
+                "FOREIGN KEY(patient_id) REFERENCES patients(id)" +
+                ")"},
+            {"test_order_panel", "CREATE TABLE IF NOT EXISTS test_order_panel (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "test_order_id INTEGER NOT NULL," +
+                "panel_id INTEGER NOT NULL," +
+                "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
+                "FOREIGN KEY(test_order_id) REFERENCES test_order(id)," +
+                "FOREIGN KEY(panel_id) REFERENCES Panels(panel_id)" +
                 ")"},
             {"reports", "CREATE TABLE IF NOT EXISTS reports (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +

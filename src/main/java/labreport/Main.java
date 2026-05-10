@@ -18,6 +18,7 @@ import labreport.server.DoctorHandler;
 import labreport.server.LabProfileHandler;
 import labreport.server.LabProfilePageHandler;
 import labreport.server.PanelHandler;
+import labreport.server.PatientHandler;
 import labreport.server.SecureTestHandler;
 import labreport.server.ShutdownHandler;
 import labreport.server.StaticFileHandler;
@@ -110,10 +111,9 @@ public class Main {
             componentContext.getFilters().add(new CorsFilter());
             componentContext.getFilters().add(new AuthFilter());
 
-            // server.createContext("/patients", new PatientsHandler())
-            // .getFilters().add(new AuthFilter());
-            // server.createContext("/reports", new ReportsHandler())
-            // .getFilters().add(new AuthFilter());
+            HttpContext patientContext = server.createContext("/api/patients", new PatientHandler());
+            patientContext.getFilters().add(new CorsFilter());
+            patientContext.getFilters().add(new AuthFilter());
 
             server.start();
 
