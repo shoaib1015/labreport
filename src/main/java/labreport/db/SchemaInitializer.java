@@ -81,6 +81,23 @@ public class SchemaInitializer {
                 "status TEXT DEFAULT 'Active'," +
                 "created_at TEXT DEFAULT CURRENT_TIMESTAMP" +
                 ")"},
+            {"ReferringDoctors", "CREATE TABLE IF NOT EXISTS ReferringDoctors (" +
+                "doctor_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "full_name	TEXT NOT NULL," +
+                "license_number	TEXT NOT NULL UNIQUE," +
+                "specialization	TEXT," +
+                "clinic_name	TEXT," +
+                "clinic_address	TEXT," +
+                "contact_number	TEXT," +
+                "email	TEXT UNIQUE," +
+                "referral_code	TEXT UNIQUE," +
+                "preferred_contact_method TEXT," +
+                "status	TEXT DEFAULT 'Active'," +
+                "experience_years NUMERIC," +
+                "consultation_hours	TEXT," +
+                "remarks TEXT," +
+                "created_at	TEXT" +
+                ")"},   
             {"Panels", "CREATE TABLE IF NOT EXISTS Panels (" +
                 "panel_id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "panel_name TEXT NOT NULL," +
