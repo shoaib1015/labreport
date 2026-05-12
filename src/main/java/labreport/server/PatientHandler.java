@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Scanner;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -28,15 +29,26 @@ public class PatientHandler implements HttpHandler {
 
             if ("POST".equals(method) && path.endsWith("/api/patients")) {
                 handleCreatePatient(exchange);
-            } else if("GET".equals(method) && path.matches(".*/api/patients/dashboard/stats")) {
+            } else if("GET".equals(method) && path.matches("/api/patients/dashboard/stats")) {
                 // Handle dashboard stats request
                 // This is a placeholder. You would implement the logic to fetch and return the dashboard stats here.
-                String jsonResponse = "{\"total_patients\": 100, \"new_patients_today\": 5}";
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(jsonResponse.getBytes(StandardCharsets.UTF_8));
-                }
+                log.info("Received request for patient dashboard stats");
+                handleGetPatientDashboardStats(exchange);
+            } else if("GET".equals(method) && path.equals("/api/patients/all")) {
+                // Handle all patients request
+                log.info("Received request to fetch all patients");
+                handleGetAllPatients(exchange);
+            } else if ("GET".equals(method) && path.equals("/api/patients")) {
+                handleSearchPatients(exchange);
+            } else if("GET".equals(method) && path.matches("/api/patients/recent")) {
+                // Handle list patients request (not implemented in this snippet)
+                log.info("Received request to list patients");
+                // You would implement the logic to fetch and return the list of patients here.
+                handleListRecentPatients(exchange,path);
+
+            } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+/test-orders")) {
+                int patientId = extractPatientIdFromPath(path);
+                handleGetPatientTestOrders(exchange, patientId);
             } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+")) {
                 
                 int patientId = extractId(path);
@@ -97,6 +109,37 @@ public class PatientHandler implements HttpHandler {
         } catch (Exception e) {
             log.severe("Failed to get patient: " + e.getMessage());
             sendErrorResponse(exchange, 500, "Failed to fetch patient: " + e.getMessage());
+        }
+    }
+
+    private void handleSearchPatients(HttpExchange exchange) throws IOException {
+        try {
+            String query = exchange.getRequestURI().getQuery();
+            Map<String, String> params = query != null ? parseQueryParams(query) : java.util.Collections.emptyMap();
+
+            String search = params.get("search");
+            String gender = params.get("gender");
+            String createdAt = params.get("created_at");
+
+            if ((search == null || search.isEmpty()) && (gender == null || gender.isEmpty()) && (createdAt == null || createdAt.isEmpty())) {
+                String jsonResponse = "{\"patients\":[]}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(jsonResponse.getBytes(StandardCharsets.UTF_8));
+                }
+                return;
+            }
+
+            String jsonResponse = PatientService.searchPatientsJson(search, gender, createdAt);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(jsonResponse.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (SQLException e) {
+            log.severe("Failed to search patients: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to search patients: " + e.getMessage());
         }
     }
 
@@ -297,5 +340,122 @@ public class PatientHandler implements HttpHandler {
             return scanner.hasNext() ? scanner.next() : "";
         }
     }
+
+    private void handleGetPatientDashboardStats(HttpExchange exchange) throws IOException {
+        try {
+            String json = PatientService.getDashboardStatsJson();
+            log.info("Dashboard stats fetched successfully" + json);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, json.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (SQLException e) {
+            log.severe("Failed to get patient: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to fetch patient: " + e.getMessage());
+        }    
+    }
+
+    private void handleGetAllPatients(HttpExchange exchange) throws IOException {
+        try {
+            String json = PatientService.getAllPatientsJson();
+            log.info("All patients fetched successfully");
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, json.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (SQLException e) {
+            log.severe("Failed to get all patients: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to fetch patients: " + e.getMessage());
+        }
+    }
+
+    private void handleListRecentPatients(HttpExchange exchange, String path) throws IOException {
+        try {
+            int limit = 5;
+            String sort = "created_at";
+            String order = "DESC";
+
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null) {
+                Map<String, String> params = parseQueryParams(query);
+
+                String limitParam = params.get("limit");
+                if (limitParam != null) {
+                    try {
+                        limit = Integer.parseInt(limitParam);
+                    } catch (NumberFormatException ignored) {
+                        // Keep default limit
+                    }
+                }
+
+                String sortParam = params.get("sort");
+                if (sortParam != null && !sortParam.isEmpty()) {
+                    sort = sortParam;
+                }
+
+                String orderParam = params.get("order");
+                if (orderParam != null && !orderParam.isEmpty()) {
+                    order = orderParam;
+                }
+            }
+
+            String json = PatientService.getRecentPatientsJson(limit, sort, order);
+            log.info("Recent patients fetched successfully" + json);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, json.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (SQLException e) {
+            log.severe("Failed to get patient: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to fetch patient: " + e.getMessage());
+        }
+    }
+
+    private Map<String, String> parseQueryParams(String query) {
+        Map<String, String> params = new java.util.HashMap<>();
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            int idx = pair.indexOf('=');
+            if (idx > 0 && idx < pair.length() - 1) {
+                String key = pair.substring(0, idx);
+                String value = pair.substring(idx + 1);
+                params.put(key, value);
+            }
+        }
+        return params;
+    }
+
+    private void handleGetPatientTestOrders(HttpExchange exchange, int patientId) throws IOException {
+        try {
+            String json = PatientService.getPatientTestOrdersJson(patientId);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, json.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (SQLException e) {
+            log.severe("Failed to fetch test orders: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to fetch test orders: " + e.getMessage());
+        }
+    }
+
+    private int extractPatientIdFromPath(String path) {
+        // Extract patient ID from path like /api/patients/123/test-orders
+        String[] parts = path.split("/");
+        for (int i = 0; i < parts.length - 1; i++) {
+            if ("patients".equals(parts[i]) && i + 1 < parts.length) {
+                try {
+                    return Integer.parseInt(parts[i + 1]);
+                } catch (NumberFormatException e) {
+                    return -1;
+                }
+            }
+        }
+        return -1;
+    }
 }
+
 

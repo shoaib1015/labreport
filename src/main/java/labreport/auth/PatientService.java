@@ -480,4 +480,280 @@ public class PatientService {
         }
         return new HashMap<>();
     }
+
+    public static String getDashboardStatsJson() throws SQLException {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement("SELECT " +
+            "  (SELECT COUNT(*) FROM patients) AS total_patients, " +
+            "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ordered','SampleCollected','InLab')) AS active_tests, " +
+            "  (SELECT COUNT(*) FROM test_order WHERE status IN ('SampleCollected','InLab')) AS pending_results, " +
+            "  (SELECT COUNT(*) FROM test_order WHERE status IN ('ReportReady','Delivered')) AS completed_reports;");
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()) {
+                // Shouldn't happen; return zeros as fallback
+                return "{\"totalPatients\":0,\"activeTests\":0,\"pendingResults\":0,\"completedReports\":0}";
+            }
+
+            long totalPatients = rs.getLong("total_patients");
+            long activeTests = rs.getLong("active_tests");
+            long pendingResults = rs.getLong("pending_results");
+            long completedReports = rs.getLong("completed_reports");
+
+            // Build JSON (simple, safe for numeric values)
+            String json = String.format(
+                "{\"totalPatients\":%d,\"activeTests\":%d,\"pendingResults\":%d,\"completedReports\":%d}",
+                totalPatients, activeTests, pendingResults, completedReports
+            );
+
+            return json;
+        }catch (SQLException e) {
+            log.severe("Failed to fetch patient: " + e.getMessage());
+        }
+        return "{\"totalPatients\":0,\"activeTests\":0,\"pendingResults\":0,\"completedReports\":0}";
+    }
+
+    public static String getAllPatientsJson() throws SQLException {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"patients\":[");
+
+        String sql = "SELECT id, name, dob, gender, created_at FROM patients ORDER BY created_at DESC";
+
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            boolean first = true;
+            while (rs.next()) {
+                if (!first) {
+                    json.append(",");
+                }
+                first = false;
+
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String dob = rs.getString("dob");
+                String gender = rs.getString("gender");
+                String createdAt = rs.getString("created_at");
+
+                json.append("{\"id\":").append(id)
+                    .append(",\"name\":\"").append(escapeJson(name)).append("\"")
+                    .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
+                    .append(",\"gender\":").append(gender != null ? ("\"" + escapeJson(gender) + "\"") : "null")
+                    .append(",\"created_at\":").append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
+                    .append("}");
+            }
+
+            json.append("]}");
+            return json.toString();
+        } catch (SQLException e) {
+            log.severe("Failed to fetch all patients: " + e.getMessage());
+            return "{\"patients\":[]}";
+        }
+    }
+
+    public static String getRecentPatientsJson() throws SQLException {
+        return getRecentPatientsJson(5, "created_at", "DESC");
+    }
+
+    public static String getRecentPatientsJson(int limit, String sort, String order) throws SQLException {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"patients\":[");
+
+        String safeSort = validateSortColumn(sort);
+        String safeOrder = validateOrder(order);
+
+        String sql = "SELECT id, name, dob, gender, created_at FROM patients " +
+                     "ORDER BY " + safeSort + " " + safeOrder + " LIMIT ?";
+
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, limit);
+            ResultSet rs = stmt.executeQuery();
+
+            boolean first = true;
+            while (rs.next()) {
+                if (!first) {
+                    json.append(",");
+                }
+                first = false;
+
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String dob = rs.getString("dob");
+                String gender = rs.getString("gender");
+                String createdAt = rs.getString("created_at");
+
+                json.append("{\"id\":").append(id)
+                    .append(",\"name\":\"").append(escapeJson(name)).append("\"")
+                    .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
+                    .append(",\"gender\":").append(gender != null ? ("\"" + escapeJson(gender) + "\"") : "null")
+                    .append(",\"created_at\":").append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
+                    .append("}");
+            }
+
+            json.append("]}");
+            return json.toString();
+        } catch (SQLException e) {
+            log.severe("Failed to fetch recent patients: " + e.getMessage());
+            return "{\"patients\":[]}";
+        }
+    }
+
+    public static String searchPatientsJson(String search, String gender, String createdAt) throws SQLException {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"patients\":[");
+
+        StringBuilder sql = new StringBuilder("SELECT id, name, dob, gender, created_at FROM patients");
+        java.util.List<String> filters = new java.util.ArrayList<>();
+        if (search != null && !search.isEmpty()) {
+            if (search.matches("\\d+")) {
+                filters.add("(id = ? OR LOWER(name) LIKE ?)");
+            } else {
+                filters.add("LOWER(name) LIKE ?");
+            }
+        }
+        if (gender != null && !gender.isEmpty()) {
+            filters.add("gender = ?");
+        }
+        if (createdAt != null && !createdAt.isEmpty()) {
+            filters.add("created_at LIKE ?");
+        }
+
+        if (!filters.isEmpty()) {
+            sql.append(" WHERE ").append(String.join(" AND ", filters));
+        }
+
+        sql.append(" ORDER BY created_at DESC");
+
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql.toString());
+
+            int index = 1;
+            if (search != null && !search.isEmpty()) {
+                if (search.matches("\\d+")) {
+                    stmt.setInt(index++, Integer.parseInt(search));
+                    stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                } else {
+                    stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                }
+            }
+            if (gender != null && !gender.isEmpty()) {
+                stmt.setString(index++, gender);
+            }
+            if (createdAt != null && !createdAt.isEmpty()) {
+                stmt.setString(index++, createdAt.length() == 10 ? createdAt + "%" : createdAt + "%");
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            boolean first = true;
+            while (rs.next()) {
+                if (!first) {
+                    json.append(",");
+                }
+                first = false;
+
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String dob = rs.getString("dob");
+                String genderValue = rs.getString("gender");
+                String createdAtValue = rs.getString("created_at");
+
+                json.append("{\"id\":").append(id)
+                    .append(",\"name\":\"").append(escapeJson(name)).append("\"")
+                    .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
+                    .append(",\"gender\":").append(genderValue != null ? ("\"" + escapeJson(genderValue) + "\"") : "null")
+                    .append(",\"created_at\":").append(createdAtValue != null ? ("\"" + escapeJson(createdAtValue) + "\"") : "null")
+                    .append("}");
+            }
+
+            json.append("]}");
+            return json.toString();
+        } catch (SQLException e) {
+            log.severe("Failed to search patients: " + e.getMessage());
+            return "{\"patients\":[]}";
+        }
+    }
+
+    private static String validateSortColumn(String sort) {
+        if (sort == null) {
+            return "created_at";
+        }
+        switch (sort) {
+            case "id":
+            case "name":
+            case "dob":
+            case "gender":
+            case "created_at":
+                return sort;
+            default:
+                return "created_at";
+        }
+    }
+
+    public static String getPatientTestOrdersJson(int patientId) throws SQLException {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"testOrders\":[");
+
+        String sql = "SELECT id, patient_id, priority, status, created_at FROM test_order WHERE patient_id = ? ORDER BY created_at DESC";
+
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, patientId);
+            ResultSet rs = stmt.executeQuery();
+
+            boolean first = true;
+            while (rs.next()) {
+                if (!first) {
+                    json.append(",");
+                }
+                first = false;
+
+                int id = rs.getInt("id");
+                String priority = rs.getString("priority");
+                String status = rs.getString("status");
+                String createdAt = rs.getString("created_at");
+
+                json.append("{\"id\":").append(id)
+                    .append(",\"panelName\":\"Test Panel\"")
+                    .append(",\"priority\":").append(priority != null ? ("\"" + escapeJson(priority) + "\"") : "null")
+                    .append(",\"status\":").append(status != null ? ("\"" + escapeJson(status) + "\"") : "\"Pending\"")
+                    .append(",\"created_at\":").append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
+                    .append("}");
+            }
+
+            json.append("]}");
+            return json.toString();
+        } catch (SQLException e) {
+            log.severe("Failed to fetch test orders: " + e.getMessage());
+            return "{\"testOrders\":[]}";
+        }
+    }
+
+    private static String validateOrder(String order) {
+        if (order == null) {
+            return "DESC";
+        }
+        String normalized = order.trim().toUpperCase();
+        if ("ASC".equals(normalized) || "DESC".equals(normalized)) {
+            return normalized;
+        }
+        return "DESC";
+    }
+
+    private static String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+    }
 }

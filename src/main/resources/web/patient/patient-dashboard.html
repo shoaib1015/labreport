@@ -216,19 +216,6 @@
             transform: translateY(-1px);
         }
 
-        .bottom-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 1200px) {
-            .bottom-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .search-form {
             display: grid;
             grid-template-columns: 1fr 1fr 150px 100px;
@@ -405,6 +392,39 @@
             </div>
         </div>
 
+        <!-- Search Form -->
+        <!-- Patient Search -->
+        <div class="section">
+            <h2 class="section-title">Patient Search</h2>
+            <div class="search-form">
+                <input type="text" id="searchName" placeholder="Name / ID:" />
+                <input type="date" id="searchCreatedAt" placeholder="Created At:" />
+                <select id="searchGender">
+                    <option value="">All</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                <button onclick="searchPatients()">Search</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Last Visit</th>
+                    </tr>
+                </thead>
+                <tbody id="searchResultsTable">
+                    <tr>
+                        <td colspan="5" class="no-data">No results. Use search above.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
         <!-- Recent Patients Section -->
         <div class="section">
             <h2 class="section-title">Recent Patients</h2>
@@ -425,72 +445,7 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
-
-        <!-- Bottom Grid: Search & Test Details -->
-        <div class="bottom-grid">
-            <!-- Patient Search -->
-            <div class="section">
-                <h2 class="section-title">Patient Search</h2>
-                <div class="search-form">
-                    <input type="text" id="searchName" placeholder="Name / ID:" />
-                    <input type="date" id="searchDOB" placeholder="Date of Birth:" />
-                    <select id="searchGender">
-                        <option value="">All</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    <button onclick="searchPatients()">Search</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>Last Visit</th>
-                        </tr>
-                    </thead>
-                    <tbody id="searchResultsTable">
-                        <tr>
-                            <td colspan="5" class="no-data">No results. Use search above.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Patient Test Details -->
-            <div class="section">
-                <h2 class="section-title">Patient Test Details</h2>
-                <div class="patient-info">
-                    <span>Patient: <strong id="testDetailPatient">-</strong></span>
-                    <span>Age: <strong id="testDetailAge">-</strong></span>
-                    <span>Gender: <strong id="testDetailGender">-</strong></span>
-                    <span>ID: <strong id="testDetailId">-</strong></span>
-                </div>
-                <div class="test-buttons" id="testButtonsContainer">
-                    <!-- Test buttons will be populated here -->
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Test Component</th>
-                            <th>Result</th>
-                            <th>Normal Range</th>
-                            <th>Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody id="testDetailsTable">
-                        <tr>
-                            <td colspan="4" class="no-data">Select a patient to view test details</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button class="print-button" onclick="printTestDetails()">Print Report</button>
-            </div>
-        </div>
+        </div>    
     </div>
 
     <script>
@@ -551,15 +506,15 @@
 
         function searchPatients() {
             const name = document.getElementById('searchName').value;
-            const dob = document.getElementById('searchDOB').value;
+            const createdAt = document.getElementById('searchCreatedAt').value;
             const gender = document.getElementById('searchGender').value;
 
             let query = '/api/patients?';
             const params = [];
             
             if (name) params.push('search=' + encodeURIComponent(name));
-            if (dob) params.push('dob=' + dob);
-            if (gender) params.push('gender=' + gender);
+            if (createdAt) params.push('created_at=' + encodeURIComponent(createdAt));
+            if (gender) params.push('gender=' + encodeURIComponent(gender));
 
             if (params.length === 0) {
                 alert('Please enter at least one search criteria');
@@ -580,10 +535,13 @@
                                 <td>${calculateAge(patient.dob)}</td>
                                 <td>${patient.gender || '-'}</td>
                                 <td>${patient.created_at ? formatDate(patient.created_at) : '-'}</td>
+                                <td>
+                                    <button class="action-button" onclick="viewPatientDetails(${patient.id})">View Details</button>
+                                </td>
                             </tr>
                         `).join('');
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No patients found</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" class="no-data">No patients found</td></tr>';
                     }
                 })
                 .catch(error => {
@@ -594,64 +552,11 @@
         }
 
         function viewPatientDetails(patientId) {
-            fetch(`/api/patients/${patientId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const patient = data.patient;
-                    document.getElementById('testDetailPatient').textContent = patient.name;
-                    document.getElementById('testDetailAge').textContent = calculateAge(patient.dob);
-                    document.getElementById('testDetailGender').textContent = patient.gender || '-';
-                    document.getElementById('testDetailId').textContent = patient.id;
-
-                    // Load test orders for this patient
-                    return fetch(`/api/patients/${patientId}/test-orders`);
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Populate test buttons
-                    const container = document.getElementById('testButtonsContainer');
-                    if (data.testOrders && data.testOrders.length > 0) {
-                        container.innerHTML = data.testOrders.map((order, index) => 
-                            `<button class="test-button" onclick="loadTestDetails(${order.id})">${order.panelName || 'Test ' + (index + 1)}</button>`
-                        ).join('');
-                    } else {
-                        container.innerHTML = '<div class="no-data">No tests ordered</div>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading patient details:', error);
-                });
-        }
-
-        function loadTestDetails(testOrderId) {
-            fetch(`/api/test-orders/${testOrderId}/details`)
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.querySelector('#testDetailsTable');
-                    if (data.details && data.details.length > 0) {
-                        tbody.innerHTML = data.details.map(detail => `
-                            <tr>
-                                <td>${detail.componentName}</td>
-                                <td>${detail.result || '-'}</td>
-                                <td>${detail.normalRange || '-'}</td>
-                                <td>${detail.remarks || '-'}</td>
-                            </tr>
-                        `).join('');
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="4" class="no-data">No test details available</td></tr>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading test details:', error);
-                });
-        }
-
-        function printTestDetails() {
-            window.print();
+            window.location.href = `/patient/patient-details.html?patientId=${patientId}`;
         }
 
         function goToNewPatient() {
-            window.location.href = '/patient-edit.html';
+            window.location.href = '/patient/patient-edit.html';
         }
 
         function goToSearch() {
@@ -660,7 +565,7 @@
         }
 
         function goToAllPatients() {
-            window.location.href = '/patient-list.html';
+            window.location.href = '/patient/patient-list.html';
         }
 
         function calculateAge(dob) {
