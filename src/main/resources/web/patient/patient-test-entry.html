@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Test Entry</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            max-width: 1000px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid #e8f0f8;
+            position: sticky;
+            top: 0;
+            background-color: white;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c5282;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-content {
+            padding: 24px;
+        }
+
+        .form-section {
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2c5282;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-control {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2c5282;
+            box-shadow: 0 0 4px rgba(44, 82, 130, 0.2);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c5282;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e8f0f8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table thead {
+            background-color: #f8f9fa;
+        }
+
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c5282;
+            border-bottom: 2px solid #e8f0f8;
+            font-size: 13px;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .input-field {
+            width: 100%;
+        }
+
+        .patient-info-display {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #2c5282;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px 24px;
+            border-top: 1px solid #e8f0f8;
+            background-color: #f8f9fa;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #2c5282;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1e3f5a;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: #2c5282;
+            border: 1px solid #2c5282;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f0f0f0;
+        }
+
+        .form-row-wide {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Patient Test Entry</div>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <div class="modal-content">
+                <!-- Patient Selection & Info -->
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label class="form-label">Select Patient:</label>
+                            <select id="patientSelect" class="form-control" onchange="loadPatientInfo()">
+                                <option>Select patient</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="patient-info-display" id="patientInfo" style="display: none;">
+                        <div class="info-item">
+                            <span class="info-label">Age:</span>
+                            <span id="infoAge">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Gender:</span>
+                            <span id="infoGender">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Contact:</span>
+                            <span id="infoContact">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Referring Doctor & Panel -->
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Referring Doctor:</label>
+                            <select id="doctorSelect" class="form-control">
+                                <option>Select doctor</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 3;">
+                            <label class="form-label">Select Test Panel:</label>
+                            <select id="panelSelect" class="form-control" onchange="loadPanelComponents()">
+                                <option>CBC Panel</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Components Table -->
+                <div class="form-section">
+                    <div class="section-title">Test Components</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Test Component</th>
+                                <th>Unit</th>
+                                <th>Normal Range</th>
+                                <th>Result</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="componentsTable">
+                            <tr>
+                                <td>Hemoglobin</td>
+                                <td>g/dL</td>
+                                <td>13-17 g/dL</td>
+                                <td><input type="text" class="form-control input-field" placeholder="Enter result"></td>
+                                <td><input type="text" class="form-control input-field" placeholder="Enter remarks"></td>
+                            </tr>
+                            <tr>
+                                <td>WBC Count</td>
+                                <td>cells/µL</td>
+                                <td>4000-11000 cells/µL</td>
+                                <td><input type="text" class="form-control input-field" placeholder="Enter result"></td>
+                                <td><input type="text" class="form-control input-field" placeholder="Enter remarks"></td>
+                            </tr>
+                            <tr>
+                                <td>Platelet Count</td>
+                                <td>cells/µL</td>
+                                <td>150,000-450,000 celis</td>
+                                <td><input type="text" class="form-control input-field" placeholder="Enter result"></td>
+                                <td><input type="text" class="form-control input-field" placeholder="Enter remarks"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sample Collection Date -->
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Sample Collected:</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="date" id="sampleDate" class="form-control" style="flex: 1;">
+                                <button class="btn btn-secondary" onclick="setToday()" style="padding: 10px 16px;">📅</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Report Status:</label>
+                            <select id="reportStatus" class="form-control">
+                                <option>Pending</option>
+                                <option>In Progress</option>
+                                <option>Ready</option>
+                                <option>Delivered</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes/Comments -->
+                <div class="form-section">
+                    <div class="form-row-wide">
+                        <div class="form-group">
+                            <label class="form-label">Notes / Comments:</label>
+                            <textarea id="notes" class="form-control" placeholder="Enter any additional notes"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveTestEntry()">Save Test Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPatientId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentPatientId = urlParams.get('patientId');
+            
+            if (currentPatientId) {
+                document.getElementById('patientSelect').value = currentPatientId;
+                loadPatientInfo();
+            }
+            
+            loadPatients();
+            loadDoctors();
+        });
+
+        function closeModal() {
+            window.history.back();
+        }
+
+        function loadPatients() {
+            // This would fetch from the API in production
+            const select = document.getElementById('patientSelect');
+            // Sample data - replace with API call
+            select.innerHTML = '<option>Select patient</option>';
+        }
+
+        function loadDoctors() {
+            // This would fetch from the API in production
+            const select = document.getElementById('doctorSelect');
+            // Sample data - replace with API call
+            select.innerHTML = '<option>Select doctor</option>';
+        }
+
+        function loadPatientInfo() {
+            const patientId = document.getElementById('patientSelect').value;
+            if (!patientId || patientId === 'Select patient') return;
+
+            fetch(`/api/patients/${patientId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const patient = data.patient || data;
+                    const age = calculateAge(patient.dob);
+                    
+                    document.getElementById('patientInfo').style.display = 'flex';
+                    document.getElementById('infoAge').textContent = age;
+                    document.getElementById('infoGender').textContent = patient.gender || '-';
+                    document.getElementById('infoContact').textContent = patient.contact_phone || '-';
+                })
+                .catch(error => console.error('Error loading patient:', error));
+        }
+
+        function loadPanelComponents() {
+            // In production, this would load components based on selected panel
+            // For now, it just refreshes the display
+        }
+
+        function setToday() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('sampleDate').value = today;
+        }
+
+        function saveTestEntry() {
+            const patientId = document.getElementById('patientSelect').value;
+            if (!patientId || patientId === 'Select patient') {
+                alert('Please select a patient');
+                return;
+            }
+
+            // Collect form data
+            const formData = {
+                patientId: patientId,
+                panelName: document.getElementById('panelSelect').value,
+                sampleDate: document.getElementById('sampleDate').value,
+                reportStatus: document.getElementById('reportStatus').value,
+                notes: document.getElementById('notes').value,
+                components: []
+            };
+
+            // Collect component results
+            const rows = document.querySelectorAll('#componentsTable tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 5) {
+                    formData.components.push({
+                        name: cells[0].textContent,
+                        result: cells[3].querySelector('input').value,
+                        remarks: cells[4].querySelector('input').value
+                    });
+                }
+            });
+
+            console.log('Test Entry Data:', formData);
+            alert('Test entry saved successfully!');
+            closeModal();
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        function calculateAge(dob) {
+            if (!dob) return '-';
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Details</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-back {
+            color: #2c5282;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .header-back:hover {
+            color: #1e3f5a;
+        }
+
+        .header-meta {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 300px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #2c5282;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1e3f5a;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: #2c5282;
+            border: 1px solid #2c5282;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Main Content Section */
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .patient-avatar-section {
+            text-align: center;
+            padding: 30px 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e8f0f8;
+        }
+
+        .patient-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+
+        .patient-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .contact-section {
+            padding: 20px;
+            border-bottom: 1px solid #e8f0f8;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .contact-icon {
+            color: #2c5282;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .contact-value {
+            color: #333;
+            word-break: break-word;
+        }
+
+        .stats-section {
+            padding: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c5282;
+        }
+
+        .referring-doctor-section {
+            padding: 20px;
+            border-top: 1px solid #e8f0f8;
+            background-color: #f8f9fa;
+        }
+
+        .referring-doctor-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .referring-doctor-name {
+            font-size: 14px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e8f0f8;
+            padding: 0 20px;
+        }
+
+        .tab {
+            padding: 15px 20px;
+            background-color: transparent;
+            color: #666;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            color: #2c5282;
+            border-bottom: 3px solid #2c5282;
+        }
+
+        .tab:hover {
+            color: #2c5282;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .add-note-btn {
+            background-color: #2c5282;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .add-note-btn:hover {
+            background-color: #1e3f5a;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table thead {
+            background-color: #f8f9fa;
+        }
+
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c5282;
+            border-bottom: 2px solid #e8f0f8;
+            font-size: 13px;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .action-button {
+            padding: 6px 12px;
+            background-color: #2c5282;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #1e3f5a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <a href="javascript:history.back()" class="header-back">&larr; Back</a>
+                <span class="header-meta" id="patientMeta"></span>
+            </div>
+            <div class="header-buttons">
+                <button class="btn btn-primary" onclick="editPatient()">Edit Patient</button>
+                <button class="btn btn-secondary" onclick="addTest()">Add Test</button>
+                <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="patient-avatar-section">
+                    <div class="patient-avatar" id="patientAvatar"></div>
+                    <div class="patient-name" id="patientName"></div>
+                </div>
+
+                <div class="contact-section">
+                    <div class="contact-item">
+                        <span class="contact-icon">📞</span>
+                        <span class="contact-value" id="patientPhone"></span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">✉</span>
+                        <span class="contact-value" id="patientEmail"></span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">📍</span>
+                        <span class="contact-value" id="patientAddress"></span>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <div class="stat-box">
+                        <div class="stat-label">Last Visit</div>
+                        <div class="stat-value" id="lastVisit"></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Total Tests</div>
+                        <div class="stat-value" id="totalTests"></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Active Orders</div>
+                        <div class="stat-value" id="activeOrders"></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Pending Results</div>
+                        <div class="stat-value" id="pendingResults"></div>
+                    </div>
+                </div>
+
+                <div class="referring-doctor-section">
+                    <div class="referring-doctor-label">Referring Doctor</div>
+                    <div class="referring-doctor-name" id="referringDoctor"></div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(event, 'testorders')">Test Orders</button>
+                    <button class="tab" onclick="switchTab(event, 'testresults')">Test Results</button>
+                </div>
+
+                <!-- Test Orders Tab -->
+                <div id="testorders" class="tab-content active">
+                    <h3 style="margin-bottom: 20px; color: #2c5282;">Test Orders</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Panel</th>
+                                <th>Status</th>
+                                <th>Created Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testOrdersTable">
+                            <tr><td colspan="5" class="no-data">No test orders found</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Test Results Tab -->
+                <div id="testresults" class="tab-content">
+                    <h3 style="margin-bottom: 20px; color: #2c5282;">Test Results</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Test Name</th>
+                                <th>Component</th>
+                                <th>Result</th>
+                                <th>Normal Range</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testResultsTable">
+                            <tr><td colspan="5" class="no-data">No test results found</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPatientId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentPatientId = urlParams.get('patientId');
+            
+            if (currentPatientId) {
+                loadPatientDetails();
+            }
+        });
+
+        function loadPatientDetails() {
+            fetch(`/api/patients/${currentPatientId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const patient = data.patient || data;
+                    displayPatientInfo(patient);
+                    loadTestOrders(currentPatientId);
+                })
+                .catch(error => {
+                    console.error('Error loading patient:', error);
+                });
+        }
+
+        function displayPatientInfo(patient) {
+            const initials = patient.name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
+            document.getElementById('patientAvatar').textContent = initials;
+            document.getElementById('patientName').textContent = patient.name;
+            document.getElementById('patientMeta').textContent = `${patient.name} • ID #${patient.id} • Age ${calculateAge(patient.dob)} • ${patient.gender || 'N/A'}`;
+            document.getElementById('patientPhone').textContent = patient.contact_phone || '+91 -';
+            document.getElementById('patientEmail').textContent = patient.contact_email || '-';
+            document.getElementById('patientAddress').textContent = patient.address || '-';
+            document.getElementById('dobDisplay').textContent = patient.dob || '-';
+            document.getElementById('genderDisplay').textContent = patient.gender || '-';
+            document.getElementById('addressDisplay').textContent = patient.address || '-';
+            document.getElementById('lastVisit').textContent = formatDate(patient.created_at) || '-';
+        }
+
+        function loadTestOrders(patientId) {
+            fetch(`/api/patients/${patientId}/test-orders`)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('testOrdersTable');
+                    if (data.testOrders && data.testOrders.length > 0) {
+                        tbody.innerHTML = data.testOrders.map(order => `
+                            <tr>
+                                <td>${order.id}</td>
+                                <td>${order.panelName || 'Panel'}</td>
+                                <td>${order.status || 'Pending'}</td>
+                                <td>${formatDate(order.created_at)}</td>
+                                <td><button class="action-button">View</button></td>
+                            </tr>
+                        `).join('');
+                    }
+                })
+                .catch(error => console.error('Error loading test orders:', error));
+        }
+
+        function switchTab(event, tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Deactivate all buttons
+            const buttons = document.querySelectorAll('.tab');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Activate selected tab and button
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function editPatient() {
+            window.location.href = `/patient/patient-edit.html?patientId=${currentPatientId}`;
+        }
+
+        function addTest() {
+            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        function addNote() {
+            const note = prompt('Enter note:');
+            if (note) {
+                alert('Note added: ' + note);
+            }
+        }
+
+        function calculateAge(dob) {
+            if (!dob) return '-';
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+    </script>
+</body>
+</html>
