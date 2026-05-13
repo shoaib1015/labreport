@@ -33,10 +33,10 @@ public class PanelHandler implements HttpHandler {
                 log.info("Received request for panel by name, path: " + path);
                 String panelName = extractPanelName(path);
                 handleGetPanelByName(exchange, panelName);
-            } else if ("GET".equals(method) && path.matches(".*/api/components/panel/.*")) {
-                log.info("Received request for components by panel, path: " + path);
-                String panelName = extractComponentsPanelName(path);
-                handleGetComponentsByPanel(exchange, panelName);
+            } else if ("GET".equals(method) && path.matches(".*/api/components/panel/\\d+")) {
+                log.info("Received request for components by panel ID, path: " + path);
+                int panelId = extractComponentsPanelId(path);
+                handleGetComponentsByPanel(exchange, panelId);
             } else if ("GET".equals(method) && path.matches(".*/api/panels/\\d+")) {
                 int panelId = extractId(path);
                 handleGetPanelById(exchange, panelId);
@@ -250,11 +250,11 @@ public class PanelHandler implements HttpHandler {
         }
     }
 
-    private void handleGetComponentsByPanel(HttpExchange exchange, String panelName) throws IOException {
+    private void handleGetComponentsByPanel(HttpExchange exchange, int panelId) throws IOException {
         try {
-            log.info("Fetching components for panel: " + panelName);
-            List<Map<String, String>> components = PanelService.getComponentsByPanel(panelName);
-            log.info("Fetched components for panel: " + panelName + ", count: " + components.size());
+            log.info("Fetching components for panel ID: " + panelId);
+            List<Map<String, String>> components = PanelService.getComponentsByPanel(panelId);
+            log.info("Fetched components for panel ID: " + panelId + ", count: " + components.size());
             String response = listToJson(components);
             log.info("Response JSON: " + response);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -264,10 +264,10 @@ public class PanelHandler implements HttpHandler {
                 os.write(response.getBytes(StandardCharsets.UTF_8));
             }
 
-            log.info("Components fetched for panel: " + panelName + ", count: " + components.size());
+            log.info("Components fetched for panel ID: " + panelId + ", count: " + components.size());
 
         } catch (Exception e) {
-            log.severe("Failed to get components for panel: " + e.getMessage());
+            log.severe("Failed to get components for panel ID: " + e.getMessage());
             e.printStackTrace();
             String errorResponse = "{\"error\": \"Failed to fetch components\", \"message\": \"" + escapeJson(e.getMessage()) + "\"}";
             exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -355,6 +355,23 @@ public class PanelHandler implements HttpHandler {
             }
         }
         return null;
+    }
+
+    private int extractComponentsPanelId(String path) {
+        // Extract panel ID from /api/components/panel/{panelId}
+        // Example path: /api/components/panel/5
+        String prefix = "/api/components/panel/";
+        int index = path.indexOf(prefix);
+        if (index != -1) {
+            String idStr = path.substring(index + prefix.length());
+            try {
+                return Integer.parseInt(idStr);
+            } catch (NumberFormatException e) {
+                log.severe("Failed to parse panel ID: " + e.getMessage());
+                return -1;
+            }
+        }
+        return -1;
     }
 
     private String readBody(InputStream is) throws IOException {

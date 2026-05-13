@@ -301,7 +301,7 @@
             currentPanelData = panel;
             console.log('Panel details loaded:', panel);
             displayPanelDetails(panel);
-            loadComponents(panelNameParam);
+            loadComponents();  // No parameter needed - uses currentPanelData.id
             document.getElementById('detailsLoading').style.display = 'none';
             document.getElementById('detailsContent').style.display = 'block';
         })
@@ -326,18 +326,21 @@
         document.getElementById('statusText').style.color = isActive ? '#4CAF50' : '#dc3545';
     }
 
-    function loadComponents(panelName) {
-        console.log('Loading components for panel:', panelName);
+    function loadComponents() {
+        console.log('Loading components for panel ID:', currentPanelData.id);
         
-        if (!panelName || panelName.trim() === '') {
-            console.error('Panel name is empty');
+        if (!currentPanelData || !currentPanelData.id) {
+            console.error('Panel ID is missing');
             const componentList = document.getElementById('componentList');
-            componentList.innerHTML = '<div class="component-item"><span>No panel selected</span></div>';
+            componentList.innerHTML = '<div class="component-item"><span>Panel ID not available</span></div>';
             return;
         }
-        console.log('Fetching from URL:', `/api/components/panel/${encodeURIComponent(panelName)}`);
-        const url = `/api/components/panel/${encodeURIComponent(panelName)}`;
+        
+        const panelId = currentPanelData.id || currentPanelData.panel_id;
+        console.log('Fetching from URL:', `/api/components/panel/${panelId}`);
+        const url = `/api/components/panel/${panelId}`;
         console.log('Final URL:', url);
+        
         fetch(url, {
             method: 'GET',
             credentials: 'include',

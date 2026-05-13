@@ -41,14 +41,24 @@ public class SchemaInitializer {
                 "created_by INTEGER NOT NULL," +
                 "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
                 "updated_at TEXT," +
-                "FOREIGN KEY(patient_id) REFERENCES patients(id)" +
-                ")"},
-            {"test_order_panel", "CREATE TABLE IF NOT EXISTS test_order_panel (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "test_order_id INTEGER NOT NULL," +
                 "panel_id INTEGER NOT NULL," +
-                "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
-                "FOREIGN KEY(test_order_id) REFERENCES test_order(id)," +
+                "panel_name TEXT NOT NULL," +
+                "FOREIGN KEY(patient_id) REFERENCES patients(id)," +
+                "FOREIGN KEY(panel_id) REFERENCES Panels(panel_id)" +
+                ")"},
+            {"Components", "CREATE TABLE IF NOT EXISTS Components (" +
+                "component_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "panel_name TEXT NOT NULL," +
+                "component_name TEXT NOT NULL," +
+                "unit TEXT," +
+                "normal_range TEXT," +
+                "remarks TEXT," +
+                "ageRange TEXT," +
+                "gender TEXT," +
+                "status TEXT DEFAULT 'Active'," +
+                "created_at TEXT DEFAULT (datetime('now'))," +
+                "updated_at TEXT," +
+                "panel_id INTEGER NOT NULL DEFAULT 0" +
                 "FOREIGN KEY(panel_id) REFERENCES Panels(panel_id)" +
                 ")"},
             {"reports", "CREATE TABLE IF NOT EXISTS reports (" +

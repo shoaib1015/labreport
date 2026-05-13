@@ -159,6 +159,7 @@
         .contact-value {
             color: #333;
             word-break: break-word;
+            font-weight: bold;
         }
 
         .stats-section {
@@ -168,7 +169,7 @@
         .stat-box {
             text-align: center;
             padding: 15px;
-            background-color: #f8f9fa;
+            background-color: #a8c5e6;
             border-radius: 6px;
             margin-bottom: 12px;
         }
@@ -386,21 +387,23 @@
             <div class="main-content">
                 <!-- Tabs -->
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab(event, 'testorders')">Test Orders</button>
-                    <button class="tab" onclick="switchTab(event, 'testresults')">Test Results</button>
+                    <button class="tab active" onclick="switchTab(event, 'testorders')">Test Details</button>
+                    <!-- <button class="tab" onclick="switchTab(event, 'testresults')">Test Results</button> -->
                 </div>
 
                 <!-- Test Orders Tab -->
                 <div id="testorders" class="tab-content active">
-                    <h3 style="margin-bottom: 20px; color: #2c5282;">Test Orders</h3>
+                    <h3 style="margin-bottom: 20px; color: #2c5282;">Test Details</h3>
                     <table>
                         <thead>
                             <tr>
                                 <th>Order ID</th>
                                 <th>Panel</th>
+                                <th>Component</th>
+                                <th>Normal Range</th>
+                                <th>Result</th>
                                 <th>Status</th>
                                 <th>Created Date</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="testOrdersTable">
@@ -410,7 +413,7 @@
                 </div>
 
                 <!-- Test Results Tab -->
-                <div id="testresults" class="tab-content">
+                <!-- <div id="testresults" class="tab-content">
                     <h3 style="margin-bottom: 20px; color: #2c5282;">Test Results</h3>
                     <table>
                         <thead>
@@ -426,7 +429,7 @@
                             <tr><td colspan="5" class="no-data">No test results found</td></tr>
                         </tbody>
                     </table>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -445,9 +448,16 @@
 
         function loadPatientDetails() {
             fetch(`/api/patients/${currentPatientId}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('API Response:', data);
                     const patient = data.patient || data;
+                    console.log('Patient object:', patient);
                     displayPatientInfo(patient);
                     loadTestOrders(currentPatientId);
                 })
@@ -458,16 +468,37 @@
 
         function displayPatientInfo(patient) {
             const initials = patient.name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
+            console.log('Patient Data:', patient);
+            
+            // Set avatar and basic info
             document.getElementById('patientAvatar').textContent = initials;
-            document.getElementById('patientName').textContent = patient.name;
-            document.getElementById('patientMeta').textContent = `${patient.name} • ID #${patient.id} • Age ${calculateAge(patient.dob)} • ${patient.gender || 'N/A'}`;
+            document.getElementById('patientName').textContent = patient.name || 'N/A';
+            document.getElementById('patientMeta').textContent = `${patient.name || 'Unknown'} • ID #${patient.id} • Age ${calculateAge(patient.dob)} • ${patient.gender || 'N/A'}`;
+            
+            // Set contact info
             document.getElementById('patientPhone').textContent = patient.contact_phone || '+91 -';
             document.getElementById('patientEmail').textContent = patient.contact_email || '-';
             document.getElementById('patientAddress').textContent = patient.address || '-';
-            document.getElementById('dobDisplay').textContent = patient.dob || '-';
-            document.getElementById('genderDisplay').textContent = patient.gender || '-';
-            document.getElementById('addressDisplay').textContent = patient.address || '-';
             document.getElementById('lastVisit').textContent = formatDate(patient.created_at) || '-';
+            
+            // Set stats
+            const activeTests = parseInt(patient.active_tests) || 0;
+            const activeOrders = parseInt(patient.active_tests) || 0;
+            const pendingResults = parseInt(patient.pending_results) || 0;
+            const referringDoctor = patient.referring_doctor_name || '-';
+            
+            console.log('Setting stats:');
+            console.log('  activeTests:', activeTests);
+            console.log('  activeOrders:', activeOrders);
+            console.log('  pendingResults:', pendingResults);
+            console.log('  referringDoctor:', referringDoctor);
+            
+            document.getElementById('totalTests').textContent = activeTests;
+            document.getElementById('activeOrders').textContent = activeOrders;
+            document.getElementById('pendingResults').textContent = pendingResults;
+            document.getElementById('referringDoctor').textContent = referringDoctor;
+            
+            console.log('Stats display updated');
         }
 
         function loadTestOrders(patientId) {
@@ -482,7 +513,6 @@
                                 <td>${order.panelName || 'Panel'}</td>
                                 <td>${order.status || 'Pending'}</td>
                                 <td>${formatDate(order.created_at)}</td>
-                                <td><button class="action-button">View</button></td>
                             </tr>
                         `).join('');
                     }
