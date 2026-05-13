@@ -49,8 +49,10 @@ public class PatientHandler implements HttpHandler {
             } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+/test-orders")) {
                 int patientId = extractPatientIdFromPath(path);
                 handleGetPatientTestOrders(exchange, patientId);
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/\\d+")) {
+                int patientId = extractId(path);
+                handleUpdatePatient(exchange, patientId);
             } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+")) {
-                
                 int patientId = extractId(path);
                 handleGetPatient(exchange, patientId);
             } else {
@@ -84,6 +86,30 @@ public class PatientHandler implements HttpHandler {
         } catch (Exception e) {
             log.severe("Failed to create patient: " + e.getMessage());
             sendErrorResponse(exchange, 500, "Failed to create patient: " + e.getMessage());
+        }
+    }
+
+    private void handleUpdatePatient(HttpExchange exchange, int patientId) throws IOException {
+        try {
+            String body = readBody(exchange.getRequestBody());
+            log.info("Update patient request body: " + body);
+
+            CreatePatientRequest request = parseRequest(body);
+            CreatePatientResponse response = PatientService.updatePatient(patientId, request);
+
+            String jsonResponse = objectToJson(response);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
+
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(jsonResponse.getBytes(StandardCharsets.UTF_8));
+            }
+
+            log.info("Patient updated successfully: id=" + patientId);
+
+        } catch (Exception e) {
+            log.severe("Failed to update patient: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to update patient: " + e.getMessage());
         }
     }
 

@@ -88,6 +88,128 @@ public class PatientService {
         return response;
     }
 
+    public static CreatePatientResponse updatePatient(int patientId, CreatePatientRequest request) {
+        CreatePatientResponse response = new CreatePatientResponse();
+        response.validationResult = validateRequest(request);
+        response.createdObjects = new HashMap<>();
+
+        log.info("Updating patient: " + patientId + " - " + request.name);
+        log.info("Validation result: " + response.validationResult.valid);
+
+        if (!response.validationResult.valid) {
+            log.warning("Validation errors: " + response.validationResult.errors);
+            return response;
+        }
+
+        // Execute the update
+        try {
+            log.info("Executing database update for patient: " + patientId);
+            executeUpdate(patientId, request);
+            log.info("Patient successfully updated in database");
+            
+            // Return updated patient data
+            Map<String, Object> patient = new HashMap<>();
+            patient.put("id", patientId);
+            patient.put("name", request.name);
+            patient.put("dob", request.dob);
+            patient.put("gender", request.gender);
+            patient.put("contact_phone", request.contact_phone);
+            patient.put("contact_email", request.contact_email);
+            patient.put("address", request.address);
+            patient.put("referring_doctor_id", request.referring_doctor_id);
+            patient.put("created_by", request.created_by);
+            response.createdObjects.put("patient", patient);
+        } catch (Exception e) {
+            log.severe("Failed to update patient: " + e.getMessage());
+            e.printStackTrace();
+            response.validationResult.addError("Database error: " + e.getMessage());
+            response.validationResult.valid = false;
+        }
+
+        return response;
+    }
+
+    private static void executeUpdate(int patientId, CreatePatientRequest request) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String utcNow = ZonedDateTime.now(ZoneOffset.UTC).format(UTC_FORMATTER);
+
+        log.info("===== START PATIENT UPDATE TRANSACTION =====");
+        
+        try {
+            conn.setAutoCommit(false);
+            log.info("Autocommit disabled successfully");
+
+            // Update patient record
+            log.info("Preparing patient UPDATE statement");
+            String patientSql = "UPDATE patients SET name = ?, dob = ?, gender = ?, contact_phone = ?, contact_email = ?, address = ?, referring_doctor_id = ?, updated_at = ? " +
+                    "WHERE id = ?";
+            
+            try (PreparedStatement pstmt = conn.prepareStatement(patientSql)) {
+                log.info("Setting patient update parameters:");
+                log.info("  [1] name: " + request.name);
+                pstmt.setString(1, request.name);
+                
+                log.info("  [2] dob: " + request.dob);
+                pstmt.setString(2, request.dob);
+                
+                log.info("  [3] gender: " + request.gender);
+                pstmt.setString(3, request.gender);
+                
+                String normalizedPhone = normalizePhone(request.contact_phone);
+                log.info("  [4] contact_phone (normalized): " + normalizedPhone);
+                pstmt.setString(4, normalizedPhone);
+                
+                log.info("  [5] contact_email: " + request.contact_email);
+                pstmt.setString(5, request.contact_email);
+                
+                log.info("  [6] address: " + request.address);
+                pstmt.setString(6, request.address);
+                
+                log.info("  [7] referring_doctor_id: " + request.referring_doctor_id);
+                pstmt.setObject(7, request.referring_doctor_id);
+                
+                log.info("  [8] updated_at: " + utcNow);
+                pstmt.setString(8, utcNow);
+                
+                log.info("  [9] patient id: " + patientId);
+                pstmt.setInt(9, patientId);
+                
+                log.info("Executing patient UPDATE...");
+                int rowsAffected = pstmt.executeUpdate();
+                log.info("Patient UPDATE rows affected: " + rowsAffected);
+            }
+
+            log.info("Committing transaction...");
+            conn.commit();
+            log.info("Transaction committed successfully");
+            log.info("===== PATIENT UPDATE TRANSACTION COMPLETED SUCCESSFULLY =====");
+        } catch (SQLException e) {
+            log.severe("SQL Exception during transaction: " + e.getMessage());
+            log.severe("SQL State: " + e.getSQLState());
+            log.severe("Error Code: " + e.getErrorCode());
+            e.printStackTrace();
+            
+            log.info("Rolling back transaction...");
+            try {
+                conn.rollback();
+                log.info("Rollback completed");
+            } catch (SQLException rollbackEx) {
+                log.severe("Error during rollback: " + rollbackEx.getMessage());
+            }
+            
+            throw e;
+        } finally {
+            log.info("Setting autocommit back to true");
+            try {
+                conn.setAutoCommit(true);
+                log.info("Autocommit re-enabled");
+            } catch (SQLException ex) {
+                log.severe("Error resetting autocommit: " + ex.getMessage());
+            }
+            log.info("===== END PATIENT UPDATE TRANSACTION =====");
+        }
+    }
+
     private static ValidationResult validateRequest(CreatePatientRequest request) {
         ValidationResult result = new ValidationResult();
 
@@ -166,22 +288,11 @@ public class PatientService {
 
         if (request.order_panels != null && !request.order_panels.isEmpty()) {
             sql.append("\n-- Insert test order for the created patient\n");
-            sql.append("INSERT INTO test_order (patient_id, priority, notes, created_by, created_at)\n");
-            sql.append("VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?);\n");
-            sql.append("-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at)\n");
-
-            sql.append("\n-- Insert test order panels\n");
-            for (int i = 0; i < request.order_panels.size(); i++) {
-                if (i > 0) {
-                    sql.append(";\n");
-                }
-                sql.append("INSERT INTO test_order_panel (test_order_id, panel_id, created_at)\n");
-                sql.append("VALUES ((SELECT last_insert_rowid()), ?, ?)");
-                sql.append("\n-- Placeholders: (").append(14 + (i * 2)).append(":panel_id, ").append(15 + (i * 2)).append(":created_at)");
-            }
-            sql.append(";\n");
+            sql.append("INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name)\n");
+            sql.append("VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?);\n");
+            sql.append("-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at, 14:panel_id, 15:panel_name)\n");
         }
-
+        log.info(sql.toString());
         sql.append("COMMIT;");
         return sql.toString();
     }
@@ -323,98 +434,76 @@ public class PatientService {
                 log.info("Panel list provided with " + request.order_panels.size() + " panels");
                 
                 if (patientId > 0) {
-                    log.info("Preparing test order INSERT statement");
-                    String orderSql = "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at) " +
-                            "VALUES (?, ?, ?, ?, ?)";
+                    // Fetch panel information for all provided panel IDs
+                    Map<Integer, String> panelMap = new HashMap<>();
+                    
+                    log.info("Fetching panel information for panel IDs: " + request.order_panels.toString());
+                    StringBuilder panelQueryBuilder = new StringBuilder("SELECT panel_id, panel_name FROM Panels WHERE panel_id IN (");
+                    for (int i = 0; i < request.order_panels.size(); i++) {
+                        if (i > 0) panelQueryBuilder.append(", ");
+                        panelQueryBuilder.append("?");
+                    }
+                    panelQueryBuilder.append(")");
+                    
+                    try (PreparedStatement panelFetchStmt = conn.prepareStatement(panelQueryBuilder.toString())) {
+                        // Set all panel IDs in the WHERE IN clause
+                        for (int i = 0; i < request.order_panels.size(); i++) {
+                            panelFetchStmt.setInt(i + 1, request.order_panels.get(i));
+                            log.info("Panel fetch query parameter [" + (i + 1) + "]: " + request.order_panels.get(i));
+                        }
+                        
+                        ResultSet rs = panelFetchStmt.executeQuery();
+                        while (rs.next()) {
+                            panelMap.put(rs.getInt("panel_id"), rs.getString("panel_name"));
+                            log.info("Fetched panel: id=" + rs.getInt("panel_id") + ", name=" + rs.getString("panel_name"));
+                        }
+                    }
+
+                    // Create ONE test_order for EACH selected panel
+                    log.info("Preparing test order INSERT statement - will create " + request.order_panels.size() + " orders (one per panel)");
+                    String orderSql = "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    
                     try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
-                        log.info("Setting test order parameters:");
-                        log.info("  [1] patient_id: " + patientId);
-                        orderStmt.setInt(1, patientId);
-                        
                         String priority = request.priority != null ? request.priority : "Routine";
-                        log.info("  [2] priority: " + priority);
-                        orderStmt.setString(2, priority);
                         
-                        log.info("  [3] notes: " + request.notes);
-                        orderStmt.setString(3, request.notes);
-                        
-                        log.info("  [4] created_by: " + request.created_by);
-                        orderStmt.setInt(4, request.created_by);
-                        
-                        log.info("  [5] created_at: " + utcNow);
-                        orderStmt.setString(5, utcNow);
-                        
-                        log.info("Executing test order INSERT...");
-                        int orderRowsAffected = orderStmt.executeUpdate();
-                        log.info("Test order INSERT rows affected: " + orderRowsAffected);
-                    }
-
-                    // Get the last inserted test order ID
-                    log.info("Retrieving last inserted test order ID");
-                    try (PreparedStatement stmt = conn.prepareStatement(getIdSql)) {
-                        ResultSet rs = stmt.executeQuery();
-                        if (rs.next()) {
-                            orderId = rs.getInt("id");
-                            log.info("Retrieved test order ID: " + orderId);
-                        } else {
-                            log.warning("Failed to retrieve test order ID from last_insert_rowid()");
-                        }
-                    }
-
-                    // Insert test order panels
-                    if (orderId > 0) {
-                        log.info("Preparing panel batch insert for order ID: " + orderId);
-                        Map<Integer, String> panelMap = new HashMap<>();
-
-                        String panelSql = "INSERT INTO test_order_panel (test_order_id, panel_id, created_at, panel_name) VALUES (?, ?, ?, ?)";
-                        log.info("Panel SQL: " + panelSql);
-                        try (PreparedStatement panelStmt = conn.prepareStatement(panelSql)) {
-                            // Build query to fetch all panel information for the provided panel IDs
-                            StringBuilder panelQueryBuilder = new StringBuilder("SELECT panel_id, panel_name FROM Panels WHERE panel_id IN (");
-                            log.info("panelQueryBuilder: " + panelQueryBuilder.toString());
-                            log.info("panel IDs: " + request.order_panels.toString());
-                            for (int i = 0; i < request.order_panels.size(); i++) {
-                                if (i > 0) panelQueryBuilder.append(", ");
-                                panelQueryBuilder.append("?");
-                            }
-                            panelQueryBuilder.append(")");
-                            log.info(panelQueryBuilder.toString() + " with panel IDs: " + request.order_panels.toString());
+                        int panelCount = 0;
+                        for (Integer panelId : request.order_panels) {
+                            panelCount++;
+                            log.info("Creating test order " + panelCount + " for panel_id=" + panelId);
                             
-                            try (PreparedStatement panelFetchStmt = conn.prepareStatement(panelQueryBuilder.toString())) {
-                                // Set all panel IDs in the WHERE IN clause
-                                for (int i = 0; i < request.order_panels.size(); i++) {
-                                    panelFetchStmt.setInt(i + 1, request.order_panels.get(i));
-                                    log.info("Panel fetch query parameter [" + (i + 1) + "]: " + request.order_panels.get(i));
-                                }
-                                
-                                ResultSet rs = panelFetchStmt.executeQuery();
-                                
-                                while (rs.next()) {
-                                    panelMap.put(rs.getInt("panel_id"), rs.getString("panel_name"));
-                                    log.info("Fetched panel: id=" + rs.getInt("panel_id") + ", name=" + rs.getString("panel_name"));
-                                }
-                            }
-
-                            int panelCount = 0;
-                            for (Integer panelId : request.order_panels) {
-                                panelCount++;
-                                log.info("Adding panel " + panelCount + ": panel_id=" + panelId);
-                                panelStmt.setInt(1, orderId);
-                                panelStmt.setInt(2, panelId);
-                                panelStmt.setString(3, utcNow);
-                                panelStmt.setString(4, panelMap.get(panelId));
-                                panelStmt.addBatch();
-                            }
+                            log.info("Setting test order parameters:");
+                            log.info("  [1] patient_id: " + patientId);
+                            orderStmt.setInt(1, patientId);
                             
-                            log.info("Executing batch insert for " + panelCount + " panels...");
-                            int[] batchResults = panelStmt.executeBatch();
-                            log.info("Batch insert completed. Results length: " + batchResults.length);
-                            for (int i = 0; i < batchResults.length; i++) {
-                                log.info("  Batch[" + i + "]: " + batchResults[i]);
-                            }
+                            log.info("  [2] priority: " + priority);
+                            orderStmt.setString(2, priority);
+                            
+                            log.info("  [3] notes: " + request.notes);
+                            orderStmt.setString(3, request.notes);
+                            
+                            log.info("  [4] created_by: " + request.created_by);
+                            orderStmt.setInt(4, request.created_by);
+                            
+                            log.info("  [5] created_at: " + utcNow);
+                            orderStmt.setString(5, utcNow);
+                            
+                            log.info("  [6] panel_id: " + panelId);
+                            orderStmt.setInt(6, panelId);
+                            
+                            String panelName = panelMap.get(panelId);
+                            log.info("  [7] panel_name: " + panelName);
+                            orderStmt.setString(7, panelName);
+                            
+                            orderStmt.addBatch();
                         }
-                    } else {
-                        log.warning("Test order ID is invalid (orderId=" + orderId + "). Panel insertion skipped.");
+                        
+                        log.info("Executing batch insert for " + panelCount + " test orders...");
+                        int[] batchResults = orderStmt.executeBatch();
+                        log.info("Batch insert completed. Results length: " + batchResults.length);
+                        for (int i = 0; i < batchResults.length; i++) {
+                            log.info("  Batch[" + i + "]: " + batchResults[i]);
+                        }
                     }
                 } else {
                     log.warning("Patient ID is invalid (patientId=" + patientId + "). Test order insertion skipped.");
@@ -457,7 +546,13 @@ public class PatientService {
     public static Map<String, String> getPatientById(int id) {
         try {
             Connection conn = DatabaseManager.getConnection();
-            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM patients WHERE id = ?");
+            PreparedStatement stmt = conn.prepareStatement("SELECT p.id, p.name, p.dob, p.gender, p.contact_phone, p.contact_email, p.address, p.referring_doctor_id, p.created_by, p.created_at, " +
+                        "rd.full_name AS referring_doctor_name, " +
+                        "(SELECT COUNT(*) FROM test_order WHERE patient_id = p.id) AS active_tests, " +
+                        "(SELECT COUNT(*) FROM test_order WHERE patient_id = p.id) AS pending_results " +
+                        "FROM patients p " +
+                        "LEFT JOIN ReferringDoctors rd ON p.referring_doctor_id = rd.doctor_id " +
+                        "WHERE p.id = ?");
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
 
@@ -473,10 +568,18 @@ public class PatientService {
                 patient.put("referring_doctor_id", String.valueOf(rs.getInt("referring_doctor_id")));
                 patient.put("created_by", String.valueOf(rs.getInt("created_by")));
                 patient.put("created_at", rs.getString("created_at"));
+                // Joined field from ReferringDoctors
+                String referringDoctorName = rs.getString("referring_doctor_name");
+                patient.put("referring_doctor_name", referringDoctorName != null ? referringDoctorName : "-");
+
+                // Aggregated counts from test_order
+                patient.put("active_tests", String.valueOf(rs.getInt("active_tests")));
+                patient.put("pending_results", String.valueOf(rs.getInt("pending_results")));
                 return patient;
             }
         } catch (SQLException e) {
             log.severe("Failed to fetch patient: " + e.getMessage());
+            e.printStackTrace();
         }
         return new HashMap<>();
     }

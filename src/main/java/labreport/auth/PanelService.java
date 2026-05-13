@@ -181,14 +181,14 @@ public class PanelService {
         }
     }
 
-    public static List<Map<String, String>> getComponentsByPanel(String panelName) {
+    public static List<Map<String, String>> getComponentsByPanel(int panelId) {
         try {
             List<Map<String, String>> components = new ArrayList<>();
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement("SELECT component_name, unit, normal_range, remarks, ageRange, gender, status " +
-                 "FROM Components WHERE panel_name = ?");
-            stmt.setString(1, panelName);
+                 "FROM Components WHERE panel_id = ?");
+            stmt.setInt(1, panelId);
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
@@ -203,11 +203,11 @@ public class PanelService {
                 components.add(component);
             }
 
-            log.info("Fetched components for panel: " + panelName + ", count: " + components.size());
+            log.info("Fetched components for panel ID: " + panelId + ", count: " + components.size());
             return components;
 
         } catch (Exception e) {
-            log.severe("Failed to fetch components for panel: " + e.getMessage());
+            log.severe("Failed to fetch components for panel ID: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
