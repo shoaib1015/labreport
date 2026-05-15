@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -117,6 +118,17 @@
             box-shadow: 0 0 4px rgba(44, 82, 130, 0.2);
         }
 
+        .form-control-readonly {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background-color: #f0f4f8;
+            color: #2c5282;
+            font-weight: 500;
+        }
+
         select.form-control {
             cursor: pointer;
         }
@@ -231,6 +243,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="modal-overlay">
         <div class="modal">
@@ -245,9 +258,7 @@
                     <div class="form-row">
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Select Patient:</label>
-                            <select id="patientSelect" class="form-control" onchange="loadPatientInfo()">
-                                <option>Select patient</option>
-                            </select>
+                            <div id="patientNameDisplay" class="form-control-readonly">Loading...</div>
                         </div>
                     </div>
                     <div class="patient-info-display" id="patientInfo" style="display: none;">
@@ -271,14 +282,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Referring Doctor:</label>
-                            <select id="doctorSelect" class="form-control">
-                                <option>Select doctor</option>
-                            </select>
+                            <div id="doctorNameDisplay" class="form-control-readonly">-</div>
                         </div>
                         <div class="form-group" style="grid-column: span 3;">
                             <label class="form-label">Select Test Panel:</label>
-                            <select id="panelSelect" class="form-control" onchange="loadPanelComponents()">
-                                <option>CBC Panel</option>
+                            <select id="panelSelect" class="form-control" onchange="onPanelChange()">
+                                <option value="">Select panel</option>
                             </select>
                         </div>
                     </div>
@@ -299,25 +308,7 @@
                         </thead>
                         <tbody id="componentsTable">
                             <tr>
-                                <td>Hemoglobin</td>
-                                <td>g/dL</td>
-                                <td>13-17 g/dL</td>
-                                <td><input type="text" class="form-control input-field" placeholder="Enter result"></td>
-                                <td><input type="text" class="form-control input-field" placeholder="Enter remarks"></td>
-                            </tr>
-                            <tr>
-                                <td>WBC Count</td>
-                                <td>cells/µL</td>
-                                <td>4000-11000 cells/µL</td>
-                                <td><input type="text" class="form-control input-field" placeholder="Enter result"></td>
-                                <td><input type="text" class="form-control input-field" placeholder="Enter remarks"></td>
-                            </tr>
-                            <tr>
-                                <td>Platelet Count</td>
-                                <td>cells/µL</td>
-                                <td>150,000-450,000 celis</td>
-                                <td><input type="text" class="form-control input-field" placeholder="Enter result"></td>
-                                <td><input type="text" class="form-control input-field" placeholder="Enter remarks"></td>
+                                <td colspan="5" style="text-align: center; color: #999;">Select a test panel to view components</td>
                             </tr>
                         </tbody>
                     </table>
@@ -330,7 +321,8 @@
                             <label class="form-label">Sample Collected:</label>
                             <div style="display: flex; gap: 8px;">
                                 <input type="date" id="sampleDate" class="form-control" style="flex: 1;">
-                                <button class="btn btn-secondary" onclick="setToday()" style="padding: 10px 16px;">📅</button>
+                                <button class="btn btn-secondary" onclick="setToday()"
+                                    style="padding: 10px 16px;">&#x1F4C5;</button>
                             </div>
                         </div>
                         <div class="form-group">
@@ -350,7 +342,8 @@
                     <div class="form-row-wide">
                         <div class="form-group">
                             <label class="form-label">Notes / Comments:</label>
-                            <textarea id="notes" class="form-control" placeholder="Enter any additional notes"></textarea>
+                            <textarea id="notes" class="form-control"
+                                placeholder="Enter any additional notes"></textarea>
                         </div>
                     </div>
                 </div>
@@ -366,99 +359,265 @@
 
     <script>
         let currentPatientId = null;
+        // Stores all test order data grouped by orderId
+        // { orderId: { panelName, sampleCollectedAt, status, notes, components: [...] } }
+        let testOrdersMap = {};
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
             currentPatientId = urlParams.get('patientId');
-            
+            console.log('Current Patient ID:', currentPatientId);
+
             if (currentPatientId) {
-                document.getElementById('patientSelect').value = currentPatientId;
-                loadPatientInfo();
+                loadPatientInfo(currentPatientId);
+                loadTestOrders(currentPatientId);
+            } else {
+                document.getElementById('patientNameDisplay').textContent = 'No patient ID provided';
             }
-            
-            loadPatients();
-            loadDoctors();
         });
 
         function closeModal() {
             window.history.back();
         }
 
-        function loadPatients() {
-            // This would fetch from the API in production
-            const select = document.getElementById('patientSelect');
-            // Sample data - replace with API call
-            select.innerHTML = '<option>Select patient</option>';
-        }
+        /**
+         * Fetch patient details (name, dob, gender, contact, referring doctor)
+         * using GET /api/patients/{id}
+         */
+        function loadPatientInfo(patientId) {
+            fetch('/api/patients/' + patientId)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    console.log('Patient data:', data);
 
-        function loadDoctors() {
-            // This would fetch from the API in production
-            const select = document.getElementById('doctorSelect');
-            // Sample data - replace with API call
-            select.innerHTML = '<option>Select doctor</option>';
-        }
+                    // Display patient name
+                    document.getElementById('patientNameDisplay').textContent = data.name || '-';
 
-        function loadPatientInfo() {
-            const patientId = document.getElementById('patientSelect').value;
-            if (!patientId || patientId === 'Select patient') return;
+                    // Display referring doctor name (joined from referring_doctors table)
+                    document.getElementById('doctorNameDisplay').textContent = data.referring_doctor_name || '-';
 
-            fetch(`/api/patients/${patientId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const patient = data.patient || data;
-                    const age = calculateAge(patient.dob);
-                    
+                    // Display patient info bar
+                    var age = calculateAge(data.dob);
                     document.getElementById('patientInfo').style.display = 'flex';
                     document.getElementById('infoAge').textContent = age;
-                    document.getElementById('infoGender').textContent = patient.gender || '-';
-                    document.getElementById('infoContact').textContent = patient.contact_phone || '-';
+                    document.getElementById('infoGender').textContent = data.gender || '-';
+                    document.getElementById('infoContact').textContent = data.contact_phone || '-';
                 })
-                .catch(error => console.error('Error loading patient:', error));
+                .catch(function(error) {
+                    console.error('Error loading patient:', error);
+                    document.getElementById('patientNameDisplay').textContent = 'Error loading patient';
+                });
         }
 
-        function loadPanelComponents() {
-            // In production, this would load components based on selected panel
-            // For now, it just refreshes the display
+        /**
+         * Fetch test orders with components for this patient.
+         * Groups the flat response by order_id and populates the panel dropdown.
+         */
+        function loadTestOrders(patientId) {
+            fetch('/api/patients/' + patientId + '/test-orders')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    console.log('Test orders data:', data);
+                    var orders = data.testOrders || [];
+
+                    // Group by order_id
+                    testOrdersMap = {};
+                    orders.forEach(function(row) {
+                        var orderId = row.id;
+                        if (!testOrdersMap[orderId]) {
+                            testOrdersMap[orderId] = {
+                                panelName: row.panelName,
+                                sampleCollectedAt: row.sampleCollectedAt,
+                                status: row.status,
+                                notes: row.notes,
+                                components: []
+                            };
+                        }
+                        testOrdersMap[orderId].components.push({
+                            id: row.componentRowId,
+                            name: row.componentName,
+                            unit: row.unit || '',
+                            referenceRange: row.referenceRange || '',
+                            resultValue: row.resultValue || '',
+                            flag: row.flag || 'Normal'
+                        });
+                    });
+
+                    // Populate panel dropdown
+                    var panelSelect = document.getElementById('panelSelect');
+                    panelSelect.innerHTML = '<option value="">Select panel</option>';
+
+                    var orderIds = Object.keys(testOrdersMap);
+                    orderIds.forEach(function(orderId) {
+                        var order = testOrdersMap[orderId];
+                        var option = document.createElement('option');
+                        option.value = orderId;
+                        option.textContent = order.panelName;
+                        panelSelect.appendChild(option);
+                    });
+
+                    // Auto-select first panel if available
+                    if (orderIds.length > 0) {
+                        panelSelect.value = orderIds[0];
+                        onPanelChange();
+                    }
+                })
+                .catch(function(error) { console.error('Error loading test orders:', error); });
         }
 
-        function setToday() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('sampleDate').value = today;
-        }
+        /**
+         * When a panel (test order) is selected, render its components in the table
+         * and populate the form fields with the test order data.
+         */
+        function onPanelChange() {
+            var panelSelect = document.getElementById('panelSelect');
+            var orderId = panelSelect.value;
+            var tbody = document.getElementById('componentsTable');
 
-        function saveTestEntry() {
-            const patientId = document.getElementById('patientSelect').value;
-            if (!patientId || patientId === 'Select patient') {
-                alert('Please select a patient');
+            if (!orderId || !testOrdersMap[orderId]) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Select a test panel to view components</td></tr>';
                 return;
             }
 
-            // Collect form data
-            const formData = {
-                patientId: patientId,
-                panelName: document.getElementById('panelSelect').value,
-                sampleDate: document.getElementById('sampleDate').value,
-                reportStatus: document.getElementById('reportStatus').value,
-                notes: document.getElementById('notes').value,
-                components: []
-            };
+            var order = testOrdersMap[orderId];
 
-            // Collect component results
-            const rows = document.querySelectorAll('#componentsTable tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length === 5) {
-                    formData.components.push({
-                        name: cells[0].textContent,
-                        result: cells[3].querySelector('input').value,
-                        remarks: cells[4].querySelector('input').value
+            // Populate sample date, status, notes from the test order
+            if (order.sampleCollectedAt) {
+                var dateValue = order.sampleCollectedAt.substring(0, 10);
+                document.getElementById('sampleDate').value = dateValue;
+            } else {
+                document.getElementById('sampleDate').value = '';
+            }
+
+            if (order.status) {
+                document.getElementById('reportStatus').value = order.status;
+            }
+
+            if (order.notes) {
+                document.getElementById('notes').value = order.notes;
+            } else {
+                document.getElementById('notes').value = '';
+            }
+
+            // Render component rows
+            tbody.innerHTML = '';
+            order.components.forEach(function(comp) {
+                var tr = document.createElement('tr');
+
+                var tdName = document.createElement('td');
+                tdName.textContent = comp.name;
+
+                var tdUnit = document.createElement('td');
+                tdUnit.textContent = comp.unit;
+
+                var tdRange = document.createElement('td');
+                tdRange.textContent = comp.referenceRange;
+
+                var tdResult = document.createElement('td');
+                var resultInput = document.createElement('input');
+                resultInput.type = 'text';
+                resultInput.className = 'form-control input-field';
+                resultInput.setAttribute('data-component-id', comp.id);
+                resultInput.value = comp.resultValue;
+                resultInput.placeholder = 'Enter result';
+                tdResult.appendChild(resultInput);
+
+                var tdRemarks = document.createElement('td');
+                var flagSelect = document.createElement('select');
+                flagSelect.className = 'form-control input-field';
+                flagSelect.setAttribute('data-component-id', comp.id);
+                flagSelect.setAttribute('data-field', 'flag');
+
+                var options = ['Normal', 'High', 'Low'];
+                options.forEach(function(opt) {
+                    var optEl = document.createElement('option');
+                    optEl.value = opt;
+                    optEl.textContent = opt;
+                    if (comp.flag === opt) {
+                        optEl.selected = true;
+                    }
+                    flagSelect.appendChild(optEl);
+                });
+                tdRemarks.appendChild(flagSelect);
+
+                tr.appendChild(tdName);
+                tr.appendChild(tdUnit);
+                tr.appendChild(tdRange);
+                tr.appendChild(tdResult);
+                tr.appendChild(tdRemarks);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function setToday() {
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById('sampleDate').value = today;
+        }
+
+        /**
+         * Save test entry:
+         * - Updates test_order: sample_collected_at, status, notes, updated_at
+         * - Updates test_order_component: result_value, flag, updated_at
+         */
+        function saveTestEntry() {
+            var panelSelect = document.getElementById('panelSelect');
+            var testOrderId = panelSelect.value;
+
+            if (!testOrderId) {
+                alert('Please select a test panel');
+                return;
+            }
+
+            if (!currentPatientId) {
+                alert('No patient selected');
+                return;
+            }
+
+            // Collect component results from the table
+            var components = [];
+            var rows = document.querySelectorAll('#componentsTable tr');
+            rows.forEach(function(row) {
+                var resultInput = row.querySelector('input[data-component-id]');
+                var flagSelect = row.querySelector('select[data-field="flag"]');
+                if (resultInput && flagSelect) {
+                    components.push({
+                        id: parseInt(resultInput.getAttribute('data-component-id')),
+                        resultValue: resultInput.value,
+                        flag: flagSelect.value
                     });
                 }
             });
 
-            console.log('Test Entry Data:', formData);
-            alert('Test entry saved successfully!');
-            closeModal();
+            var payload = {
+                testOrderId: testOrderId,
+                sampleCollectedAt: document.getElementById('sampleDate').value,
+                status: document.getElementById('reportStatus').value,
+                notes: document.getElementById('notes').value,
+                components: components
+            };
+
+            console.log('Saving test entry:', payload);
+
+            fetch('/api/patients/' + currentPatientId + '/test-entry', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        alert('Test entry saved successfully!');
+                        // Reload test orders to reflect updated data
+                        loadTestOrders(currentPatientId);
+                    } else {
+                        alert('Failed to save: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error saving test entry:', error);
+                    alert('Error saving test entry. Please try again.');
+                });
         }
 
         function printReport() {
@@ -467,10 +626,10 @@
 
         function calculateAge(dob) {
             if (!dob) return '-';
-            const birthDate = new Date(dob);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
+            var birthDate = new Date(dob);
+            var today = new Date();
+            var age = today.getFullYear() - birthDate.getFullYear();
+            var monthDiff = today.getMonth() - birthDate.getMonth();
             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                 age--;
             }
@@ -478,4 +637,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -56,7 +56,7 @@ public class UserService {
 
             // Check if lab profile with lab_id=1 exists
             PreparedStatement checkStmt =
-                    conn.prepareStatement("SELECT COUNT(*) FROM LabProfile WHERE lab_id = 1");
+                    conn.prepareStatement("SELECT COUNT(*) FROM lab_profile WHERE lab_id = 1");
             ResultSet rs = checkStmt.executeQuery();
 
             int profileCount = rs.next() ? rs.getInt(1) : 0;
@@ -69,7 +69,7 @@ public class UserService {
             // Insert default lab profile
             PreparedStatement insertStmt =
                     conn.prepareStatement(
-                            "INSERT INTO LabProfile (lab_id, lab_name, address, contact_number, updated_at) VALUES (?, ?, ?, ?, ?)");
+                            "INSERT INTO lab_profile (lab_id, lab_name, address, contact_number, updated_at) VALUES (?, ?, ?, ?, ?)");
 
             insertStmt.setInt(1, 1);
             insertStmt.setString(2, "Bharat Pathology Laboratory");

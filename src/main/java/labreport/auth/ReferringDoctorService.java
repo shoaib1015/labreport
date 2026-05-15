@@ -22,7 +22,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM ReferringDoctors ORDER BY full_name");
+                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM referring_doctors ORDER BY full_name");
 
             ResultSet rs = stmt.executeQuery();
 
@@ -51,7 +51,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM ReferringDoctors WHERE doctor_id = ?");
+                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM referring_doctors WHERE doctor_id = ?");
 
             stmt.setInt(1, doctorId);
             ResultSet rs = stmt.executeQuery();
@@ -78,7 +78,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO ReferringDoctors (full_name, contact_number, license_number, status, created_at) VALUES (?, ?, ?, ?, ?)");
+                    "INSERT INTO referring_doctors (full_name, contact_number, license_number, status, created_at) VALUES (?, ?, ?, ?, ?)");
 
             stmt.setString(1, fullName);
             stmt.setString(2, contactNumber);
@@ -101,7 +101,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE ReferringDoctors SET full_name = ?, contact_number = ?, license_number = ?, status = ? WHERE doctor_id = ?");
+                    "UPDATE referring_doctors SET full_name = ?, contact_number = ?, license_number = ?, status = ? WHERE doctor_id = ?");
 
             stmt.setString(1, fullName);
             stmt.setString(2, contactNumber);
@@ -123,7 +123,7 @@ public class ReferringDoctorService {
         try {
             Connection conn = DatabaseManager.getConnection();
 
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM ReferringDoctors WHERE doctor_id = ?");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM referring_doctors WHERE doctor_id = ?");
             stmt.setInt(1, doctorId);
 
             int rowsAffected = stmt.executeUpdate();

@@ -220,12 +220,25 @@
             padding: 40px;
             color: #999;
         }
+
+        .header-back {
+            color: #2c5282;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .header-back:hover {
+            color: #1e3f5a;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
+            <a href="javascript:history.back()" class="header-back">&larr; Back</a>
             <h1>All Patients</h1>
             <div class="header-buttons">
                 <button class="btn-primary" onclick="goToNewPatient()">+ Add Patient</button>

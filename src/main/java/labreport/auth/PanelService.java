@@ -23,7 +23,7 @@ public class PanelService {
 
             PreparedStatement stmt = conn.prepareStatement(
                     "SELECT panel_id, panel_name, category_name, description, price, status " +
-                    "FROM Panels");
+                    "FROM panels");
 
             ResultSet rs = stmt.executeQuery();
 
@@ -54,8 +54,8 @@ public class PanelService {
 
             PreparedStatement stmt = conn.prepareStatement(
                     "SELECT p.panel_id, p.panel_name, p.category_id, p.description, p.price, p.status, c.category_name " +
-                    "FROM Panels p " +
-                    "LEFT JOIN Categories c ON p.category_id = c.category_id " +
+                    "FROM panels p " +
+                    "LEFT JOIN categories c ON p.category_id = c.category_id " +
                     "WHERE p.panel_id = ?");
 
             stmt.setInt(1, panelId);
@@ -85,7 +85,7 @@ public class PanelService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO Panels (panel_name, category_id, description, price, status, created_at, category_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    "INSERT INTO panels (panel_name, category_id, description, price, status, created_at, category_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
             log.info(panelName + ", " + categoryId + ", " + description + ", " + price + ", " + status + ", " + categoryName);
             stmt.setString(1, panelName);
@@ -111,7 +111,7 @@ public class PanelService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE Panels SET panel_name = ?, category_id = ?, description = ?, price = ?, status = ?, category_name = ? WHERE panel_id = ?");
+                    "UPDATE panels SET panel_name = ?, category_id = ?, description = ?, price = ?, status = ?, category_name = ? WHERE panel_id = ?");
 
             stmt.setString(1, panelName);
             stmt.setInt(2, Integer.parseInt(categoryId));
@@ -135,7 +135,7 @@ public class PanelService {
         try {
             Connection conn = DatabaseManager.getConnection();
 
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM Panels WHERE panel_id = ?");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM panels WHERE panel_id = ?");
             stmt.setInt(1, panelId);
 
             int rowsAffected = stmt.executeUpdate();
@@ -154,8 +154,8 @@ public class PanelService {
 
             PreparedStatement stmt = conn.prepareStatement(
                     "SELECT p.panel_id, p.panel_name, p.category_id, p.description, p.price, p.status, c.category_name " +
-                    "FROM Panels p " +
-                    "LEFT JOIN Categories c ON p.category_id = c.category_id " +
+                    "FROM panels p " +
+                    "LEFT JOIN categories c ON p.category_id = c.category_id " +
                     "WHERE p.panel_name = ?");
 
             stmt.setString(1, panelName);
@@ -187,7 +187,7 @@ public class PanelService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement("SELECT component_name, unit, normal_range, remarks, ageRange, gender, status " +
-                 "FROM Components WHERE panel_id = ?");
+                 "FROM components WHERE panel_id = ?");
             stmt.setInt(1, panelId);
             ResultSet rs = stmt.executeQuery();
 
@@ -217,7 +217,7 @@ public class PanelService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT id, category_name, description, status FROM Categories ORDER BY category_name");
+                    "SELECT id, category_name, description, status FROM categories ORDER BY category_name");
 
             ResultSet rs = stmt.executeQuery();
 
