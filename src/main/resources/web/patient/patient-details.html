@@ -388,7 +388,6 @@
                 <!-- Tabs -->
                 <div class="tabs">
                     <button class="tab active" onclick="switchTab(event, 'testorders')">Test Details</button>
-                    <!-- <button class="tab" onclick="switchTab(event, 'testresults')">Test Results</button> -->
                 </div>
 
                 <!-- Test Orders Tab -->
@@ -411,25 +410,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Test Results Tab -->
-                <!-- <div id="testresults" class="tab-content">
-                    <h3 style="margin-bottom: 20px; color: #2c5282;">Test Results</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Test Name</th>
-                                <th>Component</th>
-                                <th>Result</th>
-                                <th>Normal Range</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="testResultsTable">
-                            <tr><td colspan="5" class="no-data">No test results found</td></tr>
-                        </tbody>
-                    </table>
-                </div> -->
             </div>
         </div>
     </div>
@@ -511,6 +491,9 @@
                             <tr>
                                 <td>${order.id}</td>
                                 <td>${order.panelName || 'Panel'}</td>
+                                <td>${order.componentName || 'Component'}</td>
+                                <td>${order.referenceRange || '-'}</td>
+                                <td>${order.resultValue || '-'}</td>
                                 <td>${order.status || 'Pending'}</td>
                                 <td>${formatDate(order.created_at)}</td>
                             </tr>
@@ -539,11 +522,12 @@
         }
 
         function addTest() {
-            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
+            //window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
         }
 
         function printReport() {
-            window.print();
+            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
+            //window.print();
         }
 
         function addNote() {

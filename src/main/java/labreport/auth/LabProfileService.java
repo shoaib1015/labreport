@@ -21,7 +21,7 @@ public class LabProfileService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT lab_id, lab_name, address, contact_number FROM LabProfile WHERE lab_id = ?");
+                    "SELECT lab_id, lab_name, address, contact_number FROM lab_profile WHERE lab_id = ?");
 
             stmt.setInt(1, labId);
             ResultSet rs = stmt.executeQuery();
@@ -48,7 +48,7 @@ public class LabProfileService {
 
             // Check if lab profile exists
             PreparedStatement checkStmt = conn.prepareStatement(
-                    "SELECT COUNT(*) FROM LabProfile WHERE lab_id = ?");
+                    "SELECT COUNT(*) FROM lab_profile WHERE lab_id = ?");
             checkStmt.setInt(1, labId);
             ResultSet rs = checkStmt.executeQuery();
             boolean exists = rs.next() && rs.getInt(1) > 0;
@@ -56,7 +56,7 @@ public class LabProfileService {
             if (exists) {
                 // Update existing record
                 PreparedStatement updateStmt = conn.prepareStatement(
-                        "UPDATE LabProfile SET lab_name = ?, address = ?, contact_number = ?, updated_at = ? WHERE lab_id = ?");
+                        "UPDATE lab_profile SET lab_name = ?, address = ?, contact_number = ?, updated_at = ? WHERE lab_id = ?");
 
                 updateStmt.setString(1, labName);
                 updateStmt.setString(2, address);
@@ -71,7 +71,7 @@ public class LabProfileService {
             } else {
                 // Insert new record
                 PreparedStatement insertStmt = conn.prepareStatement(
-                        "INSERT INTO LabProfile (lab_id, lab_name, address, contact_number, updated_at) VALUES (?, ?, ?, ?, ?)");
+                        "INSERT INTO lab_profile (lab_id, lab_name, address, contact_number, updated_at) VALUES (?, ?, ?, ?, ?)");
 
                 insertStmt.setInt(1, labId);
                 insertStmt.setString(2, labName);

@@ -3,6 +3,7 @@ package labreport.server;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import labreport.auth.PatientService;
+import labreport.auth.TestOrderComponentService;
 import labreport.auth.PatientService.CreatePatientRequest;
 import labreport.auth.PatientService.CreatePatientResponse;
 import labreport.logging.AppLogger;
@@ -49,6 +50,9 @@ public class PatientHandler implements HttpHandler {
             } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+/test-orders")) {
                 int patientId = extractPatientIdFromPath(path);
                 handleGetPatientTestOrders(exchange, patientId);
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/\\d+/test-entry")) {
+                int patientId = extractPatientIdFromPath(path);
+                handleSaveTestEntry(exchange, patientId);
             } else if ("PUT".equals(method) && path.matches(".*/api/patients/\\d+")) {
                 int patientId = extractId(path);
                 handleUpdatePatient(exchange, patientId);
@@ -481,6 +485,80 @@ public class PatientHandler implements HttpHandler {
             }
         }
         return -1;
+    }
+
+    private void handleSaveTestEntry(HttpExchange exchange, int patientId) throws IOException {
+        try {
+            String body = readBody(exchange.getRequestBody());
+            log.info("Save test entry request for patient_id=" + patientId + ": " + body);
+
+            // Parse top-level fields
+            String sampleCollectedAt = extractJsonString(body, "sampleCollectedAt");
+            String status = extractJsonString(body, "status");
+            String notes = extractJsonString(body, "notes");
+            String testOrderIdStr = extractJsonString(body, "testOrderId");
+
+            if (testOrderIdStr == null || testOrderIdStr.isEmpty()) {
+                sendErrorResponse(exchange, 400, "testOrderId is required");
+                return;
+            }
+
+            int testOrderId = Integer.parseInt(testOrderIdStr);
+
+            // Update test_order
+            PatientService.updateTestOrder(testOrderId, sampleCollectedAt, status, notes);
+
+            // Parse and update components array
+            int compStart = body.indexOf("\"components\"");
+            if (compStart != -1) {
+                int arrayStart = body.indexOf('[', compStart);
+                int arrayEnd = body.lastIndexOf(']');
+                if (arrayStart != -1 && arrayEnd > arrayStart) {
+                    String arrayContent = body.substring(arrayStart + 1, arrayEnd);
+                    // Split into individual objects by finding each {...}
+                    int depth = 0;
+                    int objStart = -1;
+                    for (int i = 0; i < arrayContent.length(); i++) {
+                        char c = arrayContent.charAt(i);
+                        if (c == '{') {
+                            if (depth == 0) objStart = i;
+                            depth++;
+                        } else if (c == '}') {
+                            depth--;
+                            if (depth == 0 && objStart != -1) {
+                                String obj = arrayContent.substring(objStart, i + 1);
+                                String idStr = extractJsonString(obj, "id");
+                                String resultValue = extractJsonString(obj, "resultValue");
+                                String flag = extractJsonString(obj, "flag");
+                                if (idStr != null && !idStr.isEmpty()) {
+                                    int componentId = Integer.parseInt(idStr);
+                                    TestOrderComponentService.updateComponentResult(
+                                        componentId,
+                                        resultValue != null ? resultValue : "",
+                                        flag != null ? flag : "Normal"
+                                    );
+                                }
+                                objStart = -1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            String response = "{\"success\":true,\"message\":\"Test entry saved successfully\"}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes(StandardCharsets.UTF_8));
+            }
+
+            log.info("Test entry saved successfully for patient_id=" + patientId + ", testOrderId=" + testOrderId);
+
+        } catch (Exception e) {
+            log.severe("Failed to save test entry: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorResponse(exchange, 500, "Failed to save test entry: " + e.getMessage());
+        }
     }
 }
 
