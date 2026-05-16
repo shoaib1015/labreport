@@ -561,7 +561,11 @@
                 if (patient.name) document.querySelector('input[name="name"]').value = patient.name;
                 if (patient.dob) document.querySelector('input[name="dob"]').value = patient.dob;
                 if (patient.gender) document.querySelector('select[name="gender"]').value = patient.gender;
-                if (patient.contact_phone) document.querySelector('input[name="contact_phone"]').value = patient.contact_phone;
+                if (patient.contact_phone) {
+                    // Remove leading +91 if present
+                    const phone = patient.contact_phone.replace(/^\+91/, '');
+                    document.querySelector('input[name="contact_phone"]').value = phone.trim();
+                }
                 if (patient.contact_email) document.querySelector('input[name="contact_email"]').value = patient.contact_email;
                 if (patient.address) document.querySelector('textarea[name="address"]').value = patient.address;
                 if (patient.referring_doctor_id) document.querySelector('select[name="referring_doctor_id"]').value = patient.referring_doctor_id;
@@ -588,6 +592,10 @@
 
             function displayDoctors(doctors) {
                 const doctorSelect = document.getElementById('referringDoctorSelect');
+                const option = document.createElement('option');
+                option.value = 'Self';          // the value submitted with the form
+                option.textContent = 'Self';    // the text shown in the dropdown
+                doctorSelect.appendChild(option);
 
                 if (!doctors || doctors.length === 0) {
                     return;
@@ -599,6 +607,7 @@
                     option.textContent = doctor.full_name || doctor.name || 'Unknown';
                     doctorSelect.appendChild(option);
                 });
+                //doctorSelect.appendChild(document.createElement('option')).value = 'Self'; // Add empty option at the end for better UX
             }
 
             function loadPanels() {
