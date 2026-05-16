@@ -668,7 +668,7 @@ public class PatientService {
                     "  (SELECT COUNT(*) FROM patients) AS total_patients, " +
                     "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ordered','SampleCollected','InLab')) AS active_tests, "
                     +
-                    "  (SELECT COUNT(*) FROM test_order WHERE status IN ('SampleCollected','InLab')) AS pending_results, "
+                    "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ordered','SampleCollected','InLab')) AS pending_results, "
                     +
                     "  (SELECT COUNT(*) FROM test_order WHERE status IN ('ReportReady','Delivered')) AS completed_reports;");
             ResultSet rs = stmt.executeQuery();
@@ -865,6 +865,16 @@ public class PatientService {
         } catch (SQLException e) {
             log.severe("Failed to search patients: " + e.getMessage());
             return "{\"patients\":[]}";
+        }
+    }
+
+    public static void deletePatient(int patientId) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM patients WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, patientId);
+            int rows = stmt.executeUpdate();
+            log.info("Deleted patient id=" + patientId + ", rows affected: " + rows);
         }
     }
 
