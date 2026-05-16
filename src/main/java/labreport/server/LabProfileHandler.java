@@ -100,14 +100,19 @@ public class LabProfileHandler implements HttpHandler {
     }
 
     private String toJson(Map<String, String> map) {
-        StringBuilder sb = new StringBuilder("{");
-        boolean first = true;
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            if (!first) sb.append(",");
-            sb.append("\"").append(entry.getKey()).append("\":\"")
-                    .append(escapeJson(entry.getValue())).append("\"");
-            first = false;
-        }
+    StringBuilder sb = new StringBuilder("{");
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+        String key = entry.getKey();
+        String value = entry.getValue();
+        // Escape quotes and control characters
+        value = value.replace("\\", "\\\\")
+                     .replace("\"", "\\\"")
+                     .replace("\n", "\\n")
+                     .replace("\r", "\\r")
+                     .replace("\t", "\\t");
+        sb.append("\"").append(key).append("\":\"").append(value).append("\",");
+    }
+        if (sb.length() > 1) sb.setLength(sb.length() - 1); // remove last comma
         sb.append("}");
         return sb.toString();
     }

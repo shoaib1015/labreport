@@ -8,5 +8,5 @@ start "LabReportServer" javaw -jar "%JAR%"
 
 timeout /t 2 > nul
 
-start "" chrome --app=http://localhost:8080/app.html
+start "" msedge --app=http://localhost:8080/app.html
 exit

@@ -84,7 +84,7 @@ public class SchemaInitializer {
                         "license_number TEXT," +
                         "accreditation TEXT," +
                         "status TEXT DEFAULT 'Active'" +
-                        "updated_at TEXT" +
+                        "updated_at TEXT DEFAULT (datetime('now'))" +
                         ")" },
                 { "categories", "CREATE TABLE IF NOT EXISTS categories (" +
                         "category_id INTEGER PRIMARY KEY AUTOINCREMENT," +

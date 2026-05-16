@@ -59,6 +59,9 @@ public class PatientHandler implements HttpHandler {
             } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+")) {
                 int patientId = extractId(path);
                 handleGetPatient(exchange, patientId);
+            }else if ("DELETE".equals(method) && path.matches(".*/api/patients/\\d+")) {
+                int patientId = extractId(path);
+                handleDeletePatient(exchange, patientId);
             } else {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, -1);
             }
@@ -558,6 +561,22 @@ public class PatientHandler implements HttpHandler {
             log.severe("Failed to save test entry: " + e.getMessage());
             e.printStackTrace();
             sendErrorResponse(exchange, 500, "Failed to save test entry: " + e.getMessage());
+        }
+    }
+
+    private void handleDeletePatient(HttpExchange exchange, int patientId) throws IOException {
+        try {
+            PatientService.deletePatient(patientId);
+            String response = "{\"success\":true,\"message\":\"Patient deleted successfully\"}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes(StandardCharsets.UTF_8));
+            }
+            log.info("Patient deleted successfully: id=" + patientId);
+        } catch (Exception e) {
+            log.severe("Failed to delete patient: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to delete patient: " + e.getMessage());
         }
     }
 }
