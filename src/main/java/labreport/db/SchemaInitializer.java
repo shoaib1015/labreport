@@ -59,7 +59,7 @@ public class SchemaInitializer {
                         "status TEXT DEFAULT 'Active'," +
                         "created_at TEXT DEFAULT (datetime('now'))," +
                         "updated_at TEXT," +
-                        "panel_id INTEGER NOT NULL DEFAULT 0" +
+                        "panel_id INTEGER NOT NULL DEFAULT 0," +
                         "FOREIGN KEY(panel_id) REFERENCES panels(panel_id)" +
                         ")" },
                 { "reports", "CREATE TABLE IF NOT EXISTS reports (" +
@@ -84,7 +84,7 @@ public class SchemaInitializer {
                         "license_number TEXT," +
                         "accreditation TEXT," +
                         "status TEXT DEFAULT 'Active'" +
-                        "updated_at TEXT DEFAULT" +
+                        "updated_at TEXT" +
                         ")" },
                 { "categories", "CREATE TABLE IF NOT EXISTS categories (" +
                         "category_id INTEGER PRIMARY KEY AUTOINCREMENT," +

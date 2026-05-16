@@ -699,7 +699,7 @@ public class PatientService {
         StringBuilder json = new StringBuilder();
         json.append("{\"patients\":[");
 
-        String sql = "SELECT id, name, dob, gender, created_at FROM patients ORDER BY created_at DESC";
+        String sql = "SELECT p.id, p.name, p.dob, p.gender, p.created_at, p.referring_doctor_id, d.full_name AS referring_doctor_name FROM patients p LEFT JOIN referring_doctors d ON p.referring_doctor_id = d.doctor_id ORDER BY p.created_at DESC";
 
         try {
             Connection conn = DatabaseManager.getConnection();
@@ -718,13 +718,17 @@ public class PatientService {
                 String dob = rs.getString("dob");
                 String gender = rs.getString("gender");
                 String createdAt = rs.getString("created_at");
-
+                int referringDoctorId = rs.getInt("referring_doctor_id");
+                String referringDoctorName = rs.getString("referring_doctor_name");
+                log.info("referringDoctorName"+referringDoctorName);
                 json.append("{\"id\":").append(id)
                         .append(",\"name\":\"").append(escapeJson(name)).append("\"")
                         .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
                         .append(",\"gender\":").append(gender != null ? ("\"" + escapeJson(gender) + "\"") : "null")
                         .append(",\"created_at\":")
                         .append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
+                        .append(",\"referring_doctor_id\":").append(referringDoctorId)
+                        .append(",\"referring_doctor_name\":").append(referringDoctorName != null ? ("\"" + escapeJson(referringDoctorName) + "\"") : "null")
                         .append("}");
             }
 

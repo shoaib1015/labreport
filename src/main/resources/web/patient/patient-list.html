@@ -258,11 +258,9 @@
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                 </select>
-                <!-- <select id="filterStatus">
-                    <option value="">All</option>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                </select> -->
+                <select name="referring_doctor_id" id="referringDoctorSelect">
+                    <option value="">Select Doctor</option>
+                </select>
                 <button onclick="applyFilters()">Search</button>
             </div>
 
@@ -275,6 +273,7 @@
                         <th>Age</th>
                         <th>Gender</th>
                         <th>Last Visit</th>
+                        <th>Referred By</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -295,6 +294,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
     <script>
         const itemsPerPage = 6;
         let currentPage = 1;
@@ -303,6 +304,7 @@
         let totalPages = 1;
 
         document.addEventListener('DOMContentLoaded', function() {
+            loadDoctors();
             loadAllPatients();
         });
 
@@ -337,7 +339,7 @@
             const startIndex = (page - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
             const pagePatients = filteredPatients.slice(startIndex, endIndex);
-
+            console.log('Displaying page:', page, 'Patients:', filteredPatients);
             const tbody = document.querySelector('#patientsTable');
             if (pagePatients.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="no-data">No patients found</td></tr>';
@@ -349,6 +351,7 @@
                         <td>${calculateAge(patient.dob)}</td>
                         <td>${patient.gender || '-'}</td>
                         <td>${patient.created_at ? formatDate(patient.created_at) : '-'}</td>
+                        <td>${patient.referring_doctor_name || '-'}</td>
                         <td>
                             <button class="action-button" onclick="viewPatientDetails(${patient.id})">View Details</button>
                         </td>
@@ -402,6 +405,7 @@
             const name = document.getElementById('filterName').value.toLowerCase();
             const dob = document.getElementById('filterDOB').value;
             const gender = document.getElementById('filterGender').value;
+            const referringDoctorId = document.getElementById('referringDoctorSelect').value;
 
             filteredPatients = allPatients.filter(patient => {
                 const matchName = !name || 
@@ -409,8 +413,9 @@
                     patient.id.toString().includes(name);
                 const matchDOB = !dob || (patient.dob && patient.dob.startsWith(dob));
                 const matchGender = !gender || patient.gender === gender;
+                const matchReferringDoctor = !referringDoctorId || patient.referring_doctor_id === parseInt(referringDoctorId);
 
-                return matchName && matchDOB && matchGender;
+                return matchName && matchDOB && matchGender && matchReferringDoctor;
             });
 
             totalPages = Math.ceil(filteredPatients.length / itemsPerPage) || 1;
@@ -428,7 +433,20 @@
         }
 
         function printPatientList() {
-            window.print();
+            //Write code to download the patient list as PDF or open print dialog
+            const worksheet = XLSX.utils.json_to_sheet(filteredPatients.map(patient => ({
+                Patient_ID: patient.id,
+                Patient_Name: patient.name,
+                Date_Of_Birth: formatDate(patient.dob),
+                Age: calculateAge(patient.dob),
+                Gender: patient.gender,
+                Created_On: formatDate(patient.created_at),
+                Referred_By: patient.referring_doctor_name || '-'
+            })));
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
+            XLSX.writeFile(workbook, 'Patient_List.xlsx');
+            //window.print();
         }
 
         function calculateAge(dob) {
@@ -448,6 +466,38 @@
             const date = new Date(dateStr);
             return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
         }
+
+        function loadDoctors() {
+                fetch('/api/doctors', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(doctors => {
+                        displayDoctors(doctors);
+                    })
+                    .catch(error => {
+                        console.error('Error loading doctors:', error);
+                    });
+            }
+
+            function displayDoctors(doctors) {
+                const doctorSelect = document.getElementById('referringDoctorSelect');
+
+                if (!doctors || doctors.length === 0) {
+                    return;
+                }
+
+                doctors.forEach(doctor => {
+                    const option = document.createElement('option');
+                    option.value = doctor.id;
+                    option.textContent = doctor.full_name || doctor.name || 'Unknown';
+                    doctorSelect.appendChild(option);
+                });
+            }
     </script>
 </body>
 </html>
