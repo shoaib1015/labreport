@@ -462,7 +462,12 @@
         }
 
         function printReport() {
-            window.print();
+            const patientId = document.getElementById('patientSelect')?.value;
+            if (!patientId || patientId === 'Select patient') {
+                alert('Please select a patient before printing the report.');
+                return;
+            }
+            window.open(`/report/print.html?patientId=${encodeURIComponent(patientId)}`, '_blank');
         }
 
         function calculateAge(dob) {

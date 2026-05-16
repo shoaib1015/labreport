@@ -802,7 +802,7 @@ public class PatientService {
         StringBuilder json = new StringBuilder();
         json.append("{\"testOrders\":[");
 
-        String sql = "SELECT id, patient_id, priority, status, created_at FROM test_order WHERE patient_id = ? ORDER BY created_at DESC";
+        String sql = "SELECT id, patient_id, priority, status, created_at, panel_id, panel_name, sample_collected_at FROM test_order WHERE patient_id = ? ORDER BY created_at DESC";
 
         try {
             Connection conn = DatabaseManager.getConnection();
@@ -821,12 +821,18 @@ public class PatientService {
                 String priority = rs.getString("priority");
                 String status = rs.getString("status");
                 String createdAt = rs.getString("created_at");
+                int panelId = rs.getInt("panel_id");
+                String panelName = rs.getString("panel_name");
+                String sampleCollectedAt = rs.getString("sample_collected_at");
 
                 json.append("{\"id\":").append(id)
-                    .append(",\"panelName\":\"Test Panel\"")
+                    .append(",\"patientId\":").append(patientId)
+                    .append(",\"panelId\":").append(panelId)
+                    .append(",\"panelName\":").append(panelName != null ? ("\"" + escapeJson(panelName) + "\"") : "null")
                     .append(",\"priority\":").append(priority != null ? ("\"" + escapeJson(priority) + "\"") : "null")
                     .append(",\"status\":").append(status != null ? ("\"" + escapeJson(status) + "\"") : "\"Pending\"")
                     .append(",\"created_at\":").append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
+                    .append(",\"sample_collected_at\":").append(sampleCollectedAt != null ? ("\"" + escapeJson(sampleCollectedAt) + "\"") : "null")
                     .append("}");
             }
 
