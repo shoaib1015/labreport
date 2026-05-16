@@ -22,7 +22,7 @@ public class CategoryService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT category_id, category_name, description, status FROM Categories ORDER BY category_name");
+                    "SELECT category_id, category_name, description, status FROM categories ORDER BY category_name");
 
             ResultSet rs = stmt.executeQuery();
 
@@ -50,7 +50,7 @@ public class CategoryService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT category_id, category_name, description, status FROM Categories WHERE category_id = ?");
+                    "SELECT category_id, category_name, description, status FROM categories WHERE category_id = ?");
 
             stmt.setInt(1, categoryId);
             ResultSet rs = stmt.executeQuery();
@@ -76,7 +76,7 @@ public class CategoryService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO Categories (category_name, description, status, created_at) VALUES (?, ?, ?, ?)");
+                    "INSERT INTO categories (category_name, description, status, created_at) VALUES (?, ?, ?, ?)");
 
             stmt.setString(1, categoryName);
             stmt.setString(2, description);
@@ -98,7 +98,7 @@ public class CategoryService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE Categories SET category_name = ?, description = ?, status = ? WHERE category_id = ?");
+                    "UPDATE categories SET category_name = ?, description = ?, status = ? WHERE category_id = ?");
 
             stmt.setString(1, categoryName);
             stmt.setString(2, description);
@@ -119,7 +119,7 @@ public class CategoryService {
         try {
             Connection conn = DatabaseManager.getConnection();
 
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM Categories WHERE category_id = ?");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM categories WHERE category_id = ?");
             stmt.setInt(1, categoryId);
 
             int rowsAffected = stmt.executeUpdate();
