@@ -115,6 +115,10 @@ public class Main {
             patientContext.getFilters().add(new CorsFilter());
             patientContext.getFilters().add(new AuthFilter());
 
+            HttpContext commissionContext = server.createContext("/api/commissions", new PanelHandler());
+            commissionContext.getFilters().add(new CorsFilter());
+            commissionContext.getFilters().add(new AuthFilter());
+
             server.start();
 
             log.info("*** SERVER STARTED AT http://localhost:" + port + " ***");
