@@ -6,6 +6,7 @@ import labreport.logging.AppLogger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -238,5 +239,28 @@ public class PanelService {
             log.severe("Failed to fetch categories: " + e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    public static Double getCommissions(int doctorId) {
+        // Implementation for fetching commissions
+        Connection conn = DatabaseManager.getConnection();
+        
+        String sql = "SELECT commission_percent " +
+                     "FROM referring_doctors " +
+                     "WHERE doctor_id = ?";
+        log.info("Executing SQL to fetch commissions for doctor_id=" + doctorId + ": " + sql);
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, doctorId);
+            // stmt.setInt(2, panelId); // Remove this line if not needed
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("commission_percent");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0.0;
     }
 }

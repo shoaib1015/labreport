@@ -286,7 +286,7 @@ public class PanelHandler implements HttpHandler {
     private void handleGetCommission(HttpExchange exchange, int doctorId) throws IOException {
         try {
             log.info("Fetching commission for doctor ID: " + doctorId);
-            Double commission_percent = PatientService.getCommissions(doctorId);
+            Double commission_percent = PanelService.getCommissions(doctorId);
 
             String response = "{\"commission_percent\": " + commission_percent + "}";
             exchange.getResponseHeaders().set("Content-Type", "application/json");
