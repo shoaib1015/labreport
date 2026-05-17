@@ -44,6 +44,8 @@ public class SchemaInitializer {
                         "updated_at TEXT," +
                         "panel_id INTEGER NOT NULL," +
                         "panel_name TEXT NOT NULL," +
+                        "commission_percent REAL NOT NULL CHECK (commission_percent >= 0)," +
+                        "commission_amount REAL NOT NULL CHECK (commission_amount >= 0)," +
                         "FOREIGN KEY(patient_id) REFERENCES patients(id)," +
                         "FOREIGN KEY(panel_id) REFERENCES panels(panel_id)" +
                         ")" },
@@ -107,6 +109,7 @@ public class SchemaInitializer {
                         "status	TEXT DEFAULT 'Active'," +
                         "experience_years NUMERIC," +
                         "consultation_hours	TEXT," +
+                        "commission_percent REAL NOT NULL CHECK (commission_percent >= 0), " +
                         "remarks TEXT," +
                         "created_at	TEXT" +
                         ")" },
@@ -134,7 +137,8 @@ public class SchemaInitializer {
                         "updated_at TEXT," +
                         "FOREIGN KEY(test_order_id) REFERENCES test_order(id)," +
                         "FOREIGN KEY(component_id) REFERENCES components(component_id)" +
-                        ")" }
+                        ")" 
+                }
         };
 
         for (String[] table : tables) {

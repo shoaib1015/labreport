@@ -26,6 +26,7 @@ public class PanelHandler implements HttpHandler {
         try {
             String method = exchange.getRequestMethod().toUpperCase();
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
                log.info("Received request: " + method + " " + path); 
             if ("GET".equals(method) && path.endsWith("/api/panels")) {
                 handleGetAllPanels(exchange);
@@ -48,7 +49,11 @@ public class PanelHandler implements HttpHandler {
             } else if ("DELETE".equals(method) && path.matches(".*/api/panels/\\d+")) {
                 int panelId = extractId(path);
                 handleDeletePanel(exchange, panelId);
-            } else {
+            } else if ("GET".equals(method) && path.matches(".*/api/commissions/\\d+")) {
+                int doctorId = extractId(path);
+                handleGetCommission(exchange, doctorId);
+            }
+            else {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, -1);
             }
 
@@ -270,6 +275,32 @@ public class PanelHandler implements HttpHandler {
             log.severe("Failed to get components for panel ID: " + e.getMessage());
             e.printStackTrace();
             String errorResponse = "{\"error\": \"Failed to fetch components\", \"message\": \"" + escapeJson(e.getMessage()) + "\"}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(500, errorResponse.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(errorResponse.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    private void handleGetCommission(HttpExchange exchange, int doctorId) throws IOException {
+        try {
+            log.info("Fetching commission for doctor ID: " + doctorId);
+            Double commission_percent = PatientService.getCommissions(doctorId);
+
+            String response = "{\"commission_percent\": " + commission_percent + "}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes(StandardCharsets.UTF_8));
+            }
+
+            log.info("Commissions fetched successfully, count: " + commission_percent);
+
+        } catch (Exception e) {
+            log.severe("Failed to get commissions: " + e.getMessage());
+            String errorResponse = "{\"error\": \"Failed to fetch commissions\", \"message\": \"" + escapeJson(e.getMessage()) + "\"}";
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(500, errorResponse.getBytes(StandardCharsets.UTF_8).length);
             try (OutputStream os = exchange.getResponseBody()) {
