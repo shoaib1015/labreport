@@ -187,27 +187,11 @@
 
         const categoryMap = new Map();
         for (const order of testOrders) {
-          const panelId = order.panelId || order.panel_id || 0;
-          let panel = { panel_name: order.panelName || 'Unknown Panel', category_name: 'Uncategorized' };
-          let components = [];
-          if (panelId && panelId > 0) {
-            try {
-              panel = await fetchJson(`/api/panels/${encodeURIComponent(panelId)}`);
-            } catch (err) {
-              panel = { panel_name: order.panelName || 'Unknown Panel', category_name: 'Uncategorized' };
-            }
-            try {
-              components = await fetchJson(`/api/components/panel/${encodeURIComponent(panelId)}`);
-            } catch (err) {
-              components = [];
-            }
-          }
-
-          const categoryKey = panel.category_name || 'Uncategorized';
+          const categoryKey = order.categoryName || 'Uncategorized';
           if (!categoryMap.has(categoryKey)) {
             categoryMap.set(categoryKey, { categoryName: categoryKey, entries: [] });
           }
-          categoryMap.get(categoryKey).entries.push({ order, panel, components });
+          categoryMap.get(categoryKey).entries.push(order);
         }
 
         const categories = Array.from(categoryMap.values());
@@ -217,20 +201,21 @@
         }
 
         reportContent.innerHTML = categories.map(group => {
-          const rows = group.entries.map(entry => {
-            const panelTitle = escapeHtml(entry.panel.panel_name || entry.order.panelName || 'Panel');
-            const panelInfo = `Priority: ${escapeHtml(entry.order.priority || '-')}` + (entry.order.sample_collected_at ? ` • Sample: ${escapeHtml(formatDate(entry.order.sample_collected_at))}` : '');
-            const componentRows = entry.components.length > 0
-              ? entry.components.map(comp => `
+          const rows = group.entries.map(order => {
+            const panelTitle = escapeHtml(order.panelName || 'Panel');
+            const panelInfo = `Status: ${escapeHtml(order.status || '-')}` + (order.sampleCollectedAt ? ` • Sample: ${escapeHtml(formatDate(order.sampleCollectedAt))}` : '');
+            const components = order.components || [];
+            const componentRows = components.length > 0
+              ? components.map(comp => `
                     <tr>
                       <td class="component-name">${escapeHtml(comp.component_name || '-')}</td>
-                      <td>${escapeHtml(comp.value || comp.remarks || '-')}</td>
-                      <td class="normal-range">${escapeHtml(comp.normal_range || '-')}</td>
+                      <td>${escapeHtml(comp.result_value || '-')}</td>
+                      <td class="normal-range">${escapeHtml(comp.reference_range || '-')}</td>
                     </tr>
                 `).join('')
               : `
                     <tr>
-                      <td colspan="3" class="muted">No tests available for this panel.</td>
+                      <td colspan="3" class="muted">No component results available for this panel.</td>
                     </tr>
                 `;
             return `
