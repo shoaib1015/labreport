@@ -460,13 +460,31 @@
                             <input type="text" id="orderNotes" placeholder="Optional notes for test order">
                         </div>
 
-                        <div class="form-group" style="grid-column: 1 / -1;">
+                        <!-- <div class="form-group" style="grid-column: 1 / -1;">
                             <label>Select Tests/Panels</label>
                             <div class="panels-grid" id="panelList">
                                 <div style="text-align: center; color: #999; grid-column: 1 / -1;">Loading panels...
                                 </div>
                             </div>
+                        </div> -->
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Select Tests/Panels & Commission (%)</label>
+                            <div style="display: flex; gap: 20px; align-items: center;">
+                                
+                                <!-- Dropdown for panels -->
+                                <select name="order_panels" id="panelDropdown" class="form-control" style="flex: 2;">
+                                <option value="">Select a test panel</option>
+                                <!-- Options will be appended dynamically -->
+                                </select>
+                                
+                                <!-- Commission input field -->
+                                <input type="number" id="commissionPercent" name="commission_percent" 
+                                    class="form-control" placeholder="%" min="0" max="100" step="0.01" 
+                                    style="flex: 1; max-width: 120px;">
+                            </div>
+                            <small style="color: #666;">Default commission auto‑fills from doctor’s rate card, editable if needed.</small>
                         </div>
+
                     </div>
                 </div>
 
@@ -629,11 +647,11 @@
             }
 
             function displayPanels(panels) {
-                const panelList = document.getElementById('panelList');
-                panelList.innerHTML = '';
+                const dropdown = document.getElementById('panelDropdown');
+                dropdown.innerHTML = '<option value="">Select a test panel</option>';
 
                 if (!panels || panels.length === 0) {
-                    panelList.innerHTML = '<div style="color: #999; grid-column: 1 / -1;">No panels available</div>';
+                    dropdown.innerHTML = '<option value="">No panels available</option>';
                     return;
                 }
 
@@ -641,14 +659,14 @@
                     const panelId = panel.panel_id || panel.id;
                     const panelName = panel.panel_name || 'Unknown';
 
-                    const label = document.createElement('label');
-                    label.innerHTML = `
-            <input type="checkbox" name="order_panels" value="${panelId}">
-            <span>${panelName}</span>
-        `;
-                    panelList.appendChild(label);
+                    const option = document.createElement('option');
+                    option.value = panelId;
+                    option.textContent = panelName;
+                    dropdown.appendChild(option);
                 });
             }
+
+
 
             document.getElementById('patientForm').addEventListener('submit', function (event) {
                 event.preventDefault();
@@ -888,6 +906,43 @@
                     });
                 }
             }
+
+            // Attach event listener after rendering dropdown
+            document.addEventListener('DOMContentLoaded', () => {
+                const doctorDropdown = document.getElementById('referringDoctorSelect');
+                const commissionInput = document.getElementById('commissionPercent');
+                
+                if (doctorDropdown) {
+
+                    doctorDropdown.addEventListener('change', async (e) => {
+                    const doctorId = e.target.value;
+                    
+                    if (!doctorId) {
+                        commissionInput.value = '';
+                        return;
+                    }
+                    
+                    try {
+                        // Call backend API to fetch commission
+                        const response = await fetch(`/api/commissions/${doctorId}`, {
+                            method: 'GET',
+                            credentials: 'include',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        const data = await response.json();
+
+                        // Auto-fill commission field
+                        commissionInput.value = data.commission_percent || '';
+                    } catch (error) {
+                        console.error('Error fetching commission:', error);
+                        commissionInput.value = '';
+                    }
+                    });
+                }
+            });
+
         </script>
 
 </body>
