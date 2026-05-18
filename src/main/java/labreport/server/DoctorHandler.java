@@ -98,13 +98,14 @@ public class DoctorHandler implements HttpHandler {
             String contactNumber = params.get("contact_number");
             String licenseNumber = params.get("license_number");
             String status = params.get("status");
+            double commissionPercent = parseDouble(params.get("commission_percent"), 0.0);
 
             if (fullName == null || fullName.trim().isEmpty()) {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, -1);
                 return;
             }
 
-            boolean success = ReferringDoctorService.addDoctor(fullName, contactNumber, licenseNumber, status);
+            boolean success = ReferringDoctorService.addDoctor(fullName, contactNumber, licenseNumber, status, commissionPercent);
 
             if (success) {
                 String response = "{\"status\": \"success\", \"message\": \"Doctor added successfully\"}";
@@ -135,13 +136,14 @@ public class DoctorHandler implements HttpHandler {
             String contactNumber = params.get("contact_number");
             String licenseNumber = params.get("license_number");
             String status = params.get("status");
+            double commissionPercent = parseDouble(params.get("commission_percent"), 0.0);
 
             if (fullName == null || fullName.trim().isEmpty()) {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, -1);
                 return;
             }
 
-            boolean success = ReferringDoctorService.updateDoctor(doctorId, fullName, contactNumber, licenseNumber, status);
+            boolean success = ReferringDoctorService.updateDoctor(doctorId, fullName, contactNumber, licenseNumber, status, commissionPercent);
 
             if (success) {
                 String response = "{\"status\": \"success\", \"message\": \"Doctor updated successfully\"}";
@@ -195,6 +197,17 @@ public class DoctorHandler implements HttpHandler {
     private String readBody(InputStream is) {
         Scanner s = new Scanner(is, StandardCharsets.UTF_8.name()).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
+    }
+
+    private double parseDouble(String value, double defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     private String listToJson(List<Map<String, String>> list) {
