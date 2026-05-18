@@ -526,8 +526,11 @@
         }
 
         function printReport() {
-            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
-            //window.print();
+            if (!currentPatientId) {
+                alert('Please select a patient before printing the report.');
+                return;
+            }
+            window.open(`/report/print.html?patientId=${encodeURIComponent(currentPatientId)}`, '_blank');
         }
 
         function addNote() {

@@ -22,7 +22,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM referring_doctors ORDER BY full_name");
+                    "SELECT doctor_id, full_name, contact_number, license_number, status, commission_percent FROM referring_doctors ORDER BY full_name");
 
             ResultSet rs = stmt.executeQuery();
 
@@ -34,6 +34,7 @@ public class ReferringDoctorService {
                 doctor.put("contact_number", rs.getString("contact_number"));
                 doctor.put("license_number", rs.getString("license_number"));
                 doctor.put("status", rs.getString("status"));
+                doctor.put("commission_percent", String.valueOf(rs.getDouble("commission_percent")));
                 doctors.add(doctor);
             }
 
@@ -51,7 +52,7 @@ public class ReferringDoctorService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT doctor_id, full_name, contact_number, license_number, status FROM referring_doctors WHERE doctor_id = ?");
+                    "SELECT doctor_id, full_name, contact_number, license_number, status, commission_percent FROM referring_doctors WHERE doctor_id = ?");
 
             stmt.setInt(1, doctorId);
             ResultSet rs = stmt.executeQuery();
@@ -63,6 +64,7 @@ public class ReferringDoctorService {
                 doctor.put("contact_number", rs.getString("contact_number"));
                 doctor.put("license_number", rs.getString("license_number"));
                 doctor.put("status", rs.getString("status"));
+                doctor.put("commission_percent", String.valueOf(rs.getDouble("commission_percent")));
             }
 
             return doctor;
@@ -73,18 +75,19 @@ public class ReferringDoctorService {
         }
     }
 
-    public static boolean addDoctor(String fullName, String contactNumber, String licenseNumber, String status) {
+    public static boolean addDoctor(String fullName, String contactNumber, String licenseNumber, String status, double commissionPercent) {
         try {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO referring_doctors (full_name, contact_number, license_number, status, created_at) VALUES (?, ?, ?, ?, ?)");
+                    "INSERT INTO referring_doctors (full_name, contact_number, license_number, status, commission_percent, created_at) VALUES (?, ?, ?, ?, ?, ?)");
 
             stmt.setString(1, fullName);
             stmt.setString(2, contactNumber);
             stmt.setString(3, licenseNumber);
             stmt.setString(4, status != null && !status.isEmpty() ? status : "Active");
-            stmt.setString(5, LocalDateTime.now().toString());
+            stmt.setDouble(5, commissionPercent);
+            stmt.setString(6, LocalDateTime.now().toString());
 
             int rowsAffected = stmt.executeUpdate();
             log.info("Doctor added successfully: " + fullName + ", rows affected: " + rowsAffected);
@@ -96,18 +99,19 @@ public class ReferringDoctorService {
         }
     }
 
-    public static boolean updateDoctor(int doctorId, String fullName, String contactNumber, String licenseNumber, String status) {
+    public static boolean updateDoctor(int doctorId, String fullName, String contactNumber, String licenseNumber, String status, double commissionPercent) {
         try {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE referring_doctors SET full_name = ?, contact_number = ?, license_number = ?, status = ? WHERE doctor_id = ?");
+                    "UPDATE referring_doctors SET full_name = ?, contact_number = ?, license_number = ?, status = ?, commission_percent = ? WHERE doctor_id = ?");
 
             stmt.setString(1, fullName);
             stmt.setString(2, contactNumber);
             stmt.setString(3, licenseNumber);
             stmt.setString(4, status != null && !status.isEmpty() ? status : "Active");
-            stmt.setInt(5, doctorId);
+            stmt.setDouble(5, commissionPercent);
+            stmt.setInt(6, doctorId);
 
             int rowsAffected = stmt.executeUpdate();
             log.info("Doctor updated successfully: id=" + doctorId + ", rows affected: " + rowsAffected);

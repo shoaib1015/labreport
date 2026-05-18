@@ -20,18 +20,24 @@
     <iframe id="reportFrame" src="/report-preview.html"></iframe>
 
     <script>
+        const params = new URLSearchParams(window.location.search);
+        const patientId = params.get('patientId');
+        const reportFrame = document.getElementById('reportFrame');
+        if (patientId) {
+            reportFrame.src = '/report-preview.html?patientId=' + encodeURIComponent(patientId);
+        }
+
         function doPrint() {
-            var frame = document.getElementById('reportFrame');
             try {
-                frame.contentWindow.focus();
-                frame.contentWindow.print();
+                reportFrame.contentWindow.focus();
+                reportFrame.contentWindow.print();
             } catch (e) {
                 window.print();
             }
         }
 
         function reloadReport() {
-            document.getElementById('reportFrame').src = '/report-preview.html';
+            reportFrame.src = '/report-preview.html' + (patientId ? '?patientId=' + encodeURIComponent(patientId) : '');
         }
 
         window.addEventListener('load', function () {
