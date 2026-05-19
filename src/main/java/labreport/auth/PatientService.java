@@ -756,7 +756,20 @@ public class PatientService {
         StringBuilder json = new StringBuilder();
         json.append("{\"patients\":[");
 
-        String sql = "SELECT p.id, p.name, p.dob, p.gender, p.created_at, p.referring_doctor_id, d.full_name AS referring_doctor_name FROM patients p LEFT JOIN referring_doctors d ON p.referring_doctor_id = d.doctor_id ORDER BY p.created_at DESC";
+        String sql = "SELECT p.id,p.name,p.dob,p.gender,p.created_at,p.referring_doctor_id," +
+                        "d.full_name AS referring_doctor_name,t.id AS order_id, "+
+                        "t.panel_name,t.status,t.created_at AS order_created_at,"+
+                        "t.commission_percent,t.commission_amount,pnl.price AS panel_price "+
+                    "FROM patients p "+
+                    "LEFT JOIN referring_doctors d "+ 
+                    "ON p.referring_doctor_id = d.doctor_id "+
+                    "LEFT JOIN test_order t "+
+                        "ON p.id = t.patient_id "+
+                    "LEFT JOIN panels pnl "+
+                        "ON t.panel_id = pnl.panel_id "+
+                    "ORDER BY p.created_at DESC, t.created_at DESC";
+        
+        log.info(sql);
 
         try {
             Connection conn = DatabaseManager.getConnection();
@@ -778,6 +791,9 @@ public class PatientService {
                 String createdAt = rs.getString("created_at");
                 int referringDoctorId = rs.getInt("referring_doctor_id");
                 String referringDoctorName = rs.getString("referring_doctor_name");
+                Double test_price = rs.getDouble("panel_price");
+                String commission_percent = rs.getString("commission_percent");
+                String commission_amount = rs.getString("commission_amount");
                 log.info("referringDoctorName"+referringDoctorName);
                 json.append("{")
                         .append("\"id\":\"").append(id).append("\"")
@@ -788,6 +804,9 @@ public class PatientService {
                         .append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
                         .append(",\"referring_doctor_id\":").append(referringDoctorId)
                         .append(",\"referring_doctor_name\":").append(referringDoctorName != null ? ("\"" + escapeJson(referringDoctorName) + "\"") : "null")
+                        .append(",\"test_price\":").append(test_price != null ? test_price : 0)
+                        .append(",\"commission_percent\":").append(commission_percent != null ? ("\"" + escapeJson(commission_percent) + "\"") : "null")
+                        .append(",\"commission_amount\":").append(commission_amount != null ? ("\"" + escapeJson(commission_amount) + "\"") : "null")
                         .append("}");
             }
 

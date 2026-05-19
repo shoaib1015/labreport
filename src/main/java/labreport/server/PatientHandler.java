@@ -37,7 +37,6 @@ public class PatientHandler implements HttpHandler {
                 handleGetPatientDashboardStats(exchange);
             } else if("GET".equals(method) && path.equals("/api/patients/all")) {
                 // Handle all patients request
-                log.info("Received request to fetch all patients");
                 handleGetAllPatients(exchange);
             } else if ("GET".equals(method) && path.equals("/api/patients")) {
                 handleSearchPatients(exchange);

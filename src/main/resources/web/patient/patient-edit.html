@@ -468,21 +468,41 @@
                             </div>
                         </div> -->
                         <div class="form-group" style="grid-column: 1 / -1;">
-                            <label>Select Tests/Panels & Commission (%)</label>
-                            <div style="display: flex; gap: 20px; align-items: center;">
+                            <label>Add Tests/Panels</label>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
                                 
                                 <!-- Dropdown for panels -->
-                                <select name="order_panels" id="panelDropdown" class="form-control" style="flex: 2;">
+                                <select id="panelDropdown" class="form-control" style="flex: 2;">
                                 <option value="">Select a test panel</option>
                                 <!-- Options will be appended dynamically -->
                                 </select>
                                 
                                 <!-- Commission input field -->
-                                <input type="number" id="commissionPercent" name="commission_percent" 
-                                    class="form-control" placeholder="%" min="0" max="100" step="0.01" 
+                                <input type="number" id="commissionPercent" 
+                                    class="form-control" placeholder="Commission %" min="0" max="100" step="0.01" 
                                     style="flex: 1; max-width: 120px;">
+                                
+                                <!-- Add button -->
+                                <button type="button" id="addTestBtn" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                    Add Test
+                                </button>
                             </div>
-                            <small style="color: #666;">Default commission auto‑fills from doctor’s rate card, editable if needed.</small>
+                            <small style="color: #666;">Select a panel, optionally set commission %, then click "Add Test" to add it to the list below.</small>
+
+                            <!-- List of added tests -->
+                            <div id="addedTestsList" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border: 1px solid #e8f0f8; border-radius: 4px; display: none;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                    <thead>
+                                        <tr style="background-color: #e8f0f8; border-bottom: 1px solid #ddd;">
+                                            <th style="padding: 8px; text-align: left; font-weight: 600;">Test Panel</th>
+                                            <th style="padding: 8px; text-align: center; font-weight: 600; width: 120px;">Commission %</th>
+                                            <th style="padding: 8px; text-align: center; font-weight: 600; width: 60px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="testsTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                     </div>
@@ -531,6 +551,8 @@
         <script>
             let currentUserId = 1; // Default user ID - should be from session
             let currentPatientId = null; // Will be set if editing
+            let panelsMap = {}; // Map of panel ID to panel name
+            let addedTests = []; // Array of added test orders
 
             document.addEventListener('DOMContentLoaded', function () {
                 // Check if editing existing patient
@@ -658,6 +680,9 @@
                 panels.forEach(panel => {
                     const panelId = panel.panel_id || panel.id;
                     const panelName = panel.panel_name || 'Unknown';
+                    
+                    // Store in map for later reference
+                    panelsMap[panelId] = panelName;
 
                     const option = document.createElement('option');
                     option.value = panelId;
@@ -672,6 +697,69 @@
                 event.preventDefault();
                 submitPatient();
             });
+
+            // Add Test button event listener
+            function addTestOrder() {
+                const dropdown = document.getElementById('panelDropdown');
+                const commissionInput = document.getElementById('commissionPercent');
+                const panelId = dropdown.value;
+
+                if (!panelId) {
+                    alert('Please select a test panel');
+                    return;
+                }
+
+                // Check if panel already added
+                if (addedTests.some(t => t.panelId === panelId)) {
+                    alert('This panel is already added. Please remove it first to add again.');
+                    return;
+                }
+
+                const panelName = panelsMap[panelId] || 'Unknown';
+                const commission = parseFloat(commissionInput.value) || 0;
+
+                addedTests.push({
+                    panelId: panelId,
+                    panelName: panelName,
+                    commission: commission
+                });
+
+                renderAddedTests();
+                
+                // Reset fields
+                dropdown.value = '';
+                commissionInput.value = '';
+            }
+
+            function removeTestOrder(panelId) {
+                addedTests = addedTests.filter(t => t.panelId !== panelId);
+                renderAddedTests();
+            }
+
+            function renderAddedTests() {
+                const tableBody = document.getElementById('testsTableBody');
+                const listContainer = document.getElementById('addedTestsList');
+
+                if (addedTests.length === 0) {
+                    listContainer.style.display = 'none';
+                    tableBody.innerHTML = '';
+                    return;
+                }
+
+                listContainer.style.display = 'block';
+                tableBody.innerHTML = addedTests.map((test, index) => `
+                    <tr style="border-bottom: 1px solid #e8f0f8;">
+                        <td style="padding: 8px;">${test.panelName}</td>
+                        <td style="padding: 8px; text-align: center;">${test.commission}%</td>
+                        <td style="padding: 8px; text-align: center;">
+                            <button type="button" onclick="removeTestOrder('${test.panelId}')" 
+                                style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
 
             function submitPatient() {
                 // Clear previous errors
@@ -691,8 +779,10 @@
                     created_by: currentUserId,
                     priority: document.getElementById('orderPriority').value || 'Routine',
                     notes: document.getElementById('orderNotes').value || null,
-                    commission_percent: parseFloat(formData.get('commission_percent')) || 0,
-                    order_panels: getSelectedPanels()
+                    order_panels: addedTests.map(t => ({
+                        panelId: parseInt(t.panelId),
+                        commission: t.commission
+                    }))
                 };
 
                 console.log('Submitting patient request:', request);
@@ -766,19 +856,15 @@
             }
 
             function getSelectedPanels() {
-                const dropdown = document.getElementById('panelDropdown');
-                const selectedOptions = Array.from(dropdown.selectedOptions);
-                const panels = selectedOptions.map(opt => parseInt(opt.value));
-                console.log('Selected panels:', panels);
-                return panels;
+                // Return the added tests array
+                console.log('Selected panels with commission:', addedTests);
+                return addedTests;
             }
 
 
             function clearSelectedPanels() {
-                const checkboxes = document.querySelectorAll('input[name="order_panels"]');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
+                addedTests = [];
+                renderAddedTests();
             }
 
             function clearErrors() {
@@ -908,17 +994,17 @@
                 }
             }
 
-            // Attach event listener after rendering dropdown
+            // Attach event listener for doctor selection to auto-fill commission
             document.addEventListener('DOMContentLoaded', () => {
                 const doctorDropdown = document.getElementById('referringDoctorSelect');
                 const commissionInput = document.getElementById('commissionPercent');
+                const addTestBtn = document.getElementById('addTestBtn');
                 
                 if (doctorDropdown) {
-
                     doctorDropdown.addEventListener('change', async (e) => {
                     const doctorId = e.target.value;
                     
-                    if (!doctorId) {
+                    if (!doctorId || doctorId === 'Self') {
                         commissionInput.value = '';
                         return;
                     }
@@ -941,6 +1027,10 @@
                         commissionInput.value = '';
                     }
                     });
+                }
+                
+                if (addTestBtn) {
+                    addTestBtn.addEventListener('click', addTestOrder);
                 }
             });
 
