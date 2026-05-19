@@ -49,6 +49,9 @@ public class PatientService {
         public List<Integer> order_panels;
         public String priority;
         public String notes;
+        public Double commission_percent;
+        public Double commission_amount;
+        public String id; // Custom patient ID to be generated
     }
 
     public static class CreatePatientResponse {
@@ -63,6 +66,7 @@ public class PatientService {
         response.createdObjects = new HashMap<>();
 
         log.info("Creating patient: " + request.name);
+        log.info("Request data: " + request.toString());
         log.info("Validation result: " + response.validationResult.valid);
 
         if (!response.validationResult.valid) {
@@ -72,12 +76,14 @@ public class PatientService {
 
         // Generate SQL transaction and created objects
         response.sqlTransaction = generateSQLTransaction(request);
-        response.createdObjects = generateCreatedObjects(request);
+        log.info("Generated SQL transaction:\n" + response.sqlTransaction);
+        
 
         // Execute the transaction
         try {
             log.info("Executing database transaction for patient: " + request.name);
             executeTransaction(request);
+            response.createdObjects = generateCreatedObjects(request);
             log.info("Patient and test orders successfully inserted into database");
         } catch (Exception e) {
             log.severe("Failed to create patient: " + e.getMessage());
@@ -89,7 +95,7 @@ public class PatientService {
         return response;
     }
 
-    public static CreatePatientResponse updatePatient(int patientId, CreatePatientRequest request) {
+    public static CreatePatientResponse updatePatient(String patientId, CreatePatientRequest request) {
         CreatePatientResponse response = new CreatePatientResponse();
         response.validationResult = validateRequest(request);
         response.createdObjects = new HashMap<>();
@@ -130,11 +136,12 @@ public class PatientService {
         return response;
     }
 
-    private static void executeUpdate(int patientId, CreatePatientRequest request) throws SQLException {
+    private static void executeUpdate(String patientId, CreatePatientRequest request) throws SQLException {
         Connection conn = DatabaseManager.getConnection();
         String utcNow = ZonedDateTime.now(ZoneOffset.UTC).format(UTC_FORMATTER);
 
         log.info("===== START PATIENT UPDATE TRANSACTION =====");
+        log.info("request: " + request.order_panels);
 
         try {
             conn.setAutoCommit(false);
@@ -174,11 +181,33 @@ public class PatientService {
                 pstmt.setString(8, utcNow);
 
                 log.info("  [9] patient id: " + patientId);
-                pstmt.setInt(9, patientId);
+                pstmt.setString(9, patientId);
 
                 log.info("Executing patient UPDATE...");
                 int rowsAffected = pstmt.executeUpdate();
                 log.info("Patient UPDATE rows affected: " + rowsAffected);
+            }
+
+            // If the request includes panel information, update existing test_order rows
+            if (request.order_panels != null && !request.order_panels.isEmpty()) {
+                log.info("Updating related test_order records for patient id=" + patientId);
+                String updateOrderSql = "UPDATE test_order SET priority = ?, notes = ?, commission_percent = ?, commission_amount = (SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?), updated_at = ? WHERE patient_id = ?";
+                try (PreparedStatement updateOrderStmt = conn.prepareStatement(updateOrderSql)) {
+                    String priority = request.priority != null ? request.priority : "Routine";
+                    for (Integer panelId : request.order_panels) {
+                        log.info("Updating test_order for panel_id=" + panelId);
+                        updateOrderStmt.setString(1, priority);
+                        updateOrderStmt.setString(2, request.notes);
+                        updateOrderStmt.setDouble(3, request.commission_percent != null ? request.commission_percent : 0.0);
+                        updateOrderStmt.setDouble(4, request.commission_percent != null ? request.commission_percent : 0.0);
+                        updateOrderStmt.setInt(5, panelId);
+                        updateOrderStmt.setString(6, utcNow);
+                        updateOrderStmt.setString(7, patientId);
+                        
+                        int updated = updateOrderStmt.executeUpdate();
+                        log.info("test_order UPDATE rows affected for panel_id=" + panelId + ": " + updated);
+                    }
+                }
             }
 
             log.info("Committing transaction...");
@@ -314,10 +343,11 @@ public class PatientService {
         if (request.order_panels != null && !request.order_panels.isEmpty()) {
             sql.append("\n-- Insert test order for the created patient\n");
             sql.append(
-                    "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name)\n");
-            sql.append("VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?);\n");
+                    "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount, " +
+                    "(SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?)" +");\n");
+            sql.append("VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?, ?, ?);\n");
             sql.append(
-                    "-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at, 14:panel_id, 15:panel_name)\n");
+                    "-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at, 14:panel_id, 15:panel_name, 16:commission_percent, 17:commission_amount)\n");
         }
         log.info(sql.toString());
         sql.append("COMMIT;");
@@ -330,7 +360,7 @@ public class PatientService {
 
         // Patient object
         Map<String, Object> patient = new HashMap<>();
-        patient.put("id", "[GENERATED_ID]");
+        patient.put("id", request.id);
         patient.put("name", request.name);
         patient.put("dob", request.dob);
         patient.put("gender", request.gender);
@@ -348,7 +378,7 @@ public class PatientService {
             List<Map<String, Object>> testOrders = new ArrayList<>();
             Map<String, Object> testOrder = new HashMap<>();
             testOrder.put("id", "[GENERATED_ID]");
-            testOrder.put("patient_id", "[FROM_PATIENT_ID]");
+            testOrder.put("patient_id", request.id);
             testOrder.put("priority", request.priority != null ? request.priority : "Routine");
             testOrder.put("notes", request.notes);
             testOrder.put("created_by", request.created_by);
@@ -398,39 +428,60 @@ public class PatientService {
 
             // Insert patient
             log.info("Preparing patient INSERT statement");
-            String patientSql = "INSERT INTO patients (name, dob, gender, contact_phone, contact_email, address, referring_doctor_id, created_by, created_at) "
+
+            int nextCounter = 1;
+            try (PreparedStatement counterStmt = conn.prepareStatement(
+                "SELECT COUNT(*) FROM patients WHERE date(created_at) = date('now')")) {
+                ResultSet rs = counterStmt.executeQuery();
+                if (rs.next()) {
+                    nextCounter = rs.getInt(1) + 1;
+                }
+            }
+
+            LocalDate today = LocalDate.now();
+            int year = today.getYear() % 100; // e.g. 26
+            char monthLetter = (char) ('A' + today.getMonthValue() - 1); // May = E
+            int day = today.getDayOfMonth();
+
+            String customId = String.format("%02d%c%02d%d", year, monthLetter, day, nextCounter);
+            request.id=customId;
+            log.info("Generated custom patient ID: " + customId);
+
+            String patientSql = "INSERT INTO patients (id, name, dob, gender, contact_phone, contact_email, address, referring_doctor_id, created_by, created_at) "
                     +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try (PreparedStatement pstmt = conn.prepareStatement(patientSql)) {
                 log.info("Setting patient parameters:");
+
+                pstmt.setString(1, customId);
                 log.info("  [1] name: " + request.name);
-                pstmt.setString(1, request.name);
+                pstmt.setString(2, request.name);
 
                 log.info("  [2] dob: " + request.dob);
-                pstmt.setString(2, request.dob);
+                pstmt.setString(3, request.dob);
 
                 log.info("  [3] gender: " + request.gender);
-                pstmt.setString(3, request.gender);
+                pstmt.setString(4, request.gender);
 
                 String normalizedPhone = normalizePhone(request.contact_phone);
                 log.info("  [4] contact_phone (normalized): " + normalizedPhone);
-                pstmt.setString(4, normalizedPhone);
+                pstmt.setString(5, normalizedPhone);
 
                 log.info("  [5] contact_email: " + request.contact_email);
-                pstmt.setString(5, request.contact_email);
+                pstmt.setString(6, request.contact_email);
 
                 log.info("  [6] address: " + request.address);
-                pstmt.setString(6, request.address);
+                pstmt.setString(7, request.address);
 
                 log.info("  [7] referring_doctor_id: " + request.referring_doctor_id);
-                pstmt.setObject(7, request.referring_doctor_id);
+                pstmt.setObject(8, request.referring_doctor_id);
 
                 log.info("  [8] created_by: " + request.created_by);
-                pstmt.setInt(8, request.created_by);
+                pstmt.setInt(9, request.created_by);
 
                 log.info("  [9] created_at: " + utcNow);
-                pstmt.setString(9, utcNow);
+                pstmt.setString(10, utcNow);
 
                 log.info("Executing patient INSERT...");
                 int patientRowsAffected = pstmt.executeUpdate();
@@ -494,9 +545,9 @@ public class PatientService {
                     // Create ONE test_order for EACH selected panel and INSERT COMPONENTS
                     log.info("Preparing test order INSERT statement - will create " + request.order_panels.size()
                             + " orders (one per panel)");
-                    String orderSql = "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name) "
+                    String orderSql = "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount) "
                             +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?,(SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?))";
 
                     try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
                         String priority = request.priority != null ? request.priority : "Routine";
@@ -512,7 +563,7 @@ public class PatientService {
 
                             log.info("Setting test order parameters:");
                             log.info("  [1] patient_id: " + patientId);
-                            orderStmt.setInt(1, patientId);
+                            orderStmt.setString(1, customId);
 
                             log.info("  [2] priority: " + priority);
                             orderStmt.setString(2, priority);
@@ -533,7 +584,12 @@ public class PatientService {
                             log.info("  [7] panel_name: " + panelName);
                             orderStmt.setString(7, panelName);
 
+                            orderStmt.setDouble(8, request.commission_percent != null ? request.commission_percent : 0.0);
+                            //to calculate commission_amount in Java instead of SQL, we would need the panel price. For simplicity, we'll set it to 0 for now and calculate it later when fetching panel details.
+                            orderStmt.setDouble(9, request.commission_percent != null ? request.commission_percent : 0.0);
+                            orderStmt.setInt(10, panelId);
                             // Execute individual insert
+                            log.info(orderStmt.toString());
                             int rowsInserted = orderStmt.executeUpdate();
                             log.info("Test order insert result: " + rowsInserted);
 
@@ -616,7 +672,7 @@ public class PatientService {
         }
     }
 
-    public static Map<String, String> getPatientById(int id) {
+    public static Map<String, String> getPatientById(String id) {
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
@@ -630,7 +686,7 @@ public class PatientService {
                             "FROM patients p " +
                             "LEFT JOIN referring_doctors rd ON p.referring_doctor_id = rd.doctor_id " +
                             "WHERE p.id = ?");
-            stmt.setInt(1, id);
+            stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -713,7 +769,8 @@ public class PatientService {
                 }
                 first = false;
 
-                int id = rs.getInt("id");
+                String id = rs.getString("id");
+                log.info("Processing patient id: " + id);
                 String name = rs.getString("name");
                 String dob = rs.getString("dob");
                 String gender = rs.getString("gender");
@@ -721,7 +778,8 @@ public class PatientService {
                 int referringDoctorId = rs.getInt("referring_doctor_id");
                 String referringDoctorName = rs.getString("referring_doctor_name");
                 log.info("referringDoctorName"+referringDoctorName);
-                json.append("{\"id\":").append(id)
+                json.append("{")
+                        .append("\"id\":\"").append(id).append("\"")
                         .append(",\"name\":\"").append(escapeJson(name)).append("\"")
                         .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
                         .append(",\"gender\":").append(gender != null ? ("\"" + escapeJson(gender) + "\"") : "null")
@@ -767,13 +825,14 @@ public class PatientService {
                 }
                 first = false;
 
-                int id = rs.getInt("id");
+                String id = rs.getString("id");
                 String name = rs.getString("name");
                 String dob = rs.getString("dob");
                 String gender = rs.getString("gender");
                 String createdAt = rs.getString("created_at");
 
-                json.append("{\"id\":").append(id)
+                json.append("{")
+                        .append("\"id\":\"").append(id).append("\"")
                         .append(",\"name\":\"").append(escapeJson(name)).append("\"")
                         .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
                         .append(",\"gender\":").append(gender != null ? ("\"" + escapeJson(gender) + "\"") : "null")
@@ -796,10 +855,12 @@ public class PatientService {
 
         StringBuilder sql = new StringBuilder("SELECT id, name, dob, gender, created_at FROM patients");
         java.util.List<String> filters = new java.util.ArrayList<>();
+        log.info("Received search parameters: search='" + search );
         if (search != null && !search.isEmpty()) {
-            if (search.matches("\\d+")) {
+            if (search.matches("[A-Za-z0-9]+")) {
+                log.info("Search term looks like an ID or alphanumeric string, adding id and name filters");
                 filters.add("(id = ? OR LOWER(name) LIKE ?)");
-            } else {
+        } else {
                 filters.add("LOWER(name) LIKE ?");
             }
         }
@@ -816,18 +877,23 @@ public class PatientService {
 
         sql.append(" ORDER BY created_at DESC");
 
+        log.info("Executing patient search with SQL: " + sql.toString());
+
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql.toString());
 
             int index = 1;
             if (search != null && !search.isEmpty()) {
-                if (search.matches("\\d+")) {
-                    stmt.setInt(index++, Integer.parseInt(search));
-                    stmt.setString(index++, "%" + search.toLowerCase() + "%");
-                } else {
-                    stmt.setString(index++, "%" + search.toLowerCase() + "%");
-                }
+                stmt.setString(index++, search);
+                stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                // if (search.matches("[A-Za-z0-9]+")) {
+                //     stmt.setInt(index++, Integer.parseInt(search));
+                //     stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                // } else {
+                //     stmt.setString(index++, search);
+                //     stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                // }
             }
             if (gender != null && !gender.isEmpty()) {
                 stmt.setString(index++, gender);
@@ -835,22 +901,26 @@ public class PatientService {
             if (createdAt != null && !createdAt.isEmpty()) {
                 stmt.setString(index++, createdAt.length() == 10 ? createdAt + "%" : createdAt + "%");
             }
-
+            log.info("Prepared statement parameters set. Executing query...");
             ResultSet rs = stmt.executeQuery();
+            
             boolean first = true;
             while (rs.next()) {
+                log.info("Found patient match: id=" + rs.getString("id") + ", name=" + rs.getString("name"));
                 if (!first) {
                     json.append(",");
                 }
                 first = false;
 
-                int id = rs.getInt("id");
+                String id = rs.getString("id");
                 String name = rs.getString("name");
                 String dob = rs.getString("dob");
                 String genderValue = rs.getString("gender");
                 String createdAtValue = rs.getString("created_at");
-
-                json.append("{\"id\":").append(id)
+                log.info("Patient data: id=" + id + ", name=" + name + ", dob=" + dob + ", gender=" + genderValue + ", created_at=" + createdAtValue);   
+                
+                json.append("{")
+                        .append("\"id\":\"").append(id).append("\"")
                         .append(",\"name\":\"").append(escapeJson(name)).append("\"")
                         .append(",\"dob\":").append(dob != null ? ("\"" + escapeJson(dob) + "\"") : "null")
                         .append(",\"gender\":")
@@ -868,11 +938,11 @@ public class PatientService {
         }
     }
 
-    public static void deletePatient(int patientId) throws SQLException {
+    public static void deletePatient(String patientId) throws SQLException {
         Connection conn = DatabaseManager.getConnection();
         String sql = "DELETE FROM patients WHERE id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, patientId);
+            stmt.setString(1, patientId);
             int rows = stmt.executeUpdate();
             log.info("Deleted patient id=" + patientId + ", rows affected: " + rows);
         }
@@ -894,7 +964,7 @@ public class PatientService {
         }
     }
 
-    public static String getPatientTestOrdersJson(int patientId) throws SQLException {
+    public static String getPatientTestOrdersJson(String patientId) throws SQLException {
         StringBuilder json = new StringBuilder();
         json.append("{\"testOrders\":[");
 
@@ -908,7 +978,7 @@ public class PatientService {
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, patientId);
+            stmt.setString(1, patientId);
             ResultSet rs = stmt.executeQuery();
             log.info(rs.toString());
             boolean first = true;

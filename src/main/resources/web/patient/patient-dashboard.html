@@ -482,6 +482,7 @@
                 .then(data => {
                     const tbody = document.querySelector('#recentPatientsTable tbody');
                     if (data.patients && data.patients.length > 0) {
+                        console.log('Recent patients loaded:', data.patients);
                         tbody.innerHTML = data.patients.map(patient => `
                             <tr>
                                 <td>${patient.id}</td>
@@ -509,7 +510,7 @@
             const name = document.getElementById('searchName').value;
             const createdAt = document.getElementById('searchCreatedAt').value;
             const gender = document.getElementById('searchGender').value;
-
+            console.log('Searching patients with:', { name, createdAt, gender });
             let query = '/api/patients?';
             const params = [];
             

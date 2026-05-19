@@ -346,7 +346,7 @@
             } else {
                 tbody.innerHTML = pagePatients.map(patient => `
                     <tr>
-                        <td>${patient.id}</td>
+                        <td>${String(patient.id)}</td>
                         <td>${patient.name}</td>
                         <td>${calculateAge(patient.dob)}</td>
                         <td>${patient.gender || '-'}</td>
