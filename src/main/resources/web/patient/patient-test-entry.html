@@ -285,8 +285,8 @@
                             <div id="doctorNameDisplay" class="form-control-readonly">-</div>
                         </div>
                         <div class="form-group" style="grid-column: span 3;">
-                            <label class="form-label">Select Test Panel:</label>
-                            <select id="panelSelect" class="form-control" onchange="onPanelChange()">
+                            <label class="form-label">Select Test Panel *</label>
+                            <select id="panelSelect" class="form-control" onchange="onPanelChange()" required>
                                 <option value="">Select panel</option>
                             </select>
                         </div>
@@ -411,7 +411,7 @@
 
         /**
          * Fetch test orders with components for this patient.
-         * Groups the flat response by order_id and populates the panel dropdown.
+         * API returns nested structure with orders containing components array.
          */
         function loadTestOrders(patientId) {
             fetch('/api/patients/' + patientId + '/test-orders')
@@ -420,27 +420,36 @@
                     console.log('Test orders data:', data);
                     var orders = data.testOrders || [];
 
-                    // Group by order_id
+                    // Process nested order structure
                     testOrdersMap = {};
-                    orders.forEach(function(row) {
-                        var orderId = row.id;
-                        if (!testOrdersMap[orderId]) {
-                            testOrdersMap[orderId] = {
-                                panelName: row.panelName,
-                                sampleCollectedAt: row.sampleCollectedAt,
-                                status: row.status,
-                                notes: row.notes,
-                                components: []
-                            };
+                    orders.forEach(function(order) {
+                        var orderId = order.id;
+                        var notes = order.notes || '';
+                        // Ensure 'null' string is converted to empty string
+                        if (notes === 'null' || notes === null || notes === undefined) {
+                            notes = '';
                         }
-                        testOrdersMap[orderId].components.push({
-                            id: row.componentRowId,
-                            name: row.componentName,
-                            unit: row.unit || '',
-                            referenceRange: row.referenceRange || '',
-                            resultValue: row.resultValue || '',
-                            flag: row.flag || 'Normal'
-                        });
+                        testOrdersMap[orderId] = {
+                            panelName: order.panelName,
+                            sampleCollectedAt: order.sampleCollectedAt,
+                            status: order.status,
+                            notes: notes,
+                            components: []
+                        };
+
+                        // Map each component from the nested array
+                        if (Array.isArray(order.components)) {
+                            order.components.forEach(function(component) {
+                                testOrdersMap[orderId].components.push({
+                                    id: component.id || component.component_row_id || 0,
+                                    name: component.component_name || '',
+                                    unit: component.unit || '',
+                                    referenceRange: component.reference_range || '',
+                                    resultValue: component.result_value || '',
+                                    flag: component.flag || 'Normal'
+                                });
+                            });
+                        }
                     });
 
                     // Populate panel dropdown
@@ -493,11 +502,12 @@
                 document.getElementById('reportStatus').value = order.status;
             }
 
-            if (order.notes) {
-                document.getElementById('notes').value = order.notes;
-            } else {
-                document.getElementById('notes').value = '';
+            // Ensure notes is never 'null' string
+            var notesValue = order.notes || '';
+            if (notesValue === 'null' || notesValue === null || notesValue === undefined) {
+                notesValue = '';
             }
+            document.getElementById('notes').value = notesValue;
 
             // Render component rows
             tbody.innerHTML = '';
@@ -517,15 +527,15 @@
                 var resultInput = document.createElement('input');
                 resultInput.type = 'text';
                 resultInput.className = 'form-control input-field';
-                resultInput.setAttribute('data-component-id', comp.id);
-                resultInput.value = comp.resultValue;
+                resultInput.setAttribute('data-component-id', String(comp.id));
+                resultInput.value = comp.resultValue || '';
                 resultInput.placeholder = 'Enter result';
                 tdResult.appendChild(resultInput);
 
                 var tdRemarks = document.createElement('td');
                 var flagSelect = document.createElement('select');
                 flagSelect.className = 'form-control input-field';
-                flagSelect.setAttribute('data-component-id', comp.id);
+                flagSelect.setAttribute('data-component-id', String(comp.id));
                 flagSelect.setAttribute('data-field', 'flag');
 
                 var options = ['Normal', 'High', 'Low'];
@@ -581,19 +591,26 @@
                 var resultInput = row.querySelector('input[data-component-id]');
                 var flagSelect = row.querySelector('select[data-field="flag"]');
                 if (resultInput && flagSelect) {
+                    var componentId = resultInput.getAttribute('data-component-id');
                     components.push({
-                        id: parseInt(resultInput.getAttribute('data-component-id')),
-                        resultValue: resultInput.value,
+                        id: isNaN(parseInt(componentId)) ? 0 : parseInt(componentId),
+                        resultValue: resultInput.value || '',
                         flag: flagSelect.value
                     });
                 }
             });
 
+            // Ensure notes is never 'null' string
+            var notes = document.getElementById('notes').value || '';
+            if (notes === 'null' || notes === null) {
+                notes = '';
+            }
+
             var payload = {
-                testOrderId: testOrderId,
+                testOrderId: parseInt(testOrderId) || 0,
                 sampleCollectedAt: document.getElementById('sampleDate').value,
                 status: document.getElementById('reportStatus').value,
-                notes: document.getElementById('notes').value,
+                notes: notes,
                 components: components
             };
 
@@ -621,7 +638,11 @@
         }
 
         function printReport() {
-            window.print();
+             if (!currentPatientId) {
+                alert('Please select a patient before printing the report.');
+                return;
+            }
+            window.open(`/report/print.html?patientId=${encodeURIComponent(currentPatientId)}`, '_blank');
         }
 
         function calculateAge(dob) {

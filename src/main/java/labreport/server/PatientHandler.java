@@ -58,6 +58,7 @@ public class PatientHandler implements HttpHandler {
                 handleUpdatePatient(exchange, patientId);
             } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
                 String patientId = extractId(path);
+                log.info("patient_id:"+patientId);
                 handleGetPatient(exchange, patientId);
             }else if ("DELETE".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
                 String patientId = extractId(path);

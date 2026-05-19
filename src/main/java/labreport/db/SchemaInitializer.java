@@ -1,6 +1,7 @@
 package labreport.db;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.logging.Logger;
 import labreport.logging.AppLogger;
@@ -85,7 +86,7 @@ public class SchemaInitializer {
                         "director_name TEXT," +
                         "license_number TEXT," +
                         "accreditation TEXT," +
-                        "status TEXT DEFAULT 'Active'" +
+                        "status TEXT DEFAULT 'Active'," +
                         "updated_at TEXT DEFAULT (datetime('now'))" +
                         ")" },
                 { "categories", "CREATE TABLE IF NOT EXISTS categories (" +
@@ -98,7 +99,7 @@ public class SchemaInitializer {
                 { "referring_doctors", "CREATE TABLE IF NOT EXISTS referring_doctors (" +
                         "doctor_id INTEGER PRIMARY KEY AUTOINCREMENT," +
                         "full_name	TEXT NOT NULL," +
-                        "license_number	TEXT NOT NULL UNIQUE," +
+                        "license_number	TEXT UNIQUE," +
                         "specialization	TEXT," +
                         "clinic_name	TEXT," +
                         "clinic_address	TEXT," +
@@ -141,6 +142,12 @@ public class SchemaInitializer {
                 }
         };
 
+        createTables(connection, tables);
+        ensureTestOrderColumns(connection);
+        ensureReferringDoctorColumns(connection);
+    }
+
+    private static void createTables(Connection connection, String[][] tables) {
         for (String[] table : tables) {
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute(table[1]);
@@ -150,6 +157,43 @@ public class SchemaInitializer {
                 log.warning("Could not create table '" + table[0] + "': " + e.getMessage());
             }
         }
+    }
 
+    private static void ensureTestOrderColumns(Connection connection) {
+        ensureColumnExists(connection, "test_order", "status TEXT DEFAULT 'Pending'");
+        ensureColumnExists(connection, "test_order", "panel_id INTEGER NOT NULL DEFAULT 0");
+        ensureColumnExists(connection, "test_order", "panel_name TEXT NOT NULL DEFAULT ''");
+        ensureColumnExists(connection, "test_order", "commission_percent REAL NOT NULL DEFAULT 0");
+        ensureColumnExists(connection, "test_order", "commission_amount REAL NOT NULL DEFAULT 0");
+        ensureColumnExists(connection, "test_order", "updated_at TEXT");
+    }
+
+    private static void ensureReferringDoctorColumns(Connection connection) {
+        ensureColumnExists(connection, "referring_doctors", "commission_percent REAL NOT NULL DEFAULT 0");
+    }
+
+    private static void ensureColumnExists(Connection connection, String tableName, String columnDefinition) {
+        String columnName = columnDefinition.split(" ", 2)[0];
+        if (!columnExists(connection, tableName, columnName)) {
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnDefinition);
+                log.info("Added missing column '" + columnName + "' to table '" + tableName + "'");
+            } catch (Exception e) {
+                log.warning("Could not add column '" + columnName + "' to table '" + tableName + "': " + e.getMessage());
+            }
+        }
+    }
+
+    private static boolean columnExists(Connection connection, String tableName, String columnName) {
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + tableName + ")")) {
+            while (rs.next()) {
+                if (columnName.equalsIgnoreCase(rs.getString("name"))) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.warning("Could not verify column '" + columnName + "' on table '" + tableName + "': " + e.getMessage());
+        }
+        return false;
     }
 }

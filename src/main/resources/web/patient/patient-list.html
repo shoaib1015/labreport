@@ -353,7 +353,7 @@
                         <td>${patient.created_at ? formatDate(patient.created_at) : '-'}</td>
                         <td>${patient.referring_doctor_name || '-'}</td>
                         <td>
-                            <button class="action-button" onclick="viewPatientDetails(${patient.id})">View Details</button>
+                            <button class="action-button" onclick="viewPatientDetails('${patient.id}')">View Details</button>
                         </td>
                     </tr>
                 `).join('');

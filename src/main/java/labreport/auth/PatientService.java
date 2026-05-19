@@ -687,11 +687,12 @@ public class PatientService {
                             "LEFT JOIN referring_doctors rd ON p.referring_doctor_id = rd.doctor_id " +
                             "WHERE p.id = ?");
             stmt.setString(1, id);
+            log.info("Fetching patient details for ID: " + id + " with SQL: " + stmt.toString());
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 Map<String, String> patient = new HashMap<>();
-                patient.put("id", String.valueOf(rs.getInt("id")));
+                patient.put("id", String.valueOf(rs.getString("id")));
                 patient.put("name", rs.getString("name"));
                 patient.put("dob", rs.getString("dob"));
                 patient.put("gender", rs.getString("gender"));
@@ -965,60 +966,106 @@ public class PatientService {
     }
 
     public static String getPatientTestOrdersJson(String patientId) throws SQLException {
+        log.info("Fetching test orders for patient ID: " + patientId);
         StringBuilder json = new StringBuilder();
         json.append("{\"testOrders\":[");
 
-        String sql = "SELECT t.id as order_id, t.panel_name, t.sample_collected_at, t.notes, t.status, t.created_at, " +
+        String sql = "SELECT t.id as order_id, t.panel_id, t.panel_name, t.sample_collected_at, t.notes, t.status, t.created_at, " +
+                "p.category_name, " +
                 "c.id as component_row_id, c.component_name, c.result_value, c.unit, c.reference_range, c.flag " +
                 "FROM test_order t " +
-                "JOIN test_order_component c ON t.id = c.test_order_id " +
+                "LEFT JOIN panels p ON t.panel_id = p.panel_id " +
+                "LEFT JOIN test_order_component c ON t.id = c.test_order_id " +
                 "WHERE t.patient_id = ? " +
                 "ORDER BY t.id, c.id";
-        log.info("Executing SQL to fetch test orders for patient_id=" + patientId + ": " + sql);
+
+        log.info("Executing SQL to fetch test orders and components: " + sql);        
+
+        Map<Integer, Map<String, Object>> orders = new java.util.LinkedHashMap<>();
+
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, patientId);
+            stmt.setString(1, patientId.trim());
             ResultSet rs = stmt.executeQuery();
-            log.info(rs.toString());
-            boolean first = true;
+
             while (rs.next()) {
-                if (!first) {
+                int orderId = rs.getInt("order_id");
+                Map<String, Object> order = orders.get(orderId);
+                if (order == null) {
+                    order = new HashMap<>();
+                    order.put("id", orderId);
+                    order.put("panelId", rs.getInt("panel_id"));
+                    order.put("panelName", rs.getString("panel_name"));
+                    order.put("status", rs.getString("status"));
+                    order.put("created_at", rs.getString("created_at"));
+                    order.put("sampleCollectedAt", rs.getString("sample_collected_at"));
+                    order.put("notes", rs.getString("notes"));
+                    String categoryName = rs.getString("category_name");
+                    order.put("categoryName", categoryName != null ? categoryName : "Uncategorized");
+                    order.put("components", new java.util.ArrayList<Map<String, String>>());
+                    orders.put(orderId, order);
+                }
+
+                String componentName = rs.getString("component_name");
+                if (componentName != null) {
+                    Map<String, String> component = new HashMap<>();
+                    component.put("component_row_id", rs.getString("component_row_id"));
+                    component.put("component_name", componentName);
+                    component.put("unit", rs.getString("unit"));
+                    component.put("reference_range", rs.getString("reference_range"));
+                    component.put("result_value", rs.getString("result_value"));
+                    component.put("flag", rs.getString("flag"));
+                    @SuppressWarnings("unchecked")
+                    java.util.List<Map<String, String>> components = (java.util.List<Map<String, String>>) order.get("components");
+                    components.add(component);
+                }
+            }
+            log.info("Fetched test orders for patient ID: " + patientId);
+
+            log.info(orders.values().size() + " orders found. Building JSON response...");
+
+            boolean firstOrder = true;
+            for (Map<String, Object> order : orders.values()) {
+                log.info("Processing order ID: " + order.get("id") + ", panelName: " + order.get("panelName"));
+                if (!firstOrder) {
                     json.append(",");
                 }
-                first = false;
-                int id = rs.getInt("order_id");
-                String panelName = rs.getString("panel_name");
-                String componentName = rs.getString("component_name");
-                String referenceRange = rs.getString("reference_range");
-                String resultValue = rs.getString("result_value");
-                String unit = rs.getString("unit");
-                String flag = rs.getString("flag");
-                String status = rs.getString("status");
-                String createdAt = rs.getString("created_at");
-                String sampleCollectedAt = rs.getString("sample_collected_at");
-                String notes = rs.getString("notes");
-                int componentRowId = rs.getInt("component_row_id");
+                firstOrder = false;
 
-                json.append("{\"id\":").append(id)
-                        .append(",\"componentRowId\":").append(componentRowId)
-                        .append(",\"panelName\":\"").append(escapeJson(panelName)).append("\"")
-                        .append(",\"componentName\":\"").append(escapeJson(componentName)).append("\"")
-                        .append(",\"unit\":").append(unit != null ? ("\"" + escapeJson(unit) + "\"") : "\"\"")
-                        .append(",\"referenceRange\":\"").append(escapeJson(referenceRange)).append("\"")
-                        .append(",\"resultValue\":")
-                        .append(resultValue != null ? ("\"" + escapeJson(resultValue) + "\"") : "\"\"")
-                        .append(",\"flag\":").append(flag != null ? ("\"" + escapeJson(flag) + "\"") : "\"Normal\"")
-                        .append(",\"status\":")
-                        .append(status != null ? ("\"" + escapeJson(status) + "\"") : "\"Pending\"")
-                        .append(",\"created_at\":")
-                        .append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
-                        .append(",\"sampleCollectedAt\":")
-                        .append(sampleCollectedAt != null ? ("\"" + escapeJson(sampleCollectedAt) + "\"") : "null")
-                        .append(",\"notes\":").append(notes != null ? ("\"" + escapeJson(notes) + "\"") : "\"\"")
-                        .append("}");
+                json.append("{");
+                json.append("\"id\":").append(order.get("id"));
+                json.append(",\"panelId\":").append(order.get("panelId"));
+                json.append(",\"panelName\":\"").append(escapeJson(String.valueOf(order.get("panelName")))).append("\"");
+                json.append(",\"status\":\"").append(escapeJson(String.valueOf(order.get("status")))).append("\"");
+                json.append(",\"created_at\":").append(order.get("created_at") != null ? ("\"" + escapeJson(String.valueOf(order.get("created_at"))) + "\"") : "null");
+                json.append(",\"sampleCollectedAt\":").append(order.get("sampleCollectedAt") != null ? ("\"" + escapeJson(String.valueOf(order.get("sampleCollectedAt"))) + "\"") : "null");
+                json.append(",\"notes\":\"").append(escapeJson(String.valueOf(order.get("notes")))).append("\"");
+                json.append(",\"categoryName\":\"").append(escapeJson(String.valueOf(order.get("categoryName")))).append("\"");
+
+                json.append(",\"components\":[");
+
+                log.info("JSON String " + json.toString());
+                @SuppressWarnings("unchecked")
+                java.util.List<Map<String, String>> components = (java.util.List<Map<String, String>>) order.get("components");
+                log.info("Processing " + components.size() + " components for order ID: " +components);
+                boolean firstComponent = true;
+                for (Map<String, String> component : components) {
+                    if (!firstComponent) {
+                        json.append(",");
+                    }
+                    firstComponent = false;
+                    json.append("{");
+                    json.append("\"component_row_id\":").append(component.get("component_row_id"));
+                    json.append(",\"component_name\":\"").append(escapeJson(component.get("component_name"))).append("\"");
+                    json.append(",\"unit\":\"").append(escapeJson(component.get("unit"))).append("\"");
+                    json.append(",\"reference_range\":\"").append(escapeJson(component.get("reference_range"))).append("\"");
+                    json.append(",\"result_value\":\"").append(escapeJson(component.get("result_value"))).append("\"");
+                    json.append(",\"flag\":\"").append(escapeJson(component.get("flag"))).append("\"");
+                    json.append("}");
+                }
+                json.append("]}");
             }
-
             json.append("]}");
             return json.toString();
         } catch (SQLException e) {

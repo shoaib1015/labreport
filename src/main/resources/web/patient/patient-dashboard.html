@@ -491,7 +491,7 @@
                                 <td>${patient.gender || '-'}</td>
                                 <td>${patient.created_at ? formatDate(patient.created_at) : '-'}</td>
                                 <td>
-                                    <button class="action-button" onclick="viewPatientDetails(${patient.id})">View Details</button>
+                                    <button class="action-button" onclick="viewPatientDetails('${patient.id}')">View Details</button>
                                 </td>
                             </tr>
                         `).join('');
@@ -538,7 +538,7 @@
                                 <td>${patient.gender || '-'}</td>
                                 <td>${patient.created_at ? formatDate(patient.created_at) : '-'}</td>
                                 <td>
-                                    <button class="action-button" onclick="viewPatientDetails(${patient.id})">View Details</button>
+                                    <button class="action-button" onclick="viewPatientDetails('${patient.id}')">View Details</button>
                                 </td>
                             </tr>
                         `).join('');
@@ -554,6 +554,7 @@
         }
 
         function viewPatientDetails(patientId) {
+            console.log('Viewing details for patient ID:', patientId);
             window.location.href = `/patient/patient-details.html?patientId=${patientId}`;
         }
 

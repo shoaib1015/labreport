@@ -9,6 +9,13 @@
     </style>
 </head>
 <body>
-    <iframe src="/report-preview.html"></iframe>
+    <iframe id="reportFrame" src="/report-preview.html"></iframe>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const patientId = params.get('patientId');
+        if (patientId) {
+            document.getElementById('reportFrame').src = '/report-preview.html?patientId=' + encodeURIComponent(patientId);
+        }
+    </script>
 </body>
 </html>
