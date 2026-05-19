@@ -433,20 +433,66 @@
         }
 
         function printPatientList() {
-            //Write code to download the patient list as PDF or open print dialog
-            const worksheet = XLSX.utils.json_to_sheet(filteredPatients.map(patient => ({
+            const data = filteredPatients.map(patient => ({
                 Patient_ID: patient.id,
                 Patient_Name: patient.name,
                 Date_Of_Birth: formatDate(patient.dob),
                 Age: calculateAge(patient.dob),
                 Gender: patient.gender,
                 Created_On: formatDate(patient.created_at),
-                Referred_By: patient.referring_doctor_name || '-'
-            })));
+                Referred_By: patient.referring_doctor_name || '-',
+                Test_Price: Number(patient.test_price) || 0,
+                Commission: patient.commission_percent ? patient.commission_percent + '%' : '0%',
+                Commission_Amount: Number(patient.commission_amount) || 0
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(data);
+
+            // Auto-fit column widths
+            const colWidths = Object.keys(data[0]).map(key => ({
+                wch: Math.max(key.length, ...data.map(row => String(row[key]).length))
+            }));
+            worksheet['!cols'] = colWidths;
+
+            // Totals row
+            const totalTestPrice = data.reduce((sum, row) => sum + row.Test_Price, 0);
+            const totalCommissionAmount = data.reduce((sum, row) => sum + row.Commission_Amount, 0);
+
+            const totalsRow = {
+                Patient_ID: 'TOTAL',
+                Patient_Name: '',
+                Date_Of_Birth: '',
+                Age: '',
+                Gender: '',
+                Created_On: '',
+                Referred_By: '',
+                Test_Price: "₹" + totalTestPrice,
+                Commission: '',
+                Commission_Amount: "₹" + totalCommissionAmount
+            };
+
+            XLSX.utils.sheet_add_json(worksheet, [totalsRow], { skipHeader: true, origin: -1 });
+
+            // ✅ Right-align numeric columns
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            
+            const numericCols = ["Test_Price", "Commission", "Commission_Amount"];
+            numericCols.forEach(colName => {
+                const colIndex = Object.keys(data[0]).indexOf(colName);
+                if (colIndex === -1) return;
+                for (let R = 1; R <= range.e.r; ++R) {
+                    const cell_address = XLSX.utils.encode_cell({ r: R, c: colIndex });
+                    if (!worksheet[cell_address]) continue;
+                    worksheet[cell_address].s = {
+                        alignment: { horizontal: "right" }
+                    };
+                }
+            });
+
+            // Build workbook and save
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
             XLSX.writeFile(workbook, 'Patient_List.xlsx');
-            //window.print();
         }
 
         function calculateAge(dob) {
