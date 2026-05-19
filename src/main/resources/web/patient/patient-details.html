@@ -330,7 +330,7 @@
             <div class="header-buttons">
                 <button class="btn btn-primary" onclick="editPatient()">Edit Patient</button>
                 <button class="btn btn-secondary" onclick="addTest()">Add Test</button>
-                <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
+                <button class="btn btn-secondary" onclick="printReport()">Save Test Results</button>
             </div>
         </div>
 
@@ -427,6 +427,7 @@
         });
 
         function loadPatientDetails() {
+            console.log('Loading patient details for ID:', currentPatientId);
             fetch(`/api/patients/${currentPatientId}`)
                 .then(response => {
                     if (!response.ok) {
@@ -482,22 +483,49 @@
         }
 
         function loadTestOrders(patientId) {
+            console.log('Loading test orders for patient ID:', patientId);
             fetch(`/api/patients/${patientId}/test-orders`)
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById('testOrdersTable');
+                    console.log('Test orders data:', data);
+
                     if (data.testOrders && data.testOrders.length > 0) {
-                        tbody.innerHTML = data.testOrders.map(order => `
-                            <tr>
-                                <td>${order.id}</td>
-                                <td>${order.panelName || 'Panel'}</td>
-                                <td>${order.componentName || 'Component'}</td>
-                                <td>${order.referenceRange || '-'}</td>
-                                <td>${order.resultValue || '-'}</td>
-                                <td>${order.status || 'Pending'}</td>
-                                <td>${formatDate(order.created_at)}</td>
-                            </tr>
-                        `).join('');
+                        const rows = [];
+
+                        data.testOrders.forEach(order => {
+                            const components = Array.isArray(order.components) ? order.components : [];
+
+                            if (components.length > 0) {
+                                components.forEach(component => {
+                                    rows.push(`
+                                        <tr>
+                                            <td>${order.id}</td>
+                                            <td>${order.panelName || 'Panel'}</td>
+                                            <td>${component.component_name || 'Component'}</td>
+                                            <td>${component.reference_range || '-'}</td>
+                                            <td>${component.result_value || '-'}</td>
+                                            <td>${order.status || 'Pending'}</td>
+                                            <td>${formatDate(order.created_at)}</td>
+                                        </tr>
+                                    `);
+                                });
+                            } else {
+                                rows.push(`
+                                    <tr>
+                                        <td>${order.id}</td>
+                                        <td>${order.panelName || 'Panel'}</td>
+                                        <td colspan="3">No components available</td>
+                                        <td>${order.status || 'Pending'}</td>
+                                        <td>${formatDate(order.created_at)}</td>
+                                    </tr>
+                                `);
+                            }
+                        });
+
+                        tbody.innerHTML = rows.join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="7" class="no-data">No test orders found</td></tr>';
                     }
                 })
                 .catch(error => console.error('Error loading test orders:', error));
@@ -526,11 +554,7 @@
         }
 
         function printReport() {
-            if (!currentPatientId) {
-                alert('Please select a patient before printing the report.');
-                return;
-            }
-            window.open(`/report/print.html?patientId=${encodeURIComponent(currentPatientId)}`, '_blank');
+            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
         }
 
         function addNote() {

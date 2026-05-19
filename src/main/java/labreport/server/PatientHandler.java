@@ -47,20 +47,21 @@ public class PatientHandler implements HttpHandler {
                 // You would implement the logic to fetch and return the list of patients here.
                 handleListRecentPatients(exchange,path);
 
-            } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+/test-orders")) {
-                int patientId = extractPatientIdFromPath(path);
+            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+/test-orders")) {
+                String patientId = extractPatientIdFromPath(path);
                 handleGetPatientTestOrders(exchange, patientId);
-            } else if ("PUT".equals(method) && path.matches(".*/api/patients/\\d+/test-entry")) {
-                int patientId = extractPatientIdFromPath(path);
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+/test-entry")) {
+                String patientId = extractPatientIdFromPath(path);
                 handleSaveTestEntry(exchange, patientId);
-            } else if ("PUT".equals(method) && path.matches(".*/api/patients/\\d+")) {
-                int patientId = extractId(path);
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
+                String patientId = extractId(path);
                 handleUpdatePatient(exchange, patientId);
-            } else if ("GET".equals(method) && path.matches(".*/api/patients/\\d+")) {
-                int patientId = extractId(path);
+            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
+                String patientId = extractId(path);
+                log.info("patient_id:"+patientId);
                 handleGetPatient(exchange, patientId);
-            }else if ("DELETE".equals(method) && path.matches(".*/api/patients/\\d+")) {
-                int patientId = extractId(path);
+            }else if ("DELETE".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
+                String patientId = extractId(path);
                 handleDeletePatient(exchange, patientId);
             } else {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, -1);
@@ -96,7 +97,7 @@ public class PatientHandler implements HttpHandler {
         }
     }
 
-    private void handleUpdatePatient(HttpExchange exchange, int patientId) throws IOException {
+    private void handleUpdatePatient(HttpExchange exchange, String patientId) throws IOException {
         try {
             String body = readBody(exchange.getRequestBody());
             log.info("Update patient request body: " + body);
@@ -120,7 +121,7 @@ public class PatientHandler implements HttpHandler {
         }
     }
 
-    private void handleGetPatient(HttpExchange exchange, int patientId) throws IOException {
+    private void handleGetPatient(HttpExchange exchange, String patientId) throws IOException {
         try {
             Map<String, String> patient = PatientService.getPatientById(patientId);
 
@@ -153,6 +154,8 @@ public class PatientHandler implements HttpHandler {
             String search = params.get("search");
             String gender = params.get("gender");
             String createdAt = params.get("created_at");
+
+            log.info("Search patients with parameters: search=" + search + ", gender=" + gender + ", created_at=" + createdAt);
 
             if ((search == null || search.isEmpty()) && (gender == null || gender.isEmpty()) && (createdAt == null || createdAt.isEmpty())) {
                 String jsonResponse = "{\"patients\":[]}";
@@ -207,6 +210,17 @@ public class PatientHandler implements HttpHandler {
             }
         }
         
+        Double commissionPercent = null;
+        String commissionPercentStr = extractJsonString(json, "commission_percent");
+        if (commissionPercentStr != null && !commissionPercentStr.isEmpty()) {
+            try {
+                commissionPercent = Double.parseDouble(commissionPercentStr);
+            } catch (NumberFormatException e) {
+                // Leave as null
+            }
+        }
+        request.commission_percent = commissionPercent;
+        log.info("Parsed commission_percent: " + commissionPercent);
         // Parse order_panels array
         request.order_panels = extractJsonArray(json, "order_panels");
         
@@ -363,9 +377,9 @@ public class PatientHandler implements HttpHandler {
                    .replace("\t", "\\t");
     }
 
-    private int extractId(String path) {
+    private String extractId(String path) {
         String[] parts = path.split("/");
-        return Integer.parseInt(parts[parts.length - 1]);
+        return (parts[parts.length - 1]);
     }
 
     private String readBody(InputStream is) throws IOException {
@@ -461,7 +475,7 @@ public class PatientHandler implements HttpHandler {
         return params;
     }
 
-    private void handleGetPatientTestOrders(HttpExchange exchange, int patientId) throws IOException {
+    private void handleGetPatientTestOrders(HttpExchange exchange, String patientId) throws IOException {
         try {
             String json = PatientService.getPatientTestOrdersJson(patientId);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -475,22 +489,24 @@ public class PatientHandler implements HttpHandler {
         }
     }
 
-    private int extractPatientIdFromPath(String path) {
+    private String extractPatientIdFromPath(String path) {
         // Extract patient ID from path like /api/patients/123/test-orders
         String[] parts = path.split("/");
         for (int i = 0; i < parts.length - 1; i++) {
             if ("patients".equals(parts[i]) && i + 1 < parts.length) {
                 try {
-                    return Integer.parseInt(parts[i + 1]);
+                    log.info("Extracted patient ID from path: " + parts[i + 1]);
+                    return parts[i + 1];
                 } catch (NumberFormatException e) {
-                    return -1;
+                    log.info("Invalid patient ID in path: " + path);
+                    return " "; // Invalid ID
                 }
             }
         }
-        return -1;
+        return " ";
     }
 
-    private void handleSaveTestEntry(HttpExchange exchange, int patientId) throws IOException {
+    private void handleSaveTestEntry(HttpExchange exchange, String patientId) throws IOException {
         try {
             String body = readBody(exchange.getRequestBody());
             log.info("Save test entry request for patient_id=" + patientId + ": " + body);
@@ -564,7 +580,7 @@ public class PatientHandler implements HttpHandler {
         }
     }
 
-    private void handleDeletePatient(HttpExchange exchange, int patientId) throws IOException {
+    private void handleDeletePatient(HttpExchange exchange, String patientId) throws IOException {
         try {
             PatientService.deletePatient(patientId);
             String response = "{\"success\":true,\"message\":\"Patient deleted successfully\"}";

@@ -691,6 +691,7 @@
                     created_by: currentUserId,
                     priority: document.getElementById('orderPriority').value || 'Routine',
                     notes: document.getElementById('orderNotes').value || null,
+                    commission_percent: parseFloat(formData.get('commission_percent')) || 0,
                     order_panels: getSelectedPanels()
                 };
 
@@ -765,13 +766,13 @@
             }
 
             function getSelectedPanels() {
-                const checkboxes = document.querySelectorAll('input[name="order_panels"]:checked');
-                const panels = [];
-                checkboxes.forEach(checkbox => {
-                    panels.push(parseInt(checkbox.value));
-                });
+                const dropdown = document.getElementById('panelDropdown');
+                const selectedOptions = Array.from(dropdown.selectedOptions);
+                const panels = selectedOptions.map(opt => parseInt(opt.value));
+                console.log('Selected panels:', panels);
                 return panels;
             }
+
 
             function clearSelectedPanels() {
                 const checkboxes = document.querySelectorAll('input[name="order_panels"]');

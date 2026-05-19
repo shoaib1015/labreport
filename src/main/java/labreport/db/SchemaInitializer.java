@@ -21,7 +21,7 @@ public class SchemaInitializer {
                         "created_at TEXT DEFAULT CURRENT_TIMESTAMP" +
                         ")" },
                 { "patients", "CREATE TABLE IF NOT EXISTS patients (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "id TEXT PRIMARY KEY," +
                         "name TEXT NOT NULL," +
                         "dob TEXT," +
                         "gender TEXT," +
