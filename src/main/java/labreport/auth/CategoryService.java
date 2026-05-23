@@ -75,6 +75,16 @@ public class CategoryService {
         try {
             Connection conn = DatabaseManager.getConnection();
 
+            // Check for existing category to avoid UNIQUE constraint violation
+            PreparedStatement checkStmt = conn.prepareStatement(
+                    "SELECT 1 FROM categories WHERE category_name = ? LIMIT 1");
+            checkStmt.setString(1, categoryName);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next()) {
+                log.warning("Category already exists: " + categoryName);
+                return false;
+            }
+
             PreparedStatement stmt = conn.prepareStatement(
                     "INSERT INTO categories (category_name, description, status, created_at) VALUES (?, ?, ?, ?)");
 

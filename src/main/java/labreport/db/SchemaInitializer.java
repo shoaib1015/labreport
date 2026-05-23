@@ -35,7 +35,7 @@ public class SchemaInitializer {
                         ")" },
                 { "test_order", "CREATE TABLE IF NOT EXISTS test_order (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                        "patient_id INTEGER NOT NULL," +
+                        "patient_id TEXT NOT NULL," +
                         "priority TEXT DEFAULT 'Routine'," +
                         "notes TEXT," +
                         "sample_collected_at TEXT," +
@@ -158,6 +158,7 @@ public class SchemaInitializer {
             }
         }
     }
+
 
     private static void ensureTestOrderColumns(Connection connection) {
         ensureColumnExists(connection, "test_order", "status TEXT DEFAULT 'Pending'");

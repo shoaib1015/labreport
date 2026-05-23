@@ -116,7 +116,14 @@ public class CategoryHandler implements HttpHandler {
 
                 log.info("Category added successfully");
             } else {
-                exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, -1);
+                // CategoryService returns false when the category already exists
+                String response = "{\"status\": \"error\", \"message\": \"Category already exists\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(HttpURLConnection.HTTP_CONFLICT, response.getBytes(StandardCharsets.UTF_8).length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes(StandardCharsets.UTF_8));
+                }
+                log.info("Category add failed due to duplicate: " + categoryName);
             }
 
         } catch (Exception e) {
