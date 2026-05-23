@@ -52,6 +52,8 @@ public class PanelHandler implements HttpHandler {
             } else if ("GET".equals(method) && path.matches(".*/api/commissions/\\d+")) {
                 int doctorId = extractId(path);
                 handleGetCommission(exchange, doctorId);
+            } else if ("POST".equals(method) && path.endsWith("/api/components")) {
+                handleAddComponent(exchange);
             }
             else {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_METHOD, -1);
@@ -408,6 +410,58 @@ public class PanelHandler implements HttpHandler {
     private String readBody(InputStream is) throws IOException {
         try (Scanner scanner = new Scanner(is).useDelimiter("\\A")) {
             return scanner.hasNext() ? scanner.next() : "";
+        }
+    }
+
+    private void handleAddComponent(HttpExchange exchange) throws IOException {
+        try {
+            String body = readBody(exchange.getRequestBody());
+            Map<String, String> params = FormParser.parse(body);
+
+            String panelName = params.get("panel_name");
+            String componentName = params.get("component_name");
+            String ageRange = params.get("age_range");
+            String gender = params.get("gender");
+            String unit = params.get("unit");
+            String normalRange = params.get("normal_range");
+            String remarks = params.get("remarks");
+            String status = params.get("status");
+            String panelIdStr = params.get("panel_id");
+
+            if (panelName == null || panelName.trim().isEmpty() || 
+                componentName == null || componentName.trim().isEmpty() ||
+                panelIdStr == null || panelIdStr.trim().isEmpty()) {
+                exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, -1);
+                return;
+            }
+
+            int panelId = Integer.parseInt(panelIdStr);
+
+            boolean success = PanelService.addComponent(panelName, componentName, ageRange, gender, 
+                                                       unit, normalRange, remarks, status, panelId);
+
+            if (success) {
+                String response = "{\"status\": \"success\", \"message\": \"Component added successfully\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes(StandardCharsets.UTF_8));
+                }
+
+                log.info("Component added successfully: " + componentName);
+            } else {
+                exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, -1);
+            }
+
+        } catch (Exception e) {
+            log.severe("Failed to add component: " + e.getMessage());
+            String errorResponse = "{\"error\": \"Failed to add component\", \"message\": \"" + escapeJson(e.getMessage()) + "\"}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(500, errorResponse.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(errorResponse.getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 }

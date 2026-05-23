@@ -258,6 +258,7 @@
             </div>
 
             <div class="button-group">
+                <button class="btn btn-primary" onclick="addComponent()">Add New Subtest</button>
                 <button class="btn btn-secondary" onclick="goBackToList()">Back to List</button>
             </div>
         </div>
@@ -318,7 +319,7 @@
         document.getElementById('partOf').textContent = panel.panel_name || 'N/A';
         document.getElementById('panelUnit').textContent = panel.unit || 'N/A';
         document.getElementById('panelNormalRange').textContent = panel.normal_range || 'N/A';
-        document.getElementById('panelPrice').textContent = '$' + (panel.price || '0');
+        document.getElementById('panelPrice').textContent = '₹' + (panel.price || '0');
         
         const isActive = panel.status === 'Active';
         document.getElementById('statusToggle').checked = isActive;
@@ -454,6 +455,14 @@
 
     function goBackToList() {
         window.parent.loadPage('/master/test-list.html');
+    }
+
+    function addComponent() {
+        if (currentPanelData && currentPanelData.panel_name) {
+            window.parent.loadPage(`/master/new-component.html?panel_name=${encodeURIComponent(currentPanelData.panel_name)}`);
+        } else {
+            showError('Cannot add component - panel name not available');
+        }
     }
 
     function showError(message) {

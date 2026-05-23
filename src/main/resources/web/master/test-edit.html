@@ -80,15 +80,15 @@
 <body class="full-page">
 
 <div class="page-content">
-    <h2 id="pageHeading">Add Panel</h2>
-    <div class="subtitle">Add or modify panel details</div>
+    <h2 id="pageHeading">Add Test</h2>
+    <div class="subtitle">Add or modify test details</div>
 
     <div id="error" class="error"></div>
     <div id="success" class="success"></div>
 
     <form id="panelForm">
         <div class="form-group">
-            <label>Panel Name *</label>
+            <label>Test Name *</label>
             <input type="text" name="panel_name" id="panelName" required>
             <div id="panelNameLink" style="margin-top: 8px; display: none;">
                 <a href="#" id="panelDetailsLink" style="color: #007bff; text-decoration: none; font-size: 14px;" onclick="openTestDetails(event)">View Test Details</a>
@@ -122,7 +122,8 @@
         </div>
 
         <div class="button-group">
-            <button type="button" class="save-btn" onclick="savePanel()">Save Panel</button>
+            <button type="button" class="save-btn" onclick="savePanel()">Save Test</button>
+            <button type="button" class="edit-btn" onclick="addComponent()">Add New Subtest</button>
             <button type="button" class="cancel-btn" onclick="cancelForm()">Cancel</button>
         </div>
     </form>
@@ -280,6 +281,16 @@
     function cancelForm() {
         // Go back to panel list
         window.parent.loadPage('/master/test-list.html');
+    }
+
+    function addComponent() {
+        const panelName = document.getElementById('panelName').value.trim();
+        console.log('Adding component to panel:', panelName);
+        if (panelName) {
+            window.parent.loadPage(`/master/new-component.html?panel_name=${encodeURIComponent(panelName)}`);
+        } else {
+            showError('Please enter or load a panel name first');
+        }
     }
 
     function showError(message) {

@@ -7,19 +7,27 @@
     <style>
         .button-group {
             margin-bottom: 20px;
+            display: flex;          /* align items in a row */
+            justify-content: flex-end; /* push buttons to the right */
+            gap: 8px;               /* spacing between buttons */
         }
+
         button.add-btn {
             background-color: #2563eb;
             color: white;
-            padding: 10px 20px;
+            padding: 6px 12px;      /* smaller padding for compact size */
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;        /* smaller text */
+            width: 200px;           /* fixed reduced width */
+            text-align: center;
         }
+
         button.add-btn:hover {
             background-color: #1e3f5a;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;

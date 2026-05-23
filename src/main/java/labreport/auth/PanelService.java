@@ -241,6 +241,36 @@ public class PanelService {
         }
     }
 
+    public static boolean addComponent(String panelName, String componentName, String ageRange, String gender, 
+                                       String unit, String normalRange, String remarks, String status, int panelId) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+
+            PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO components (panel_name, component_name, ageRange, gender, unit, normal_range, remarks, status, panel_id, created_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            stmt.setString(1, panelName);
+            stmt.setString(2, componentName);
+            stmt.setString(3, ageRange);
+            stmt.setString(4, gender);
+            stmt.setString(5, unit);
+            stmt.setString(6, normalRange);
+            stmt.setString(7, remarks);
+            stmt.setString(8, status != null && !status.isEmpty() ? status : "Active");
+            stmt.setInt(9, panelId);
+            stmt.setString(10, LocalDateTime.now().toString());
+
+            int rowsAffected = stmt.executeUpdate();
+            log.info("Component added successfully: " + componentName + " for panel: " + panelName + ", rows affected: " + rowsAffected);
+            return true;
+
+        } catch (Exception e) {
+            log.severe("Failed to add component: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Double getCommissions(int doctorId) {
         // Implementation for fetching commissions
         Connection conn = DatabaseManager.getConnection();

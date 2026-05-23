@@ -1,30 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Panel Master</title>
+    <title>Test Catalog</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/styles.css">
     <style>
         .button-group {
             margin-bottom: 20px;
+            display: flex;          /* ensures buttons sit side by side */
+            gap: 8px;               /* small spacing between buttons */
         }
+
         button.add-btn {
             background-color: #2563eb;
             color: white;
-            padding: 10px 20px;
+            padding: 6px 12px;      /* smaller padding for compact size */
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
-            margin-right: 10px;
+            font-size: 14px;        /* smaller text */
+            display: inline-block;
         }
+
         button.add-btn:hover {
             background-color: #1e3f5a;
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #2563eb;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #1e3f5a;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
         table th, table td {
             border: 1px solid #ddd;
@@ -34,6 +59,9 @@
         table th {
             background-color: #2563eb;
             font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         table tr:hover {
             background-color: #f9f9f9;
@@ -56,39 +84,71 @@
             margin: 0 2px;
             font-size: 12px;
         }
+        .search-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .search-container input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            max-width: 400px;
+        }
+        .search-container input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 5px rgba(37, 99, 235, 0.3);
+        }
+        .search-info {
+            color: #666;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body class="full-page">
 
 <div class="page-content">
-    <h2>Panel Master</h2>
-    <div class="subtitle">Manage laboratory test panels and categories</div>
+    <h2>Test Catalog</h2>
+    <div class="subtitle">Manage laboratory tests and categories</div>
 
     <div class="button-group">
-        <button class="add-btn" onclick="openAddPanelForm()">Add New Panel</button>
+        <button class="add-btn" onclick="openAddPanelForm()">Add New Test</button>
         <button class="add-btn" onclick="openAddCategoryForm()" style="background-color: #2196F3;">Add New Category</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search tests by name, category, or description..." onkeyup="filterPanels()">
+        <span class="search-info" id="searchInfo"></span>
     </div>
 
     <div id="loading" class="loading">Loading panels...</div>
     <div id="error" class="error" style="display: none;"></div>
 
-    <table id="panelsTable" style="display: none;">
-        <thead>
-            <tr>
-                <th>Panel Name</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="panelsBody">
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table id="panelsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Test Name</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="panelsBody">
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
+    let allPanels = [];
+
     document.addEventListener('DOMContentLoaded', function() {
         loadPanels();
     });
@@ -108,7 +168,9 @@
             return response.json();
         })
         .then(data => {
+            allPanels = data;
             displayPanels(data);
+            updateSearchInfo(data.length);
             document.getElementById('loading').style.display = 'none';
             document.getElementById('panelsTable').style.display = 'table';
         })
@@ -196,6 +258,43 @@
         };
         return text.replace(/[&<>"']/g, m => map[m]);
     }
+
+    function filterPanels() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        
+        if (!searchTerm) {
+            displayPanels(allPanels);
+            updateSearchInfo(allPanels.length);
+            return;
+        }
+        
+        const filteredPanels = allPanels.filter(panel => {
+            const panelName = (panel.panel_name || '').toLowerCase();
+            const category = (panel.category_name || '').toLowerCase();
+            const description = (panel.description || '').toLowerCase();
+            const price = (panel.price || '').toLowerCase();
+            
+            return panelName.includes(searchTerm) || 
+                   category.includes(searchTerm) || 
+                   description.includes(searchTerm) ||
+                   price.includes(searchTerm);
+        });
+        
+        displayPanels(filteredPanels);
+        updateSearchInfo(filteredPanels.length, allPanels.length);
+    }
+
+    function updateSearchInfo(displayedCount, totalCount) {
+        const searchInfo = document.getElementById('searchInfo');
+        const searchTerm = document.getElementById('searchInput').value.trim();
+        
+        if (searchTerm) {
+            searchInfo.textContent = `Showing ${displayedCount} of ${totalCount} results`;
+        } else {
+            searchInfo.textContent = `Total: ${displayedCount} tests`;
+        }
+    }
+
 </script>
 
 </body>
