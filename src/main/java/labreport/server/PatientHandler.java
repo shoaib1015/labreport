@@ -82,13 +82,21 @@ public class PatientHandler implements HttpHandler {
 
             String jsonResponse = objectToJson(response);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
+
+            if (!response.validationResult.valid) {
+                int status = response.validationResult.errors.stream().anyMatch(err -> err.startsWith("Database error:"))
+                        ? HttpURLConnection.HTTP_INTERNAL_ERROR
+                        : HttpURLConnection.HTTP_BAD_REQUEST;
+                exchange.sendResponseHeaders(status, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
+                log.warning("Patient creation failed: " + response.validationResult.errors);
+            } else {
+                exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
+                log.info("Patient created successfully");
+            }
 
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(jsonResponse.getBytes(StandardCharsets.UTF_8));
             }
-
-            log.info("Patient created successfully");
 
         } catch (Exception e) {
             log.severe("Failed to create patient: " + e.getMessage());
