@@ -46,12 +46,17 @@ public class PatientService {
         public String address;
         public Integer referring_doctor_id;
         public Integer created_by;
-        public List<Integer> order_panels;
+        public List<PanelOrder> order_panels;
         public String priority;
         public String notes;
         public Double commission_percent;
         public Double commission_amount;
         public String id; // Custom patient ID to be generated
+    }
+
+    public static class PanelOrder {
+        public Integer panelId;
+        public Double commissionPercent;
     }
 
     public static class CreatePatientResponse {
@@ -191,18 +196,22 @@ public class PatientService {
             // If the request includes panel information, update existing test_order rows
             if (request.order_panels != null && !request.order_panels.isEmpty()) {
                 log.info("Updating related test_order records for patient id=" + patientId);
-                String updateOrderSql = "UPDATE test_order SET priority = ?, notes = ?, commission_percent = ?, commission_amount = (SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?), updated_at = ? WHERE patient_id = ?";
+                String updateOrderSql = "UPDATE test_order SET priority = ?, notes = ?, commission_percent = ?, commission_amount = (SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?), updated_at = ? WHERE patient_id = ? AND panel_id = ?";
                 try (PreparedStatement updateOrderStmt = conn.prepareStatement(updateOrderSql)) {
                     String priority = request.priority != null ? request.priority : "Routine";
-                    for (Integer panelId : request.order_panels) {
-                        log.info("Updating test_order for panel_id=" + panelId);
+                    for (PanelOrder panelOrder : request.order_panels) {
+                        int panelId = panelOrder.panelId != null ? panelOrder.panelId : 0;
+                        double commissionPercent = panelOrder.commissionPercent != null ? panelOrder.commissionPercent : (request.commission_percent != null ? request.commission_percent : 0.0);
+
+                        log.info("Updating test_order for panel_id=" + panelId + " commission_percent=" + commissionPercent);
                         updateOrderStmt.setString(1, priority);
                         updateOrderStmt.setString(2, request.notes);
-                        updateOrderStmt.setDouble(3, request.commission_percent != null ? request.commission_percent : 0.0);
-                        updateOrderStmt.setDouble(4, request.commission_percent != null ? request.commission_percent : 0.0);
+                        updateOrderStmt.setDouble(3, commissionPercent);
+                        updateOrderStmt.setDouble(4, commissionPercent);
                         updateOrderStmt.setInt(5, panelId);
                         updateOrderStmt.setString(6, utcNow);
                         updateOrderStmt.setString(7, patientId);
+                        updateOrderStmt.setInt(8, panelId);
                         
                         int updated = updateOrderStmt.executeUpdate();
                         log.info("test_order UPDATE rows affected for panel_id=" + panelId + ": " + updated);
@@ -385,9 +394,10 @@ public class PatientService {
             testOrder.put("created_at", utcNow);
 
             List<Map<String, Object>> panels = new ArrayList<>();
-            for (Integer panelId : request.order_panels) {
+            for (PanelOrder panelOrder : request.order_panels) {
                 Map<String, Object> panel = new HashMap<>();
-                panel.put("panel_id", panelId);
+                panel.put("panel_id", panelOrder.panelId);
+                panel.put("commission_percent", panelOrder.commissionPercent != null ? panelOrder.commissionPercent : request.commission_percent);
                 panel.put("created_at", utcNow);
                 panels.add(panel);
             }
@@ -429,23 +439,36 @@ public class PatientService {
             // Insert patient
             log.info("Preparing patient INSERT statement");
 
-            int nextCounter = 1;
-            try (PreparedStatement counterStmt = conn.prepareStatement(
-                "SELECT COUNT(*) FROM patients WHERE date(created_at) = date('now')")) {
-                ResultSet rs = counterStmt.executeQuery();
-                if (rs.next()) {
-                    nextCounter = rs.getInt(1) + 1;
-                }
-            }
-
             LocalDate today = LocalDate.now();
             int year = today.getYear() % 100; // e.g. 26
             char monthLetter = (char) ('A' + today.getMonthValue() - 1); // May = E
             int day = today.getDayOfMonth();
+            
+            // Build ID prefix for today and find max counter
+            String idPrefix = String.format("%02d%c%02d-", year, monthLetter, day);
+            int nextCounter = 1;
+            
+            try (PreparedStatement counterStmt = conn.prepareStatement(
+                "SELECT id FROM patients WHERE id LIKE ? ORDER BY id DESC LIMIT 1")) {
+                counterStmt.setString(1, idPrefix + "%");
+                ResultSet rs = counterStmt.executeQuery();
+                if (rs.next()) {
+                    String lastId = rs.getString("id");
+                    // Extract counter from last ID (e.g., "26E24-2" -> counter is 2)
+                    try {
+                        String counterStr = lastId.substring(idPrefix.length());
+                        int lastCounter = Integer.parseInt(counterStr);
+                        nextCounter = lastCounter + 1;
+                    } catch (Exception e) {
+                        log.warning("Could not parse counter from existing ID: " + lastId);
+                        nextCounter = 1;
+                    }
+                }
+            }
 
-            String customId = String.format("%02d%c%02d%d", year, monthLetter, day, nextCounter);
+            String customId = String.format("%02d%c%02d-%d", year, monthLetter, day, nextCounter);
             request.id=customId;
-            log.info("Generated custom patient ID: " + customId);
+            log.info("Generated custom patient ID: " + customId + " (idPrefix=" + idPrefix + ", nextCounter=" + nextCounter + ")");
 
             String patientSql = "INSERT INTO patients (id, name, dob, gender, contact_phone, contact_email, address, referring_doctor_id, created_by, created_at) "
                     +
@@ -530,8 +553,8 @@ public class PatientService {
                     try (PreparedStatement panelFetchStmt = conn.prepareStatement(panelQueryBuilder.toString())) {
                         // Set all panel IDs in the WHERE IN clause
                         for (int i = 0; i < request.order_panels.size(); i++) {
-                            panelFetchStmt.setInt(i + 1, request.order_panels.get(i));
-                            log.info("Panel fetch query parameter [" + (i + 1) + "]: " + request.order_panels.get(i));
+                            panelFetchStmt.setInt(i + 1, request.order_panels.get(i).panelId);
+                            log.info("Panel fetch query parameter [" + (i + 1) + "]: " + request.order_panels.get(i).panelId);
                         }
 
                         ResultSet rs = panelFetchStmt.executeQuery();
@@ -557,9 +580,11 @@ public class PatientService {
                         String gender = request.gender != null ? request.gender : "Other";
 
                         int panelCount = 0;
-                        for (Integer panelId : request.order_panels) {
+                        for (PanelOrder panelOrder : request.order_panels) {
+                            int panelId = panelOrder.panelId != null ? panelOrder.panelId : 0;
+                            double commissionPercent = panelOrder.commissionPercent != null ? panelOrder.commissionPercent : (request.commission_percent != null ? request.commission_percent : 0.0);
                             panelCount++;
-                            log.info("Creating test order " + panelCount + " for panel_id=" + panelId);
+                            log.info("Creating test order " + panelCount + " for panel_id=" + panelId + " commission_percent=" + commissionPercent);
 
                             log.info("Setting test order parameters:");
                             log.info("  [1] patient_id: " + patientId);
@@ -584,9 +609,8 @@ public class PatientService {
                             log.info("  [7] panel_name: " + panelName);
                             orderStmt.setString(7, panelName);
 
-                            orderStmt.setDouble(8, request.commission_percent != null ? request.commission_percent : 0.0);
-                            //to calculate commission_amount in Java instead of SQL, we would need the panel price. For simplicity, we'll set it to 0 for now and calculate it later when fetching panel details.
-                            orderStmt.setDouble(9, request.commission_percent != null ? request.commission_percent : 0.0);
+                            orderStmt.setDouble(8, commissionPercent);
+                            orderStmt.setDouble(9, commissionPercent);
                             orderStmt.setInt(10, panelId);
                             // Execute individual insert
                             log.info(orderStmt.toString());
@@ -960,11 +984,51 @@ public class PatientService {
 
     public static void deletePatient(String patientId) throws SQLException {
         Connection conn = DatabaseManager.getConnection();
-        String sql = "DELETE FROM patients WHERE id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, patientId);
-            int rows = stmt.executeUpdate();
-            log.info("Deleted patient id=" + patientId + ", rows affected: " + rows);
+        log.info("Starting delete for patient id=" + patientId);
+        try {
+            conn.setAutoCommit(false);
+
+            // Delete components for all test orders of this patient
+            String deleteComponentsSql = "DELETE FROM test_order_component WHERE test_order_id IN (SELECT id FROM test_order WHERE patient_id = ?)";
+            try (PreparedStatement delCompStmt = conn.prepareStatement(deleteComponentsSql)) {
+                delCompStmt.setString(1, patientId);
+                int compRows = delCompStmt.executeUpdate();
+                log.info("Deleted test_order_component rows for patient id=" + patientId + ", rows affected: " + compRows);
+            }
+
+            // Delete test orders for this patient
+            String deleteOrdersSql = "DELETE FROM test_order WHERE patient_id = ?";
+            try (PreparedStatement delOrderStmt = conn.prepareStatement(deleteOrdersSql)) {
+                delOrderStmt.setString(1, patientId);
+                int orderRows = delOrderStmt.executeUpdate();
+                log.info("Deleted test_order rows for patient id=" + patientId + ", rows affected: " + orderRows);
+            }
+
+            // Finally delete the patient record
+            String deletePatientSql = "DELETE FROM patients WHERE id = ?";
+            try (PreparedStatement delPatientStmt = conn.prepareStatement(deletePatientSql)) {
+                delPatientStmt.setString(1, patientId);
+                int patientRows = delPatientStmt.executeUpdate();
+                log.info("Deleted patient id=" + patientId + ", rows affected: " + patientRows);
+            }
+
+            conn.commit();
+            log.info("Completed delete transaction for patient id=" + patientId);
+        } catch (SQLException e) {
+            log.severe("Error deleting patient id=" + patientId + ": " + e.getMessage());
+            try {
+                conn.rollback();
+                log.info("Rollback completed for patient delete: id=" + patientId);
+            } catch (SQLException rbEx) {
+                log.severe("Rollback failed: " + rbEx.getMessage());
+            }
+            throw e;
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException ex) {
+                log.warning("Failed to restore autocommit after delete: " + ex.getMessage());
+            }
         }
     }
 
@@ -991,7 +1055,7 @@ public class PatientService {
 
         String sql = "SELECT t.id as order_id, t.panel_id, t.panel_name, t.sample_collected_at, t.notes, t.status, t.created_at, " +
                 "p.category_name, " +
-                "c.id as component_row_id, c.component_name, c.result_value, c.unit, c.reference_range, c.flag " +
+                "c.id as component_row_id, c.component_id, c.component_name, c.result_value, c.unit, c.reference_range, c.flag " +
                 "FROM test_order t " +
                 "LEFT JOIN panels p ON t.panel_id = p.panel_id " +
                 "LEFT JOIN test_order_component c ON t.id = c.test_order_id " +
@@ -1030,6 +1094,7 @@ public class PatientService {
                 if (componentName != null) {
                     Map<String, String> component = new HashMap<>();
                     component.put("component_row_id", rs.getString("component_row_id"));
+                    component.put("component_id", String.valueOf(rs.getInt("component_id")));
                     component.put("component_name", componentName);
                     component.put("unit", rs.getString("unit"));
                     component.put("reference_range", rs.getString("reference_range"));
@@ -1076,6 +1141,7 @@ public class PatientService {
                     firstComponent = false;
                     json.append("{");
                     json.append("\"component_row_id\":").append(component.get("component_row_id"));
+                    json.append(",\"component_id\":").append(component.get("component_id") != null ? component.get("component_id") : "0");
                     json.append(",\"component_name\":\"").append(escapeJson(component.get("component_name"))).append("\"");
                     json.append(",\"unit\":\"").append(escapeJson(component.get("unit"))).append("\"");
                     json.append(",\"reference_range\":\"").append(escapeJson(component.get("reference_range"))).append("\"");

@@ -306,4 +306,63 @@ public class TestOrderComponentService {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Inserts a new test order component result row.
+     *
+     * @param testOrderId    The test order ID
+     * @param componentId    The master component ID (optional)
+     * @param componentName  The display component name
+     * @param unit           The measurement unit
+     * @param referenceRange The normal/reference range
+     * @param resultValue    The entered result value
+     * @param flag           The result flag
+     * @return true if insert was successful
+     */
+    public static boolean insertComponentResult(int testOrderId, int componentId, String componentName, String unit, String referenceRange, String resultValue, String flag) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            String sql = "INSERT INTO test_order_component " +
+                    "(test_order_id, component_id, component_name, unit, reference_range, result_value, flag, created_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))";
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, testOrderId);
+                stmt.setInt(2, componentId);
+                stmt.setString(3, componentName != null ? componentName : "");
+                stmt.setString(4, unit != null ? unit : "");
+                stmt.setString(5, referenceRange != null ? referenceRange : "");
+                stmt.setString(6, resultValue != null ? resultValue : "");
+                stmt.setString(7, flag != null ? flag : "Normal");
+
+                int rowsAffected = stmt.executeUpdate();
+                log.info("Inserted new test order component for test_order_id: " + testOrderId + ", rows affected: " + rowsAffected);
+                return rowsAffected > 0;
+            }
+        } catch (Exception e) {
+            log.severe("Failed to insert component result: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+        /**
+         * Deletes a test_order_component row by its id.
+         * @param componentId the id of the test_order_component row
+         * @return true if a row was deleted
+         */
+        public static boolean deleteComponentById(int componentId) {
+            try {
+                Connection conn = DatabaseManager.getConnection();
+                String sql = "DELETE FROM test_order_component WHERE id = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setInt(1, componentId);
+                    int rows = stmt.executeUpdate();
+                    log.info("Deleted test_order_component id=" + componentId + ", rows=" + rows);
+                    return rows > 0;
+                }
+            } catch (Exception e) {
+                log.severe("Failed to delete component id=" + componentId + ": " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        }
 }

@@ -396,7 +396,7 @@
                         <div class="form-group">
                             <label>Referred By</label>
                             <select name="referring_doctor_id" id="referringDoctorSelect">
-                                <option value="">Select (Optional)</option>
+                                <option value="" selected>Self</option>
                             </select>
                         </div>
 
@@ -479,7 +479,7 @@
                                 
                                 <!-- Commission input field -->
                                 <input type="number" id="commissionPercent" 
-                                    class="form-control" placeholder="Commission %" min="0" max="100" step="0.01" 
+                                    class="form-control" value="0" placeholder="Commission %" min="0" max="100" step="0.01" 
                                     style="flex: 1; max-width: 120px;">
                                 
                                 <!-- Add button -->
@@ -553,6 +553,7 @@
             let currentPatientId = null; // Will be set if editing
             let panelsMap = {}; // Map of panel ID to panel name
             let addedTests = []; // Array of added test orders
+            let selectedDoctorCommission = 0; // Default commission for Self
 
             document.addEventListener('DOMContentLoaded', function () {
                 // Check if editing existing patient
@@ -568,13 +569,18 @@
                     pageSubtitle.textContent = 'Update patient details and test orders';
                     document.querySelector('button[type="submit"]').textContent = 'Update Patient';
                     document.getElementById('deletePatientBtn').style.display = 'block';
-                    loadPatientData();
                 } else {
                     document.querySelector('button[type="submit"]').textContent = 'Save Patient';
                 }
 
-                loadDoctors();
-                loadPanels();
+                // Load doctors first, then panels, then patient data if editing
+                loadDoctors().then(() => {
+                    return loadPanels();
+                }).then(() => {
+                    if (currentPatientId) {
+                        loadPatientData();
+                    }
+                });
             });
 
             function loadPatientData() {
@@ -608,13 +614,40 @@
                 }
                 if (patient.contact_email) document.querySelector('input[name="contact_email"]').value = patient.contact_email;
                 if (patient.address) document.querySelector('textarea[name="address"]').value = patient.address;
-                if (patient.referring_doctor_id) document.querySelector('select[name="referring_doctor_id"]').value = patient.referring_doctor_id;
+                
+                // Set referring doctor and update commission default
+                if (patient.referring_doctor_id && patient.referring_doctor_id !== '0' && patient.referring_doctor_id !== 0) {
+                    document.querySelector('select[name="referring_doctor_id"]').value = patient.referring_doctor_id;
+                    // Fetch and set the commission for this doctor
+                    fetch(`/api/commissions/${patient.referring_doctor_id}`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        selectedDoctorCommission = data.commission_percent != null
+                            ? parseFloat(data.commission_percent)
+                            : 0;
+                        document.getElementById('commissionPercent').value = selectedDoctorCommission;
+                    })
+                    .catch(error => {
+                        console.warn('Could not fetch doctor commission:', error);
+                        selectedDoctorCommission = 0;
+                    });
+                } else {
+                    document.querySelector('select[name="referring_doctor_id"]').value = '';
+                    selectedDoctorCommission = 0;
+                    document.getElementById('commissionPercent').value = '0';
+                }
 
                 console.log('Form populated with patient data');
             }
 
             function loadDoctors() {
-                fetch('/api/doctors', {
+                return fetch('/api/doctors', {
                     method: 'GET',
                     credentials: 'include',
                     headers: {
@@ -632,10 +665,6 @@
 
             function displayDoctors(doctors) {
                 const doctorSelect = document.getElementById('referringDoctorSelect');
-                const option = document.createElement('option');
-                option.value = 'Self';          // the value submitted with the form
-                option.textContent = 'Self';    // the text shown in the dropdown
-                doctorSelect.appendChild(option);
 
                 if (!doctors || doctors.length === 0) {
                     return;
@@ -651,7 +680,7 @@
             }
 
             function loadPanels() {
-                fetch('/api/panels', {
+                return fetch('/api/panels', {
                     method: 'GET',
                     credentials: 'include',
                     headers: {
@@ -716,12 +745,15 @@
                 }
 
                 const panelName = panelsMap[panelId] || 'Unknown';
-                const commission = parseFloat(commissionInput.value) || 0;
+                const commissionValue = commissionInput.value.trim();
+                const commission = commissionValue !== ''
+                    ? parseFloat(commissionValue)
+                    : selectedDoctorCommission;
 
                 addedTests.push({
                     panelId: panelId,
                     panelName: panelName,
-                    commission: commission
+                    commission: isNaN(commission) ? 0 : commission
                 });
 
                 renderAddedTests();
@@ -733,6 +765,20 @@
 
             function removeTestOrder(panelId) {
                 addedTests = addedTests.filter(t => t.panelId !== panelId);
+                renderAddedTests();
+            }
+
+            function updateTestCommission(panelId, value) {
+                const commissionValue = parseFloat(value);
+                addedTests = addedTests.map(test => {
+                    if (test.panelId === panelId) {
+                        return {
+                            ...test,
+                            commission: isNaN(commissionValue) ? 0 : commissionValue
+                        };
+                    }
+                    return test;
+                });
                 renderAddedTests();
             }
 
@@ -750,7 +796,10 @@
                 tableBody.innerHTML = addedTests.map((test, index) => `
                     <tr style="border-bottom: 1px solid #e8f0f8;">
                         <td style="padding: 8px;">${test.panelName}</td>
-                        <td style="padding: 8px; text-align: center;">${test.commission}%</td>
+                        <td style="padding: 8px; text-align: center;">
+                            <input type="number" value="${test.commission}" min="0" step="0.1" onchange="updateTestCommission('${test.panelId}', this.value)"
+                                style="width: 80px; padding: 4px; border: 1px solid #ced4da; border-radius: 3px; text-align: center;" />
+                        </td>
                         <td style="padding: 8px; text-align: center;">
                             <button type="button" onclick="removeTestOrder('${test.panelId}')" 
                                 style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
@@ -779,10 +828,8 @@
                     created_by: currentUserId,
                     priority: document.getElementById('orderPriority').value || 'Routine',
                     notes: document.getElementById('orderNotes').value || null,
-                    order_panels: addedTests.map(t => ({
-                        panelId: parseInt(t.panelId),
-                        commission: t.commission
-                    }))
+                    commission_percent: selectedDoctorCommission,
+                    order_panels: addedTests.map(t => ({ panel_id: parseInt(t.panelId), commission_percent: t.commission }))
                 };
 
                 console.log('Submitting patient request:', request);
@@ -1004,8 +1051,10 @@
                     doctorDropdown.addEventListener('change', async (e) => {
                     const doctorId = e.target.value;
                     
-                    if (!doctorId || doctorId === 'Self') {
-                        commissionInput.value = '';
+                    if (!doctorId) {
+                        selectedDoctorCommission = 0;
+                        commissionInput.value = '0';
+                        commissionInput.placeholder = 'Commission %';
                         return;
                     }
                     
@@ -1019,12 +1068,21 @@
                             }
                         });
                         const data = await response.json();
+                        selectedDoctorCommission = data.commission_percent != null
+                            ? parseFloat(data.commission_percent)
+                            : null;
 
-                        // Auto-fill commission field
-                        commissionInput.value = data.commission_percent || '';
+                        commissionInput.value = selectedDoctorCommission != null
+                            ? selectedDoctorCommission
+                            : '';
+                        commissionInput.placeholder = selectedDoctorCommission != null
+                            ? selectedDoctorCommission
+                            : 'Commission %';
                     } catch (error) {
                         console.error('Error fetching commission:', error);
+                        selectedDoctorCommission = null;
                         commissionInput.value = '';
+                        commissionInput.placeholder = 'Commission %';
                     }
                     });
                 }
