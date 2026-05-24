@@ -406,7 +406,7 @@
                             </tr>
                         </thead>
                         <tbody id="testOrdersTable">
-                            <tr><td colspan="5" class="no-data">No test orders found</td></tr>
+                            <tr><td colspan="7" class="no-data">No test orders found</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -485,36 +485,89 @@
         function loadTestOrders(patientId) {
             console.log('Loading test orders for patient ID:', patientId);
             fetch(`/api/patients/${patientId}/test-orders`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
                 .then(data => {
                     const tbody = document.getElementById('testOrdersTable');
                     console.log('Test orders data:', data);
 
-                    if (data.testOrders && data.testOrders.length > 0) {
+                    const orders = data.testOrders || data || [];
+
+                    if (orders && orders.length > 0) {
                         const rows = [];
 
-                        data.testOrders.forEach(order => {
+                        orders.forEach(order => {
+                            const panelName = order.panelName || order.panel_name || 'Panel';
                             const components = Array.isArray(order.components) ? order.components : [];
 
                             if (components.length > 0) {
                                 components.forEach(component => {
-                                    rows.push(`
-                                        <tr>
-                                            <td>${order.id}</td>
-                                            <td>${order.panelName || 'Panel'}</td>
-                                            <td>${component.component_name || 'Component'}</td>
-                                            <td>${component.reference_range || '-'}</td>
-                                            <td>${component.result_value || '-'}</td>
-                                            <td>${order.status || 'Pending'}</td>
-                                            <td>${formatDate(order.created_at)}</td>
-                                        </tr>
-                                    `);
+                                    const compName = component.component_name || component.name || 'Component';
+                                    const compRef = component.reference_range || component.ref_range || '-';
+                                    const compResult = component.result_value || component.value || '-';
+
+                                    // Push parent component row (if it has its own value)
+                                    if (component.result_value || component.value) {
+                                        rows.push(`
+                                            <tr>
+                                                <td>${order.id}</td>
+                                                <td>${panelName}</td>
+                                                <td>${compName}</td>
+                                                <td>${compRef}</td>
+                                                <td>${compResult}</td>
+                                                <td>${order.status || 'Pending'}</td>
+                                                <td>${formatDate(order.created_at)}</td>
+                                            </tr>
+                                        `);
+                                    }
+
+                                    // If component has nested subcomponents, render them
+                                    const subComps = Array.isArray(component.subcomponents) ? component.subcomponents
+                                        : Array.isArray(component.children) ? component.children
+                                        : Array.isArray(component.sub_components) ? component.sub_components
+                                        : [];
+
+                                    if (subComps.length > 0) {
+                                        subComps.forEach(sub => {
+                                            const subName = sub.component_name || sub.name || 'Subcomponent';
+                                            const subRef = sub.reference_range || sub.ref_range || '-';
+                                            const subResult = sub.result_value || sub.value || '-';
+
+                                            rows.push(`
+                                                <tr>
+                                                    <td>${order.id}</td>
+                                                    <td>${panelName}</td>
+                                                    <td>${compName} — ${subName}</td>
+                                                    <td>${subRef}</td>
+                                                    <td>${subResult}</td>
+                                                    <td>${order.status || 'Pending'}</td>
+                                                    <td>${formatDate(order.created_at)}</td>
+                                                </tr>
+                                            `);
+                                        });
+                                    } else if (!component.result_value && !component.value) {
+                                        // If component has no own value and no subcomponents, render a placeholder row
+                                        rows.push(`
+                                            <tr>
+                                                <td>${order.id}</td>
+                                                <td>${panelName}</td>
+                                                <td>${compName}</td>
+                                                <td>${compRef}</td>
+                                                <td>-</td>
+                                                <td>${order.status || 'Pending'}</td>
+                                                <td>${formatDate(order.created_at)}</td>
+                                            </tr>
+                                        `);
+                                    }
                                 });
                             } else {
+                                // No components for this order
                                 rows.push(`
                                     <tr>
                                         <td>${order.id}</td>
-                                        <td>${order.panelName || 'Panel'}</td>
+                                        <td>${panelName}</td>
                                         <td colspan="3">No components available</td>
                                         <td>${order.status || 'Pending'}</td>
                                         <td>${formatDate(order.created_at)}</td>

@@ -166,6 +166,12 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
+        .out-of-range {
+            background-color: #fff1f0;
+            color: #b22222;
+            font-weight: 700;
+        }
+
         .input-field {
             width: 100%;
         }
@@ -304,11 +310,12 @@
                                 <th>Normal Range</th>
                                 <th>Result</th>
                                 <th>Remarks</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="componentsTable">
                             <tr>
-                                <td colspan="5" style="text-align: center; color: #999;">Select a test panel to view components</td>
+                                <td colspan="6" style="text-align: center; color: #999;">Select a test panel to view components</td>
                             </tr>
                         </tbody>
                     </table>
@@ -362,6 +369,8 @@
         // Stores all test order data grouped by orderId
         // { orderId: { panelName, sampleCollectedAt, status, notes, components: [...] } }
         let testOrdersMap = {};
+        // IDs of components removed by user during this session
+        let removedComponentIds = [];
 
         document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
@@ -394,7 +403,23 @@
                     document.getElementById('patientNameDisplay').textContent = data.name || '-';
 
                     // Display referring doctor name (joined from referring_doctors table)
-                    document.getElementById('doctorNameDisplay').textContent = data.referring_doctor_name || '-';
+                    var docName = data.referring_doctor_name;
+                    document.getElementById('doctorNameDisplay').textContent = docName && docName !== '-' ? docName : '-';
+                    // If server didn't provide a referring doctor name but we have an id, fetch it
+                    if ((!docName || docName === '-' || docName === 'null') && data.referring_doctor_id) {
+                        var refId = data.referring_doctor_id;
+                        // Some endpoints return '0' for null; ignore 0
+                        if (String(refId) !== '0') {
+                            fetch('/api/doctors/' + refId)
+                                .then(function(resp) { return resp.json(); })
+                                .then(function(doctor) {
+                                    if (doctor && doctor.full_name) {
+                                        document.getElementById('doctorNameDisplay').textContent = doctor.full_name;
+                                    }
+                                })
+                                .catch(function(err) { console.warn('Failed to fetch doctor name', err); });
+                        }
+                    }
 
                     // Display patient info bar
                     var age = calculateAge(data.dob);
@@ -431,6 +456,7 @@
                         }
                         testOrdersMap[orderId] = {
                             panelName: order.panelName,
+                            panelId: order.panelId,
                             sampleCollectedAt: order.sampleCollectedAt,
                             status: order.status,
                             notes: notes,
@@ -442,6 +468,7 @@
                             order.components.forEach(function(component) {
                                 testOrdersMap[orderId].components.push({
                                     id: component.id || component.component_row_id || 0,
+                                    componentId: component.component_id || 0,
                                     name: component.component_name || '',
                                     unit: component.unit || '',
                                     referenceRange: component.reference_range || '',
@@ -461,7 +488,27 @@
                         var order = testOrdersMap[orderId];
                         var option = document.createElement('option');
                         option.value = orderId;
-                        option.textContent = order.panelName;
+                        // If panelName is missing, try to resolve via panelId
+                        if (order.panelName && order.panelName !== 'null' && order.panelName.trim() !== '') {
+                            option.textContent = order.panelName;
+                        } else if (order.panelId) {
+                            option.textContent = 'Panel ' + order.panelId;
+                            // async fetch to get real panel name
+                            (function(opt, pid, oid) {
+                                fetch('/api/panels/' + pid)
+                                    .then(function(resp) { return resp.json(); })
+                                    .then(function(panelData) {
+                                        if (panelData && panelData.panel_name) {
+                                            opt.textContent = panelData.panel_name;
+                                            // Also update stored panelName
+                                            if (testOrdersMap[oid]) testOrdersMap[oid].panelName = panelData.panel_name;
+                                        }
+                                    })
+                                    .catch(function(err) { console.warn('Failed to fetch panel name for id ' + pid, err); });
+                            })(option, order.panelId, orderId);
+                        } else {
+                            option.textContent = 'Unknown Panel';
+                        }
                         panelSelect.appendChild(option);
                     });
 
@@ -483,8 +530,11 @@
             var orderId = panelSelect.value;
             var tbody = document.getElementById('componentsTable');
 
+            // Reset removed component tracking when switching panels
+            removedComponentIds = [];
+
             if (!orderId || !testOrdersMap[orderId]) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Select a test panel to view components</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Select a test panel to view components</td></tr>';
                 return;
             }
 
@@ -509,9 +559,91 @@
             }
             document.getElementById('notes').value = notesValue;
 
-            // Render component rows
+            getPanelComponentsForOrder(order)
+                .then(function (components) {
+                    order.components = components;
+                    renderComponentsTable(components);
+                })
+                .catch(function (error) {
+                    console.warn('Failed to load components for selected panel:', error);
+                    renderComponentsTable(order.components || []);
+                });
+        }
+
+        function getPanelComponentsForOrder(order) {
+            if (!order.panelId) {
+                return Promise.resolve(order.components || []);
+            }
+
+            return fetch('/api/components/panel/' + order.panelId)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch panel components');
+                    }
+                    return response.json();
+                })
+                .then(function(masterComponents) {
+                    if (!Array.isArray(masterComponents)) {
+                        return order.components || [];
+                    }
+
+                    var existingById = {};
+                    var existingByName = {};
+                    (order.components || []).forEach(function(comp) {
+                        if (comp.id) {
+                            existingById[comp.id] = comp;
+                        }
+                        if (comp.componentId) {
+                            existingByName[comp.componentId] = comp;
+                        }
+                        if (comp.name) {
+                            existingByName[comp.name] = comp;
+                        }
+                    });
+
+                    var merged = masterComponents.map(function(master) {
+                        var existing = null;
+                        if (master.component_id && existingByName[master.component_id]) {
+                            existing = existingByName[master.component_id];
+                        } else if (existingByName[master.component_name]) {
+                            existing = existingByName[master.component_name];
+                        }
+
+                        return {
+                            id: existing ? existing.id : 0,
+                            componentId: master.component_id || 0,
+                            name: master.component_name || '',
+                            unit: master.unit || '',
+                            referenceRange: master.normal_range || '',
+                            resultValue: existing ? existing.resultValue : '',
+                            flag: existing ? existing.flag : 'Normal'
+                        };
+                    });
+
+                    (order.components || []).forEach(function(comp) {
+                        if (comp.id && !merged.some(function(item) { return item.id === comp.id; })) {
+                            merged.push(comp);
+                        }
+                    });
+
+                    return merged;
+                })
+                .catch(function(error) {
+                    console.warn('Failed to fetch master components for panel ID ' + order.panelId + ':', error);
+                    return order.components || [];
+                });
+        }
+
+        function renderComponentsTable(components) {
+            var tbody = document.getElementById('componentsTable');
             tbody.innerHTML = '';
-            order.components.forEach(function(comp) {
+
+            if (!components || components.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No components available for this panel.</td></tr>';
+                return;
+            }
+
+            components.forEach(function(comp) {
                 var tr = document.createElement('tr');
 
                 var tdName = document.createElement('td');
@@ -528,6 +660,10 @@
                 resultInput.type = 'text';
                 resultInput.className = 'form-control input-field';
                 resultInput.setAttribute('data-component-id', String(comp.id));
+                resultInput.setAttribute('data-component-master-id', String(comp.componentId || 0));
+                resultInput.setAttribute('data-component-name', comp.name);
+                resultInput.setAttribute('data-reference-range', comp.referenceRange);
+                resultInput.setAttribute('data-unit', comp.unit);
                 resultInput.value = comp.resultValue || '';
                 resultInput.placeholder = 'Enter result';
                 tdResult.appendChild(resultInput);
@@ -538,8 +674,7 @@
                 flagSelect.setAttribute('data-component-id', String(comp.id));
                 flagSelect.setAttribute('data-field', 'flag');
 
-                var options = ['Normal', 'High', 'Low'];
-                options.forEach(function(opt) {
+                ['Normal', 'High', 'Low'].forEach(function(opt) {
                     var optEl = document.createElement('option');
                     optEl.value = opt;
                     optEl.textContent = opt;
@@ -550,14 +685,94 @@
                 });
                 tdRemarks.appendChild(flagSelect);
 
+                var tdActions = document.createElement('td');
+                var removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-secondary';
+                removeBtn.style.padding = '6px 10px';
+                removeBtn.textContent = 'Remove';
+                removeBtn.addEventListener('click', function() {
+                    onRemoveComponent(comp.id, tr);
+                });
+                tdActions.appendChild(removeBtn);
+
+                resultInput.addEventListener('input', function() {
+                    var val = resultInput.value.trim();
+                    var range = resultInput.getAttribute('data-reference-range') || '';
+                    if (isValueOutOfRange(val, range)) {
+                        resultInput.classList.add('out-of-range');
+                        try {
+                            var numeric = parseFloat(val.replace(/,/g, '.'));
+                            var bounds = parseRange(range);
+                            if (bounds) {
+                                if (bounds.min !== null && numeric < bounds.min) flagSelect.value = 'Low';
+                                else if (bounds.max !== null && numeric > bounds.max) flagSelect.value = 'High';
+                                else flagSelect.value = 'Normal';
+                            } else {
+                                flagSelect.value = 'High';
+                            }
+                        } catch (e) {
+                            flagSelect.value = 'High';
+                        }
+                    } else {
+                        resultInput.classList.remove('out-of-range');
+                        flagSelect.value = 'Normal';
+                    }
+                });
+
+                if (resultInput.value && resultInput.value.trim() !== '') {
+                    resultInput.dispatchEvent(new Event('input'));
+                }
+
                 tr.appendChild(tdName);
                 tr.appendChild(tdUnit);
                 tr.appendChild(tdRange);
                 tr.appendChild(tdResult);
                 tr.appendChild(tdRemarks);
+                tr.appendChild(tdActions);
 
                 tbody.appendChild(tr);
             });
+        }
+
+        function onRemoveComponent(componentId, rowElement) {
+            // Mark for deletion and remove row from DOM
+            if (componentId && !isNaN(parseInt(componentId))) {
+                removedComponentIds.push(parseInt(componentId));
+            }
+            if (rowElement && rowElement.parentNode) {
+                rowElement.parentNode.removeChild(rowElement);
+            }
+        }
+
+        function parseRange(rangeStr) {
+            if (!rangeStr) return null;
+            rangeStr = rangeStr.replace(/\s+/g, '');
+            var m = rangeStr.match(/^([<>]=?)?([0-9]+(?:\.[0-9]+)?)\-?([0-9]*)(?:\s*(?:units)?)?$/);
+            // Try simple min-max like 4-10
+            if (m && rangeStr.indexOf('-') !== -1) {
+                var parts = rangeStr.split('-');
+                var min = parseFloat(parts[0].replace(',', '.'));
+                var max = parseFloat(parts[1].replace(',', '.'));
+                if (!isNaN(min) && !isNaN(max)) return {min: min, max: max};
+            }
+            // Try >= or <=
+            var g = rangeStr.match(/^(>=|>)?([0-9]+(?:\.[0-9]+)?)/);
+            if (g) {
+                var num = parseFloat(g[2].replace(',', '.'));
+                if (g[1] === '>' || g[1] === '>=') return {min: num, max: null};
+            }
+            return null;
+        }
+
+        function isValueOutOfRange(valueStr, rangeStr) {
+            if (!valueStr || valueStr === '') return false;
+            var num = parseFloat(valueStr.replace(/,/g, '.'));
+            if (isNaN(num)) return false;
+            var bounds = parseRange(rangeStr);
+            if (!bounds) return false;
+            if (bounds.min !== null && num < bounds.min) return true;
+            if (bounds.max !== null && num > bounds.max) return true;
+            return false;
         }
 
         function setToday() {
@@ -592,8 +807,13 @@
                 var flagSelect = row.querySelector('select[data-field="flag"]');
                 if (resultInput && flagSelect) {
                     var componentId = resultInput.getAttribute('data-component-id');
+                    var componentMasterId = resultInput.getAttribute('data-component-master-id');
                     components.push({
                         id: isNaN(parseInt(componentId)) ? 0 : parseInt(componentId),
+                        componentId: isNaN(parseInt(componentMasterId)) ? 0 : parseInt(componentMasterId),
+                        componentName: resultInput.getAttribute('data-component-name') || '',
+                        unit: resultInput.getAttribute('data-unit') || '',
+                        referenceRange: resultInput.getAttribute('data-reference-range') || '',
                         resultValue: resultInput.value || '',
                         flag: flagSelect.value
                     });
@@ -611,7 +831,8 @@
                 sampleCollectedAt: document.getElementById('sampleDate').value,
                 status: document.getElementById('reportStatus').value,
                 notes: notes,
-                components: components
+                components: components,
+                removedComponentIds: removedComponentIds
             };
 
             console.log('Saving test entry:', payload);

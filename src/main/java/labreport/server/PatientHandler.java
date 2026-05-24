@@ -46,20 +46,20 @@ public class PatientHandler implements HttpHandler {
                 // You would implement the logic to fetch and return the list of patients here.
                 handleListRecentPatients(exchange,path);
 
-            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+/test-orders")) {
+            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/test-orders")) {
                 String patientId = extractPatientIdFromPath(path);
                 handleGetPatientTestOrders(exchange, patientId);
-            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+/test-entry")) {
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/test-entry")) {
                 String patientId = extractPatientIdFromPath(path);
                 handleSaveTestEntry(exchange, patientId);
-            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+")) {
                 String patientId = extractId(path);
                 handleUpdatePatient(exchange, patientId);
-            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
+            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+")) {
                 String patientId = extractId(path);
                 log.info("patient_id:"+patientId);
                 handleGetPatient(exchange, patientId);
-            }else if ("DELETE".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9]+")) {
+            }else if ("DELETE".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+")) {
                 String patientId = extractId(path);
                 handleDeletePatient(exchange, patientId);
             } else {
@@ -228,10 +228,90 @@ public class PatientHandler implements HttpHandler {
         }
         request.commission_percent = commissionPercent;
         log.info("Parsed commission_percent: " + commissionPercent);
-        // Parse order_panels array
-        request.order_panels = extractJsonArray(json, "order_panels");
+        // Parse order_panels array (supports [1,2,3] or [{"panelId":1,"commission_percent":10}, ...])
+        request.order_panels = extractOrderPanels(json, "order_panels");
         
         return request;
+    }
+
+    private java.util.List<PatientService.PanelOrder> extractOrderPanels(String json, String key) {
+        java.util.List<PatientService.PanelOrder> panelOrders = new java.util.ArrayList<>();
+        String searchKey = "\"" + key + "\":";
+        int index = json.indexOf(searchKey);
+        if (index == -1) {
+            return panelOrders;
+        }
+
+        int arrayStart = json.indexOf('[', index);
+        int arrayEnd = json.indexOf(']', arrayStart);
+        if (arrayStart == -1 || arrayEnd == -1) {
+            return panelOrders;
+        }
+
+        String arrayStr = json.substring(arrayStart + 1, arrayEnd).trim();
+        if (arrayStr.isEmpty()) {
+            return panelOrders;
+        }
+
+        if (arrayStr.matches("^[0-9,\\s]*$")) {
+            for (String item : arrayStr.split(",")) {
+                try {
+                    if (!item.trim().isEmpty()) {
+                        PatientService.PanelOrder panelOrder = new PatientService.PanelOrder();
+                        panelOrder.panelId = Integer.parseInt(item.trim());
+                        panelOrders.add(panelOrder);
+                    }
+                } catch (NumberFormatException e) {
+                    // Skip invalid items
+                }
+            }
+            return panelOrders;
+        }
+
+        int cursor = arrayStart + 1;
+        while (cursor < arrayEnd) {
+            int objectStart = json.indexOf('{', cursor);
+            if (objectStart == -1 || objectStart >= arrayEnd) {
+                break;
+            }
+            int objectEnd = json.indexOf('}', objectStart);
+            if (objectEnd == -1 || objectEnd > arrayEnd) {
+                break;
+            }
+
+            String objectJson = json.substring(objectStart, objectEnd + 1);
+            String panelIdStr = extractJsonString(objectJson, "panelId");
+            if (panelIdStr == null) {
+                panelIdStr = extractJsonString(objectJson, "panel_id");
+            }
+
+            if (panelIdStr != null) {
+                try {
+                    PatientService.PanelOrder panelOrder = new PatientService.PanelOrder();
+                    panelOrder.panelId = Integer.parseInt(panelIdStr);
+
+                    String commissionStr = extractJsonString(objectJson, "commissionPercent");
+                    if (commissionStr == null) {
+                        commissionStr = extractJsonString(objectJson, "commission_percent");
+                    }
+                    if (commissionStr != null && !commissionStr.isEmpty()) {
+                        try {
+                            panelOrder.commissionPercent = Double.parseDouble(commissionStr);
+                        } catch (NumberFormatException ignored) {
+                            panelOrder.commissionPercent = null;
+                        }
+                    }
+
+                    panelOrders.add(panelOrder);
+                } catch (NumberFormatException e) {
+                    // Skip invalid panel IDs
+                }
+            }
+
+            cursor = objectEnd + 1;
+        }
+
+        return panelOrders;
     }
 
     private String extractJsonString(String json, String key) {
@@ -300,6 +380,73 @@ public class PatientHandler implements HttpHandler {
         }
         
         return list;
+    }
+
+    private java.util.List<Integer> extractOrderPanelIds(String json, String key) {
+        java.util.List<Integer> panelIds = new java.util.ArrayList<>();
+        String searchKey = "\"" + key + "\":";
+        int index = json.indexOf(searchKey);
+        if (index == -1) {
+            return panelIds;
+        }
+
+        int arrayStart = json.indexOf('[', index);
+        int arrayEnd = json.indexOf(']', arrayStart);
+        if (arrayStart == -1 || arrayEnd == -1) {
+            return panelIds;
+        }
+
+        String arrayStr = json.substring(arrayStart + 1, arrayEnd).trim();
+        if (arrayStr.isEmpty()) {
+            return panelIds;
+        }
+
+        // If the array contains numeric values only, parse them directly.
+        if (arrayStr.matches("^[0-9,\\s]*$")) {
+            for (String item : arrayStr.split(",")) {
+                try {
+                    if (!item.trim().isEmpty()) {
+                        panelIds.add(Integer.parseInt(item.trim()));
+                    }
+                } catch (NumberFormatException e) {
+                    // Skip invalid items
+                }
+            }
+            return panelIds;
+        }
+
+        // Otherwise attempt to parse objects in the array and extract panelId / panel_id.
+        int cursor = arrayStart + 1;
+        while (cursor < arrayEnd) {
+            int objectStart = json.indexOf('{', cursor);
+            if (objectStart == -1 || objectStart >= arrayEnd) {
+                break;
+            }
+            int objectEnd = json.indexOf('}', objectStart);
+            if (objectEnd == -1 || objectEnd > arrayEnd) {
+                break;
+            }
+
+            String objectStr = json.substring(objectStart + 1, objectEnd);
+            Integer id = null;
+            String panelIdStr = extractJsonString("{" + objectStr + "}", "panelId");
+            if (panelIdStr == null) {
+                panelIdStr = extractJsonString("{" + objectStr + "}", "panel_id");
+            }
+            if (panelIdStr != null) {
+                try {
+                    id = Integer.parseInt(panelIdStr);
+                } catch (NumberFormatException e) {
+                    id = null;
+                }
+            }
+            if (id != null) {
+                panelIds.add(id);
+            }
+            cursor = objectEnd + 1;
+        }
+
+        return panelIds;
     }
 
     private String objectToJson(CreatePatientResponse response) {
@@ -554,18 +701,145 @@ public class PatientHandler implements HttpHandler {
                             if (depth == 0 && objStart != -1) {
                                 String obj = arrayContent.substring(objStart, i + 1);
                                 String idStr = extractJsonString(obj, "id");
+                                String componentIdStr = extractJsonString(obj, "componentId");
+                                String componentName = extractJsonString(obj, "componentName");
+                                if (componentName == null) {
+                                    componentName = extractJsonString(obj, "component_name");
+                                }
+                                String unit = extractJsonString(obj, "unit");
+                                String referenceRange = extractJsonString(obj, "referenceRange");
+                                if (referenceRange == null) {
+                                    referenceRange = extractJsonString(obj, "reference_range");
+                                }
                                 String resultValue = extractJsonString(obj, "resultValue");
                                 String flag = extractJsonString(obj, "flag");
+
+                                int componentId = 0;
+                                if (componentIdStr != null && !componentIdStr.isEmpty()) {
+                                    try {
+                                        componentId = Integer.parseInt(componentIdStr);
+                                    } catch (NumberFormatException ignored) {
+                                        componentId = 0;
+                                    }
+                                }
+
                                 if (idStr != null && !idStr.isEmpty()) {
-                                    int componentId = Integer.parseInt(idStr);
+                                    int testOrderComponentId = Integer.parseInt(idStr);
                                     TestOrderComponentService.updateComponentResult(
-                                        componentId,
-                                        resultValue != null ? resultValue : "",
-                                        flag != null ? flag : "Normal"
+                                            testOrderComponentId,
+                                            resultValue != null ? resultValue : "",
+                                            flag != null ? flag : "Normal"
                                     );
+                                } else if (componentName != null && !componentName.isEmpty()) {
+                                    // Insert the parent component if it has its own value or no nested subcomponents
+                                    boolean insertedParent = false;
+                                    int parentInsertedId = 0;
+
+                                    // Detect nested subcomponents (support keys: subcomponents, children, sub_components)
+                                    int subStartIdx = obj.indexOf("\"subcomponents\"");
+                                    if (subStartIdx == -1) subStartIdx = obj.indexOf("\"children\"");
+                                    if (subStartIdx == -1) subStartIdx = obj.indexOf("\"sub_components\"");
+
+                                    if ((resultValue != null && !resultValue.isEmpty()) || subStartIdx == -1) {
+                                        // Insert parent component row (will also be shown if it has a result)
+                                        TestOrderComponentService.insertComponentResult(
+                                                testOrderId,
+                                                componentId,
+                                                componentName,
+                                                unit != null ? unit : "",
+                                                referenceRange != null ? referenceRange : "",
+                                                resultValue != null ? resultValue : "",
+                                                flag != null ? flag : "Normal"
+                                        );
+                                        insertedParent = true;
+                                    }
+
+                                    // If nested subcomponents exist, parse and insert them as separate rows
+                                    if (subStartIdx != -1) {
+                                        int arrStart = obj.indexOf('[', subStartIdx);
+                                        int arrEnd = obj.indexOf(']', arrStart);
+                                        if (arrStart != -1 && arrEnd > arrStart) {
+                                            String subArray = obj.substring(arrStart + 1, arrEnd);
+                                            int depth2 = 0;
+                                            int subObjStart = -1;
+                                            for (int j = 0; j < subArray.length(); j++) {
+                                                char ch = subArray.charAt(j);
+                                                if (ch == '{') {
+                                                    if (depth2 == 0) subObjStart = j;
+                                                    depth2++;
+                                                } else if (ch == '}') {
+                                                    depth2--;
+                                                    if (depth2 == 0 && subObjStart != -1) {
+                                                        String subObj = subArray.substring(subObjStart, j + 1);
+                                                        // Extract subcomponent fields
+                                                        String subIdStr = extractJsonString(subObj, "id");
+                                                        String subComponentIdStr = extractJsonString(subObj, "componentId");
+                                                        String subName = extractJsonString(subObj, "componentName");
+                                                        if (subName == null) subName = extractJsonString(subObj, "component_name");
+                                                        if (subName == null) subName = extractJsonString(subObj, "name");
+                                                        String subUnit = extractJsonString(subObj, "unit");
+                                                        String subRef = extractJsonString(subObj, "referenceRange");
+                                                        if (subRef == null) subRef = extractJsonString(subObj, "reference_range");
+                                                        String subResult = extractJsonString(subObj, "resultValue");
+                                                        String subFlag = extractJsonString(subObj, "flag");
+
+                                                        int subComponentId = 0;
+                                                        if (subComponentIdStr != null && !subComponentIdStr.isEmpty()) {
+                                                            try { subComponentId = Integer.parseInt(subComponentIdStr); } catch (NumberFormatException ignored) { subComponentId = 0; }
+                                                        }
+
+                                                        // Build display name combining parent and sub (keeps hierarchy visible)
+                                                        String displayName = componentName + " — " + (subName != null ? subName : "Subcomponent");
+
+                                                        if (subIdStr != null && !subIdStr.isEmpty()) {
+                                                            int subRowId = Integer.parseInt(subIdStr);
+                                                            TestOrderComponentService.updateComponentResult(
+                                                                    subRowId,
+                                                                    subResult != null ? subResult : "",
+                                                                    subFlag != null ? subFlag : "Normal"
+                                                            );
+                                                        } else {
+                                                            TestOrderComponentService.insertComponentResult(
+                                                                    testOrderId,
+                                                                    subComponentId,
+                                                                    displayName,
+                                                                    subUnit != null ? subUnit : "",
+                                                                    subRef != null ? subRef : "",
+                                                                    subResult != null ? subResult : "",
+                                                                    subFlag != null ? subFlag : "Normal"
+                                                            );
+                                                        }
+
+                                                        subObjStart = -1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                                 objStart = -1;
                             }
+                        }
+                    }
+                }
+            }
+
+            // Parse removedComponentIds array if provided and delete them
+            int remStart = body.indexOf("\"removedComponentIds\"");
+            if (remStart != -1) {
+                int arrayStart = body.indexOf('[', remStart);
+                int arrayEnd = body.indexOf(']', arrayStart);
+                if (arrayStart != -1 && arrayEnd > arrayStart) {
+                    String arrayContent = body.substring(arrayStart + 1, arrayEnd);
+                    String[] items = arrayContent.split(",");
+                    for (String item : items) {
+                        try {
+                            String trimmed = item.trim();
+                            if (trimmed.length() == 0) continue;
+                            int compId = Integer.parseInt(trimmed);
+                            TestOrderComponentService.deleteComponentById(compId);
+                        } catch (NumberFormatException nfe) {
+                            // ignore invalid ids
                         }
                     }
                 }
