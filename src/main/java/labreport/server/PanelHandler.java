@@ -126,13 +126,26 @@ public class PanelHandler implements HttpHandler {
             String price = params.get("price");
             String status = params.get("status");
             String categoryName = params.get("category_name");
+            String totalValueStr = params.get("total_value");
+            log.info("Received add panel request: panelName=" + panelName + ", categoryId=" + categoryId + 
+                        ", description=" + description + ", price=" + price + ", status=" + status + 
+                        ", categoryName=" + categoryName + ", totalValue=" + totalValueStr);
 
             if (panelName == null || panelName.trim().isEmpty()) {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, -1);
                 return;
             }
 
-            boolean success = PanelService.addPanel(panelName, categoryId, description, price, status, categoryName);
+            int totalValue = 0; // default
+            if (totalValueStr != null && !totalValueStr.trim().isEmpty()) {
+                try {
+                    totalValue = Integer.parseInt(totalValueStr);
+                } catch (NumberFormatException e) {
+                    log.warning("Invalid total_value provided, defaulting to 0");
+                }
+            }
+
+            boolean success = PanelService.addPanel(panelName, categoryId, description, price, status, categoryName, totalValue);
 
             if (success) {
                 String response = "{\"status\": \"success\", \"message\": \"Panel added successfully\"}";
@@ -170,13 +183,25 @@ public class PanelHandler implements HttpHandler {
             String price = params.get("price");
             String status = params.get("status");
             String categoryName = params.get("category_name");
+            String totalValueStr = params.get("total_value");
+            log.info("Received update panel request: panelId=" + panelId + ", panelName=" + panelName + ", categoryId=" + categoryId + 
+                        ", description=" + description + ", price=" + price + ", status=" + status + 
+                        ", categoryName=" + categoryName + ", totalValue=" + totalValueStr);
 
             if (panelName == null || panelName.trim().isEmpty()) {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, -1);
                 return;
             }
 
-            boolean success = PanelService.updatePanel(panelId, panelName, categoryId, description, price, status, categoryName);
+            int totalValue = 0; // default
+            if (totalValueStr != null && !totalValueStr.trim().isEmpty()) {
+                try {
+                    totalValue = Integer.parseInt(totalValueStr);
+                } catch (NumberFormatException e) {
+                    log.warning("Invalid total_value provided, defaulting to 0");
+                }
+            }
+            boolean success = PanelService.updatePanel(panelId, panelName, categoryId, description, price, status, categoryName, totalValue);
 
             if (success) {
                 String response = "{\"status\": \"success\", \"message\": \"Panel updated successfully\"}";
