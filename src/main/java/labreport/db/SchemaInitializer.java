@@ -45,6 +45,7 @@ public class SchemaInitializer {
                         "updated_at TEXT," +
                         "panel_id INTEGER NOT NULL," +
                         "panel_name TEXT NOT NULL," +
+                        "total_value INTEGER NOT NULL DEFAULT 0," +
                         "commission_percent REAL NOT NULL CHECK (commission_percent >= 0)," +
                         "commission_amount REAL NOT NULL CHECK (commission_amount >= 0)," +
                         "FOREIGN KEY(patient_id) REFERENCES patients(id)," +
@@ -121,6 +122,7 @@ public class SchemaInitializer {
                         "description TEXT," +
                         "price DECIMAL(10,2)," +
                         "status TEXT DEFAULT 'Active'," +
+                        "total_value INTEGER NOT NULL DEFAULT 0," +
                         "category_name TEXT," +
                         "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
                         "updated_at TEXT" +

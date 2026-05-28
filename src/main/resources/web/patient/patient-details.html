@@ -329,8 +329,8 @@
             </div>
             <div class="header-buttons">
                 <button class="btn btn-primary" onclick="editPatient()">Edit Patient</button>
-                <button class="btn btn-secondary" onclick="addTest()">Add Test</button>
-                <button class="btn btn-secondary" onclick="printReport()">Save Test Results</button>
+                <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
+                <button class="btn btn-secondary" onclick="saveTestEntry()">Save Test Results</button>
             </div>
         </div>
 
@@ -602,12 +602,20 @@
             window.location.href = `/patient/patient-edit.html?patientId=${currentPatientId}`;
         }
 
-        function addTest() {
-            //window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
+        // function addTest() {
+        //     //window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
+        // }
+
+        function saveTestEntry() {
+            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
         }
 
         function printReport() {
-            window.location.href = `/patient/patient-test-entry.html?patientId=${currentPatientId}`;
+             if (!currentPatientId) {
+                alert('Please select a patient before printing the report.');
+                return;
+            }
+            window.open(`/report/print.html?patientId=${encodeURIComponent(currentPatientId)}`, '_blank');
         }
 
         function addNote() {

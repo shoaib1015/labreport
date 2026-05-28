@@ -81,14 +81,14 @@ public class PanelService {
         }
     }
 
-    public static boolean addPanel(String panelName, String categoryId, String description, String price, String status, String categoryName) {
+    public static boolean addPanel(String panelName, String categoryId, String description, String price, String status, String categoryName, int totalValue) {
         try {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO panels (panel_name, category_id, description, price, status, created_at, category_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    "INSERT INTO panels (panel_name, category_id, description, price, status, created_at, category_name, total_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
-            log.info(panelName + ", " + categoryId + ", " + description + ", " + price + ", " + status + ", " + categoryName);
+            log.info(panelName + ", " + categoryId + ", " + description + ", " + price + ", " + status + ", " + categoryName + ", " + totalValue);
             stmt.setString(1, panelName);
             stmt.setString(2, categoryId);
             stmt.setString(3, description);
@@ -96,6 +96,7 @@ public class PanelService {
             stmt.setString(5, status != null && !status.isEmpty() ? status : "Active");
             stmt.setString(6, LocalDateTime.now().toString());
             stmt.setString(7, categoryName);
+            stmt.setInt(8, totalValue);
 
             int rowsAffected = stmt.executeUpdate();
             log.info("Panel added successfully: " + panelName + ", rows affected: " + rowsAffected);
@@ -107,12 +108,12 @@ public class PanelService {
         }
     }
 
-    public static boolean updatePanel(int panelId, String panelName, String categoryId, String description, String price, String status, String categoryName) {
+    public static boolean updatePanel(int panelId, String panelName, String categoryId, String description, String price, String status, String categoryName, int totalValue) {
         try {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE panels SET panel_name = ?, category_id = ?, description = ?, price = ?, status = ?, category_name = ? WHERE panel_id = ?");
+                    "UPDATE panels SET panel_name = ?, category_id = ?, description = ?, price = ?, status = ?, category_name = ?, total_value = ? WHERE panel_id = ?");
 
             stmt.setString(1, panelName);
             stmt.setInt(2, Integer.parseInt(categoryId));
@@ -120,7 +121,8 @@ public class PanelService {
             stmt.setString(4, price);
             stmt.setString(5, status != null && !status.isEmpty() ? status : "Active");
             stmt.setString(6, categoryName);
-            stmt.setInt(7, panelId);
+            stmt.setInt(7, totalValue);
+            stmt.setInt(8, panelId);
 
             int rowsAffected = stmt.executeUpdate();
             log.info("Panel updated successfully: id=" + panelId + ", rows affected: " + rowsAffected);

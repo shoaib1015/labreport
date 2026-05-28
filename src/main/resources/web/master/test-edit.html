@@ -121,6 +121,11 @@
             </select>
         </div>
 
+        <div class="form-group">
+            <label>Total Value</label>
+            <input type="number" name="total_value" id="totalValue" min="0" value="0">
+        </div>
+
         <div class="button-group">
             <button type="button" class="save-btn" onclick="savePanel()">Save Test</button>
             <button type="button" class="edit-btn" onclick="addComponent()">Add New Subtest</button>
@@ -193,6 +198,7 @@
             document.getElementById('description').value = panel.description || '';
             document.getElementById('price').value = panel.price || '';
             document.getElementById('status').value = panel.status || 'Active';
+            document.getElementById('totalValue').value = panel.total_value || '0';
             document.getElementById('categoryName').value = panel.category_name || '';
             // Show the test details link when editing
             document.getElementById('panelNameLink').style.display = 'block';
@@ -209,12 +215,14 @@
         const description = document.getElementById('description').value.trim();
         const price = document.getElementById('price').value.trim();
         const status = document.getElementById('status').value;
+        const totalValue = document.getElementById('totalValue').value.trim() || '0';
         console.log('Saving panel with data:', {
             panelName,
             categoryId,
             description,
             price,
-            status
+            status,
+            totalValue
         });
         // Validation
         if (!panelName) {
@@ -244,6 +252,7 @@
         params.append('description', description);
         params.append('price', price);
         params.append('status', status);
+        params.append('total_value', totalValue);
 
         // Determine if we're adding or updating
         const isEdit = currentPanelId !== null;
