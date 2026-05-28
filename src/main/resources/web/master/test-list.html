@@ -107,6 +107,79 @@
             color: #666;
             font-size: 13px;
         }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            background-color: #2563eb;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background-color: #f9f9f9;
+            border-radius: 0 0 8px 8px;
+        }
+        .modal-footer button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .modal-footer .cancel-btn {
+            background-color: #2563eb;
+            width: fit-content;
+            color: white;
+        }
+        .modal-footer .cancel-btn:hover {
+            background-color: #1e3f5a;
+        }
     </style>
 </head>
 <body class="full-page">
@@ -117,7 +190,8 @@
 
     <div class="button-group">
         <button class="add-btn" onclick="openAddPanelForm()">Add New Test</button>
-        <button class="add-btn" onclick="openAddCategoryForm()" style="background-color: #2196F3;">Add New Category</button>
+        <button class="add-btn" onclick="openAddCategoryForm()">Add New Category</button>
+        <button class="add-btn" onclick="openViewCategoriesDialog()">View Categories</button>
     </div>
 
     <div class="search-container">
@@ -143,6 +217,34 @@
             <tbody id="panelsBody">
             </tbody>
         </table>
+    </div>
+
+    <!-- Categories Modal -->
+    <div id="categoriesModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Categories in Database</h3>
+                <button class="modal-close" onclick="closeCategoriesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-container" style="max-height: 400px;">
+                    <table id="categoriesTable" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeCategoriesModal()">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -293,6 +395,53 @@
         } else {
             searchInfo.textContent = `Total: ${displayedCount} tests`;
         }
+    }
+
+    function openViewCategoriesDialog() {
+        loadCategories();
+        document.getElementById('categoriesModal').style.display = 'flex';
+    }
+
+    function closeCategoriesModal() {
+        document.getElementById('categoriesModal').style.display = 'none';
+    }
+
+    function loadCategories() {
+        fetch('/api/categories', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch categories');
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayCategories(data);
+        })
+        .catch(error => {
+            console.error('Error loading categories:', error);
+            alert('Error loading categories. Please try again.');
+        });
+    }
+
+    function displayCategories(categories) {
+        const tbody = document.getElementById('categoriesBody');
+        tbody.innerHTML = '';
+        
+        categories.forEach(category => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${escapeHtml(category.category_name || '')}</td>
+                <td>${escapeHtml(category.description || '')}</td>
+                <td>${escapeHtml(category.status || 'Active')}</td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 
 </script>

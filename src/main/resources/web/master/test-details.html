@@ -215,9 +215,9 @@
             </div>
 
             <div id="detailsContent">
-                <div class="detail-row">
+                <!-- <div class="detail-row">
                     <div class="detail-label">Code: <span id="panelCode"></span></div>
-                </div>
+                </div> -->
 
                 <div class="detail-row">
                     <div class="detail-label">Category: <span id="panelCategory"></span></div>
@@ -314,7 +314,7 @@
     }
 
     function displayPanelDetails(panel) {
-        document.getElementById('panelCode').textContent = panel.panel_code || 'N/A';
+        // document.getElementById('panelCode').textContent = panel.panel_code || 'N/A';
         document.getElementById('panelCategory').textContent = panel.category_name || 'N/A';
         document.getElementById('partOf').textContent = panel.panel_name || 'N/A';
         document.getElementById('panelUnit').textContent = panel.unit || 'N/A';

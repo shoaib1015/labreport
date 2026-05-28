@@ -169,6 +169,118 @@
             margin-bottom: 15px;
             display: none;
         }
+
+        .test-selection {
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 2px solid #2c5282;
+        }
+
+        .component-row {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            position: relative;
+        }
+
+        .component-row .remove-row-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .component-row-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            padding-right: 80px;
+        }
+
+        @media (max-width: 1200px) {
+            .component-row-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .component-row-content {
+                grid-template-columns: 1fr;
+                padding-right: 10px;
+            }
+        }
+
+        button.add-row-btn {
+            background-color: #2c5282;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        button.add-row-btn:hover {
+            background-color: #1e3f5a;
+        }
+
+        button.remove-row-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        button.remove-row-btn:hover {
+            background-color: #c82333;
+        }
+
+        .preview-section {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+
+        .preview-section h4 {
+            margin-top: 0;
+            color: #2c5282;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .preview-table th {
+            background-color: #2c5282;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .preview-table tr:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -183,61 +295,50 @@
         <div id="successMessage" class="success-message"></div>
 
         <form id="componentForm">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="panelName" class="required">Test Name</label>
-                    <select name="panel_name" id="panelName" required onchange="updatePanelId()">
-                        <option value="">Select Test</option>
-                    </select>
+            <!-- Test Selection Section -->
+            <div class="test-selection">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label for="panelName" class="required">Select Test</label>
+                        <select name="panel_name" id="panelName" required onchange="updateTestSelection()">
+                            <option value="">Select a Test to add Subtests</option>
+                        </select>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="ageRange">Age Range</label>
-                    <input type="text" name="age_range" id="ageRange" placeholder="e.g. 18-50 (optional)">
+                <div id="testSelectedInfo" style="display: none; margin-top: 10px; padding: 10px; background-color: #dbeafe; border-radius: 4px; color: #1e40af;">
+                    <strong>Selected Test:</strong> <span id="selectedTestName"></span>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="componentName" class="required">Subtest Name</label>
-                    <input type="text" name="component_name" id="componentName" placeholder="Enter subtest name" required>
-                </div>
+            <!-- Components Section -->
+            <div id="componentsSection" style="display: none;">
+                <h3>Add Subtests for this Test</h3>
+                <div id="componentsContainer"></div>
 
-                <div class="form-group">
-                    <label for="gender">Gender</label>
-                    <select name="gender" id="gender">
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
+                <button type="button" class="add-row-btn" onclick="addComponentRow()">+ Add Another Subtest</button>
 
-                <div class="form-group">
-                    <label for="unit">Unit</label>
-                    <input type="text" name="unit" id="unit" placeholder="Enter unit (optional)">
-                </div>
-
-                <div class="form-group">
-                    <label for="status">Status</label>
-                    <select name="status" id="status">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="normalRange">Normal Range</label>
-                    <input type="text" name="normal_range" id="normalRange" placeholder="Enter normal range (optional)">
-                </div>
-
-                <div class="form-group full">
-                    <label for="remarks">Remarks</label>
-                    <textarea name="remarks" id="remarks" placeholder="Enter remarks (optional)"></textarea>
+                <div class="preview-section" id="previewSection" style="display: none;">
+                    <h4>Subtests to be saved:</h4>
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Subtest Name</th>
+                                <th>Unit</th>
+                                <th>Age Range</th>
+                                <th>Gender</th>
+                                <th>Normal Range</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewTableBody">
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <div class="button-group">
                 <button type="button" class="btn-cancel" onclick="closeDialog()">Cancel</button>
-                <button type="button" class="btn-save" onclick="saveComponent()">Save</button>
+                <button type="button" class="btn-save" id="saveAllBtn" onclick="saveAllComponents()" style="display: none;">Save All Subtests</button>
             </div>
         </form>
     </div>
@@ -245,6 +346,9 @@
 
 <script>
     let panelsList = [];
+    let selectedPanelId = null;
+    let selectedPanelName = null;
+    let componentRowCount = 0;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadPanels();
@@ -269,7 +373,7 @@
             const panelNameSelect = document.getElementById('panelName');
             
             // Clear existing options except the default
-            panelNameSelect.innerHTML = '<option value="">Select Test</option>';
+            panelNameSelect.innerHTML = '<option value="">Select a Test to add Subtests</option>';
             
             // Populate Panel Name dropdown
             panels.forEach(panel => {
@@ -284,6 +388,7 @@
             const panelNameParam = params.get('panel_name');
             if (panelNameParam) {
                 document.getElementById('panelName').value = decodeURIComponent(panelNameParam);
+                updateTestSelection();
             }
         })
         .catch(error => {
@@ -292,75 +397,251 @@
         });
     }
 
-
-
-    function saveComponent() {
+    function updateTestSelection() {
         const panelName = document.getElementById('panelName').value.trim();
-        const componentName = document.getElementById('componentName').value.trim();
-        const ageRange = document.getElementById('ageRange').value.trim();
-        const gender = document.getElementById('gender').value.trim();
-        const unit = document.getElementById('unit').value.trim();
-        const normalRange = document.getElementById('normalRange').value.trim();
-        const remarks = document.getElementById('remarks').value.trim();
-        const status = document.getElementById('status').value;
-
-        // Validation
+        
         if (!panelName) {
-            showError('Panel Name is required');
+            document.getElementById('componentsSection').style.display = 'none';
+            document.getElementById('testSelectedInfo').style.display = 'none';
+            document.getElementById('saveAllBtn').style.display = 'none';
             return;
         }
 
-        if (!componentName) {
-            showError('Component Name is required');
-            return;
-        }
-
-        // Get panelId from panelsList based on panelName
+        // Find selected panel
         const selectedPanel = panelsList.find(p => p.panel_name === panelName);
         if (!selectedPanel) {
-            showError('Invalid panel selected');
+            showError('Invalid test selected');
             return;
         }
-        const panelId = selectedPanel.id;
 
-        // Prepare form data
-        const params = new URLSearchParams();
-        params.append('panel_name', panelName);
-        params.append('component_name', componentName);
-        params.append('age_range', ageRange);
-        params.append('gender', gender);
-        params.append('unit', unit);
-        params.append('normal_range', normalRange);
-        params.append('remarks', remarks);
-        params.append('status', status);
-        params.append('panel_id', panelId);
+        selectedPanelId = selectedPanel.id;
+        selectedPanelName = panelName;
 
-        // Send to API
-        fetch('/api/components', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: params.toString()
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to save component');
-            }
-            return response.json();
-        })
-        .then(data => {
-            showSuccess('Component added successfully!');
-            setTimeout(() => {
-                // Redirect back to test-list
-                window.parent.loadPage('/master/test-list.html');
-            }, 1500);
-        })
-        .catch(error => {
-            console.error('Error saving component:', error);
-            showError('Error saving component. Please try again.');
+        // Update test selection info
+        document.getElementById('selectedTestName').textContent = panelName;
+        document.getElementById('testSelectedInfo').style.display = 'block';
+
+        // Show components section and initialize
+        document.getElementById('componentsSection').style.display = 'block';
+        document.getElementById('saveAllBtn').style.display = 'block';
+        
+        // Clear existing components
+        document.getElementById('componentsContainer').innerHTML = '';
+        componentRowCount = 0;
+        
+        // Add first component row
+        addComponentRow();
+    }
+
+    function addComponentRow() {
+        const container = document.getElementById('componentsContainer');
+        const newRow = document.createElement('div');
+        newRow.className = 'component-row';
+        newRow.id = 'componentRow' + componentRowCount;
+        newRow.innerHTML = `
+            <button type="button" class="remove-row-btn" onclick="removeComponentRow(${componentRowCount})" style="display: none;">Remove</button>
+            <div class="component-row-content">
+                <div class="form-group">
+                    <label>Subtest Name *</label>
+                    <input type="text" class="component-name" placeholder="Enter subtest name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" class="component-unit" placeholder="e.g., mg/dL (optional)">
+                </div>
+
+                <div class="form-group">
+                    <label for="ageRange">Age Range</label>
+                    <select name="age_range" id="ageRange" class="component-age-range">
+                        <option value="">Select Age Range</option>
+                        <option value="All">All</option>
+                        <option value="Newborn">Newborn</option>
+                        <option value="Child">Child</option>
+                        <option value="Adult">Adult</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select class="component-gender">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">All</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Normal Range</label>
+                    <input type="text" class="component-normal-range" placeholder="e.g., 70-100 (optional)">
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="component-status">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Remarks</label>
+                    <textarea class="component-remarks" placeholder="Enter remarks (optional)" style="min-height: 60px;"></textarea>
+                </div>
+            </div>
+        `;
+        container.appendChild(newRow);
+        componentRowCount++;
+        updateRemoveButtonVisibility();
+    }
+
+    function removeComponentRow(rowId) {
+        const row = document.getElementById('componentRow' + rowId);
+        if (row) {
+            row.remove();
+        }
+        updateRemoveButtonVisibility();
+        updatePreview();
+    }
+
+    function updateRemoveButtonVisibility() {
+        const rows = document.querySelectorAll('.component-row');
+        const buttons = document.querySelectorAll('.component-row .remove-row-btn');
+        buttons.forEach(btn => {
+            btn.style.display = rows.length > 1 ? 'block' : 'none';
         });
+    }
+
+    function updatePreview() {
+        const rows = document.querySelectorAll('.component-row');
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = '';
+
+        rows.forEach((row) => {
+            const nameInput = row.querySelector('.component-name');
+            const unitInput = row.querySelector('.component-unit');
+            const ageRangeInput = row.querySelector('.component-age-range');
+            const genderSelect = row.querySelector('.component-gender');
+            const normalRangeInput = row.querySelector('.component-normal-range');
+            const statusSelect = row.querySelector('.component-status');
+
+            if (nameInput.value.trim()) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(nameInput.value.trim())}</td>
+                    <td>${escapeHtml(unitInput.value.trim())}</td>
+                    <td>${escapeHtml(ageRangeInput.value.trim())}</td>
+                    <td>${escapeHtml(genderSelect.value)}</td>
+                    <td>${escapeHtml(normalRangeInput.value.trim())}</td>
+                    <td>${escapeHtml(statusSelect.value)}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        const previewSection = document.getElementById('previewSection');
+        previewSection.style.display = tbody.children.length > 0 ? 'block' : 'none';
+    }
+
+    function saveAllComponents() {
+        if (!selectedPanelId || !selectedPanelName) {
+            showError('Please select a test first');
+            return;
+        }
+
+        const rows = document.querySelectorAll('.component-row');
+        let components = [];
+
+        for (let row of rows) {
+            const componentName = row.querySelector('.component-name').value.trim();
+            const unit = row.querySelector('.component-unit').value.trim();
+            const ageRange = row.querySelector('.component-age-range').value.trim();
+            const gender = row.querySelector('.component-gender').value;
+            const normalRange = row.querySelector('.component-normal-range').value.trim();
+            const remarks = row.querySelector('.component-remarks').value.trim();
+            const status = row.querySelector('.component-status').value;
+
+            if (!componentName) {
+                showError('All Subtest Names are required');
+                return;
+            }
+
+            components.push({
+                panel_name: selectedPanelName,
+                component_name: componentName,
+                unit: unit,
+                age_range: ageRange,
+                gender: gender,
+                normal_range: normalRange,
+                remarks: remarks,
+                status: status,
+                panel_id: selectedPanelId
+            });
+        }
+
+        if (components.length === 0) {
+            showError('Please add at least one subtest');
+            return;
+        }
+
+        // Save all components
+        saveComponentsBatch(components);
+    }
+
+    function saveComponentsBatch(components) {
+        let savedCount = 0;
+        let errorCount = 0;
+
+        function saveNext(index) {
+            if (index >= components.length) {
+                if (errorCount === 0) {
+                    showSuccess(`${savedCount} subtest(s) added successfully!`);
+                    setTimeout(() => {
+                        closeDialog();
+                    }, 1500);
+                } else {
+                    showError(`${savedCount} saved, but ${errorCount} failed. Please check and retry.`);
+                }
+                return;
+            }
+
+            const component = components[index];
+            const params = new URLSearchParams();
+            params.append('panel_name', component.panel_name);
+            params.append('component_name', component.component_name);
+            params.append('unit', component.unit);
+            params.append('age_range', component.age_range);
+            params.append('gender', component.gender);
+            params.append('normal_range', component.normal_range);
+            params.append('remarks', component.remarks);
+            params.append('status', component.status);
+            params.append('panel_id', component.panel_id);
+
+            fetch('/api/components', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+            })
+            .then(response => {
+                if (!response.ok) {
+                    errorCount++;
+                } else {
+                    savedCount++;
+                }
+                saveNext(index + 1);
+            })
+            .catch(error => {
+                console.error('Error saving component:', error);
+                errorCount++;
+                saveNext(index + 1);
+            });
+        }
+
+        saveNext(0);
     }
 
     function closeDialog() {
@@ -381,6 +662,23 @@
         successDiv.style.display = 'block';
         document.getElementById('errorMessage').style.display = 'none';
     }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Update preview when input changes
+    document.addEventListener('input', function() {
+        updatePreview();
+    });
 </script>
 
 </body>
