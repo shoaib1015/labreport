@@ -57,6 +57,33 @@
         button.cancel-btn:hover {
             background-color: #f0f0f0;
         }
+        button.add-row-btn {
+            background-color: #2c5282;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            width: fit-content;
+        }
+        button.add-row-btn:hover {
+            background-color: #1e3f5a;
+        }
+        button.remove-row-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: fit-content;
+        }
+        button.remove-row-btn:hover {
+            background-color: #c82333;
+        }
         .error {
             color: #d9534f;
             padding: 10px;
@@ -75,129 +102,284 @@
             margin-bottom: 15px;
             display: none;
         }
+        .category-row {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            position: relative;
+        }
+        .category-row .remove-row-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .category-row-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 15px;
+            padding-right: 80px;
+        }
+        @media (max-width: 768px) {
+            .category-row-content {
+                grid-template-columns: 1fr;
+                padding-right: 10px;
+            }
+        }
+        .table-container {
+            margin-top: 30px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-container th,
+        .table-container td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .table-container th {
+            background-color: #2c5282;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .table-container tr:hover {
+            background-color: #f0f0f0;
+        }
+        .preview-section {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body class="full-page">
 
 <div class="page-content">
-    <h2 id="pageHeading">Add Category</h2>
-    <div class="subtitle">Add or modify category details</div>
+    <h2 id="pageHeading">Add Categories</h2>
+    <div class="subtitle"></div>
 
     <div id="error" class="error"></div>
     <div id="success" class="success"></div>
 
     <form id="categoryForm">
-        <div class="form-group">
-            <label>Category Name *</label>
-            <input type="text" name="category_name" id="categoryName" required>
+        <div id="categoriesContainer">
+            <div class="category-row" id="categoryRow0">
+                <button type="button" class="remove-row-btn" onclick="removeRow(0)" style="display: none;">Remove</button>
+                <div class="category-row-content">
+                    <div class="form-group">
+                        <label>Category Name *</label>
+                        <input type="text" name="category_name" class="category-name" required placeholder="Enter category name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" class="category-description" placeholder="Enter description (optional)"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" class="category-status">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>Description</label>
-            <textarea name="description" id="description"></textarea>
-        </div>
+        <button type="button" class="add-row-btn" onclick="addCategoryRow()">+ Add Another Category</button>
 
-        <div class="form-group">
-            <label>Status</label>
-            <select name="status" id="status">
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-            </select>
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <h3>Categories to be saved:</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="button-group">
-            <button type="button" class="save-btn" onclick="saveCategory()">Save Category</button>
+            <button type="button" class="save-btn" onclick="saveAllCategories()">Save All Categories</button>
             <button type="button" class="cancel-btn" onclick="cancelForm()">Cancel</button>
         </div>
     </form>
 </div>
 
 <script>
-    let currentCategoryId = null;
+    let rowCount = 0;
 
     document.addEventListener('DOMContentLoaded', function() {
-        const params = new URLSearchParams(window.location.search);
-        currentCategoryId = params.get('id');
-        if (currentCategoryId) {
-            document.getElementById('pageTitle').textContent = 'Edit Category';
-            document.getElementById('pageHeading').textContent = 'Edit Category';
-            loadCategoryData(currentCategoryId);
-        }
+        rowCount = 0;
+        updateRemoveButtonVisibility();
     });
 
-    function loadCategoryData(categoryId) {
-        fetch(`/api/categories/${categoryId}`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to fetch category');
-            }
-            return response.json();
-        })
-        .then(category => {
-            document.getElementById('categoryName').value = category.category_name || '';
-            document.getElementById('description').value = category.description || '';
-            document.getElementById('status').value = category.status || 'Active';
-        })
-        .catch(error => {
-            console.error('Error loading category:', error);
-            showError('Error loading category data');
+    function addCategoryRow() {
+        rowCount++;
+        const container = document.getElementById('categoriesContainer');
+        const newRow = document.createElement('div');
+        newRow.className = 'category-row';
+        newRow.id = 'categoryRow' + rowCount;
+        newRow.innerHTML = `
+            <button type="button" class="remove-row-btn" onclick="removeRow(${rowCount})">Remove</button>
+            <div class="category-row-content">
+                <div class="form-group">
+                    <label>Category Name *</label>
+                    <input type="text" name="category_name" class="category-name" required placeholder="Enter category name">
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" class="category-description" placeholder="Enter description (optional)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" class="category-status">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        container.appendChild(newRow);
+        updateRemoveButtonVisibility();
+    }
+
+    function removeRow(rowId) {
+        const row = document.getElementById('categoryRow' + rowId);
+        if (row) {
+            row.remove();
+        }
+        updateRemoveButtonVisibility();
+        updatePreview();
+    }
+
+    function updateRemoveButtonVisibility() {
+        const rows = document.querySelectorAll('.category-row');
+        const buttons = document.querySelectorAll('.remove-row-btn');
+        buttons.forEach(btn => {
+            btn.style.display = rows.length > 1 ? 'block' : 'none';
         });
     }
 
-    function saveCategory() {
-        const categoryName = document.getElementById('categoryName').value.trim();
-        const description = document.getElementById('description').value.trim();
-        const status = document.getElementById('status').value;
+    function updatePreview() {
+        const rows = document.querySelectorAll('.category-row');
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = '';
 
-        // Validation
-        if (!categoryName) {
-            showError('Category Name is required');
+        rows.forEach((row, index) => {
+            const nameInput = row.querySelector('.category-name');
+            const descInput = row.querySelector('.category-description');
+            const statusSelect = row.querySelector('.category-status');
+
+            if (nameInput.value.trim()) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(nameInput.value.trim())}</td>
+                    <td>${escapeHtml(descInput.value.trim())}</td>
+                    <td>${escapeHtml(statusSelect.value)}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        const previewSection = document.getElementById('previewSection');
+        previewSection.style.display = tbody.children.length > 0 ? 'block' : 'none';
+    }
+
+    function saveAllCategories() {
+        const rows = document.querySelectorAll('.category-row');
+        let categories = [];
+
+        for (let row of rows) {
+            const categoryName = row.querySelector('.category-name').value.trim();
+            const description = row.querySelector('.category-description').value.trim();
+            const status = row.querySelector('.category-status').value;
+
+            if (!categoryName) {
+                showError('All Category Names are required');
+                return;
+            }
+
+            categories.push({
+                category_name: categoryName,
+                description: description,
+                status: status
+            });
+        }
+
+        if (categories.length === 0) {
+            showError('Please add at least one category');
             return;
         }
 
-        // Prepare data as URL-encoded form data
-        const params = new URLSearchParams();
-        params.append('category_name', categoryName);
-        params.append('description', description);
-        params.append('status', status);
+        // Save all categories
+        saveCategoriesBatch(categories);
+    }
 
-        // Determine if we're adding or updating
-        const isEdit = currentCategoryId !== null;
-        const url = isEdit ? `/api/categories/${currentCategoryId}` : '/api/categories';
-        const method = isEdit ? 'POST' : 'POST';
-        const successMessage = isEdit ? 'Category updated successfully!' : 'Category added successfully!';
+    function saveCategoriesBatch(categories) {
+        // Save each category sequentially
+        let savedCount = 0;
+        let errorCount = 0;
 
-        // Send to API
-        fetch(url, {
-            method: method,
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: params.toString()
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to save category');
+        function saveNext(index) {
+            if (index >= categories.length) {
+                if (errorCount === 0) {
+                    showSuccess(`${savedCount} category(ies) added successfully!`);
+                    setTimeout(() => {
+                        cancelForm();
+                    }, 1500);
+                } else {
+                    showError(`${savedCount} saved, but ${errorCount} failed. Please check and retry.`);
+                }
+                return;
             }
-            return response.json();
-        })
-        .then(data => {
-            showSuccess(successMessage);
-            setTimeout(() => {
-                cancelForm();
-            }, 1500);
-        })
-        .catch(error => {
-            console.error('Error saving category:', error);
-            showError('Error saving category. Please try again.');
-        });
+
+            const category = categories[index];
+            const params = new URLSearchParams();
+            params.append('category_name', category.category_name);
+            params.append('description', category.description);
+            params.append('status', category.status);
+
+            fetch('/api/categories', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+            })
+            .then(response => {
+                if (!response.ok) {
+                    errorCount++;
+                } else {
+                    savedCount++;
+                }
+                saveNext(index + 1);
+            })
+            .catch(error => {
+                console.error('Error saving category:', error);
+                errorCount++;
+                saveNext(index + 1);
+            });
+        }
+
+        saveNext(0);
     }
 
     function cancelForm() {
@@ -219,9 +401,22 @@
         document.getElementById('error').style.display = 'none';
     }
 
-    function loadPage(page) {
-        window.parent.loadPage(page);
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
     }
+
+    // Update preview when input changes
+    document.addEventListener('input', function() {
+        updatePreview();
+    });
 </script>
 
 </body>
