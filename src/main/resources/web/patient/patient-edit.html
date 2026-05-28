@@ -829,7 +829,10 @@
                     priority: document.getElementById('orderPriority').value || 'Routine',
                     notes: document.getElementById('orderNotes').value || null,
                     commission_percent: selectedDoctorCommission,
-                    order_panels: addedTests.map(t => ({ panel_id: parseInt(t.panelId), commission_percent: t.commission }))
+                    order_panels: addedTests.length > 0 ? addedTests.map(t => ({
+                        panel_id: parseInt(t.panelId, 10),
+                        commission_percent: parseFloat(t.commission) || 0
+                    })) : []
                 };
 
                 console.log('Submitting patient request:', request);
