@@ -57,6 +57,7 @@ public class PatientService {
     public static class PanelOrder {
         public Integer panelId;
         public Double commissionPercent;
+        public Integer totalValue;
     }
 
     public static class CreatePatientResponse {
@@ -317,23 +318,24 @@ public class PatientService {
     }
 
     /**
-     * Calculate age group from date of birth (YYYY-MM-DD)
-     * Returns 'Child' if age < 18, 'Adult' otherwise
+     * Calculate patient age from date of birth (YYYY-MM-DD)
+     * Returns the actual age in years as a string (e.g., "26")
+     * This age is compared against age ranges in components table (e.g., "0-100", "0-18", "19-65")
      */
     private static String calculateAgeGroup(String dob) {
         try {
             if (dob == null || dob.isEmpty()) {
-                return "Adult"; // Default to Adult if no DOB
+                return "0"; // Default to age 0 if no DOB
             }
 
             LocalDate birthDate = LocalDate.parse(dob);
             LocalDate today = LocalDate.now();
             int age = (int) ChronoUnit.YEARS.between(birthDate, today);
 
-            return age < 18 ? "Child" : "Adult";
+            return String.valueOf(age); // Return age as string number (e.g., "26")
         } catch (Exception e) {
-            log.warning("Failed to calculate age group from DOB '" + dob + "': " + e.getMessage());
-            return "Adult"; // Default to Adult if parsing fails
+            log.warning("Failed to calculate age from DOB '" + dob + "': " + e.getMessage());
+            return "0"; // Default to age 0 if parsing fails
         }
     }
 
@@ -349,17 +351,19 @@ public class PatientService {
         sql.append(
                 "-- Placeholders: (1:name, 2:dob, 3:gender, 4:contact_phone, 5:contact_email, 6:address, 7:referring_doctor_id, 8:created_by, 9:created_at)\n");
 
+                
         if (request.order_panels != null && !request.order_panels.isEmpty()) {
+            log.info("Generating SQL for test order insertion with " + request.order_panels.size() + " panels");
             sql.append("\n-- Insert test order for the created patient\n");
             sql.append(
-                    "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount, " +
-                    "(SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?)" +");\n");
-            sql.append("VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?, ?, ?);\n");
+                    "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount, total_value)\n" +
+                    "VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?, ?, ?, ?);\n");
             sql.append(
-                    "-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at, 14:panel_id, 15:panel_name, 16:commission_percent, 17:commission_amount)\n");
+                    "-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at, 14:panel_id, 15:panel_name, 16:commission_percent, 17:commission_amount, 18:total_value)\n");
         }
         log.info(sql.toString());
         sql.append("COMMIT;");
+        log.info("Generated sql"+sql.toString());
         return sql.toString();
     }
 
@@ -398,6 +402,7 @@ public class PatientService {
                 Map<String, Object> panel = new HashMap<>();
                 panel.put("panel_id", panelOrder.panelId);
                 panel.put("commission_percent", panelOrder.commissionPercent != null ? panelOrder.commissionPercent : request.commission_percent);
+                panel.put("total_value", panelOrder.totalValue != null ? panelOrder.totalValue : 0);
                 panel.put("created_at", utcNow);
                 panels.add(panel);
             }

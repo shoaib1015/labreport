@@ -258,7 +258,7 @@
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
-                        <option value="Other">All</option>
+                        <option value="All">All</option>
                     </select>
                 </div>
 
@@ -322,6 +322,7 @@
     let panelsList = [];
     let componentsArray = [];
     let rowCounter = 0;
+    let selectedPanelName = ''; // Store panel name from URL parameter
 
     document.addEventListener('DOMContentLoaded', function() {
         loadPanels();
@@ -360,7 +361,8 @@
             const params = new URLSearchParams(window.location.search);
             const panelNameParam = params.get('panel_name');
             if (panelNameParam) {
-                document.getElementById('panelName').value = decodeURIComponent(panelNameParam);
+                selectedPanelName = decodeURIComponent(panelNameParam);
+                document.getElementById('panelName').value = selectedPanelName;
             }
         })
         .catch(error => {
@@ -417,9 +419,12 @@
         // Add row to table
         addRowToTable(component);
 
-        // Reset form
+        // Reset form but preserve panel name from URL parameter
         document.getElementById('componentForm').reset();
-        document.getElementById('panelName').focus();
+        if (selectedPanelName) {
+            document.getElementById('panelName').value = selectedPanelName;
+        }
+        document.getElementById('componentName').focus();
 
         // Show success message
         showSuccess('Subtest added to list!');
