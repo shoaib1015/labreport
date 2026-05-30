@@ -168,7 +168,7 @@
 
         .out-of-range {
             background-color: #fff1f0;
-            color: #b22222;
+            color: #e6b400;
             font-weight: 700;
         }
 
@@ -746,23 +746,36 @@
 
         function parseRange(rangeStr) {
             if (!rangeStr) return null;
-            rangeStr = rangeStr.replace(/\s+/g, '');
-            var m = rangeStr.match(/^([<>]=?)?([0-9]+(?:\.[0-9]+)?)\-?([0-9]*)(?:\s*(?:units)?)?$/);
-            // Try simple min-max like 4-10
-            if (m && rangeStr.indexOf('-') !== -1) {
-                var parts = rangeStr.split('-');
-                var min = parseFloat(parts[0].replace(',', '.'));
-                var max = parseFloat(parts[1].replace(',', '.'));
-                if (!isNaN(min) && !isNaN(max)) return {min: min, max: max};
+            // Normalize: replace en dash (–) or em dash (—) with hyphen (-)
+            rangeStr = rangeStr.trim().replace(/\s+/g, '').replace(/[–—]/g, '-');
+
+            // Case 1: min-max (e.g., "10-12")
+            let minMaxMatch = rangeStr.match(/^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/);
+            if (minMaxMatch) {
+                let min = parseFloat(minMaxMatch[1]);
+                let max = parseFloat(minMaxMatch[2]);
+                return { min, max };
             }
-            // Try >= or <=
-            var g = rangeStr.match(/^(>=|>)?([0-9]+(?:\.[0-9]+)?)/);
-            if (g) {
-                var num = parseFloat(g[2].replace(',', '.'));
-                if (g[1] === '>' || g[1] === '>=') return {min: num, max: null};
+
+            // Case 2: >X or >=X
+            let greaterMatch = rangeStr.match(/^(>=|>)\s*(\d+(?:\.\d+)?)$/);
+            if (greaterMatch) {
+                let num = parseFloat(greaterMatch[2]);
+                return { min: num, max: null };
             }
+
+            // Case 3: <X or <=X
+            let lessMatch = rangeStr.match(/^(<=|<)\s*(\d+(?:\.\d+)?)$/);
+            if (lessMatch) {
+                let num = parseFloat(lessMatch[2]);
+                return { min: null, max: num };
+            }
+
+            console.warn('Failed to parse range string:', rangeStr);
             return null;
         }
+
+
 
         function isValueOutOfRange(valueStr, rangeStr) {
             if (!valueStr || valueStr === '') return false;
