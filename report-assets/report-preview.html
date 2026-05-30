@@ -280,6 +280,12 @@
                       <td colspan="4" class="muted">No component results available for this panel.</td>
                     </tr>
                 `;
+            const notes = order.notes || order.note || '';
+            const notesRow = notes ? `
+                    <tr class="notes-row">
+                      <td colspan="3">${escapeHtml(notes)}</td>
+                    </tr>
+                ` : '';
             return `
               <div class="panel-block">
                 <div class="panel-header">
@@ -297,6 +303,7 @@
                   </thead>
                   <tbody>
                     ${componentRows}
+                    ${notesRow}
                   </tbody>
                 </table>
               </div>
