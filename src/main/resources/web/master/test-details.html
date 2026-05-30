@@ -224,19 +224,6 @@
                 </div>
 
                 <div class="detail-row">
-                    <div class="detail-label">Part of: <span id="partOf" class="badge badge-primary"></span></div>
-                </div>
-
-                <div class="detail-row">
-                    <div>
-                        <div class="detail-label">Unit: <span id="panelUnit"></span></div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <div class="detail-label">Normal Range : <span id="panelNormalRange"></span></div>
-                    </div>
-                </div>
-
-                <div class="detail-row">
                     <div class="detail-label">Price: <span id="panelPrice"></span></div>
                 </div>
 
@@ -314,13 +301,11 @@
     }
 
     function displayPanelDetails(panel) {
-        // document.getElementById('panelCode').textContent = panel.panel_code || 'N/A';
-        document.getElementById('panelCategory').textContent = panel.category_name || 'N/A';
-        document.getElementById('partOf').textContent = panel.panel_name || 'N/A';
-        document.getElementById('panelUnit').textContent = panel.unit || 'N/A';
-        document.getElementById('panelNormalRange').textContent = panel.normal_range || 'N/A';
+        // document.getElementById('panelCode').textContent = panel.panel_code || '';
+        document.getElementById('panelCategory').textContent = panel.category_name || '';
+
         document.getElementById('panelPrice').textContent = '₹' + (panel.price || '0');
-        
+
         const isActive = panel.status === 'Active';
         document.getElementById('statusToggle').checked = isActive;
         document.getElementById('statusText').textContent = isActive ? 'Active' : 'Inactive';
@@ -472,5 +457,6 @@
     }
 </script>
 
+<script src="/js/sort-selects.js"></script>
 </body>
 </html>

@@ -171,6 +171,7 @@
                 option.textContent = category.category_name;
                 select.appendChild(option);
             });
+            if (window.sortSelectOptions) window.sortSelectOptions(select);
         })
         .catch(error => {
             console.error('Error loading categories:', error);
@@ -331,6 +332,7 @@
     }
 </script>
 
+<script src="/js/sort-selects.js"></script>
 </body>
 </html>
 

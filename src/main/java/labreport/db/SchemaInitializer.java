@@ -145,8 +145,22 @@ public class SchemaInitializer {
         };
 
         createTables(connection, tables);
-        ensureTestOrderColumns(connection);
-        ensureReferringDoctorColumns(connection);
+        ensureRequiredColumns(connection);
+    }
+
+    private static final java.util.Map<String, String[]> REQUIRED_COLUMNS = new java.util.HashMap<>();
+    static {
+        REQUIRED_COLUMNS.put("test_order", new String[] {
+                "status TEXT DEFAULT 'Pending'",
+                "panel_id INTEGER NOT NULL DEFAULT 0",
+                "panel_name TEXT NOT NULL DEFAULT ''",
+                "commission_percent REAL NOT NULL DEFAULT 0",
+                "commission_amount REAL NOT NULL DEFAULT 0",
+                "updated_at TEXT"
+        });
+        REQUIRED_COLUMNS.put("referring_doctors", new String[] {
+                "commission_percent REAL NOT NULL DEFAULT 0"
+        });
     }
 
     private static void createTables(Connection connection, String[][] tables) {
@@ -162,17 +176,13 @@ public class SchemaInitializer {
     }
 
 
-    private static void ensureTestOrderColumns(Connection connection) {
-        ensureColumnExists(connection, "test_order", "status TEXT DEFAULT 'Pending'");
-        ensureColumnExists(connection, "test_order", "panel_id INTEGER NOT NULL DEFAULT 0");
-        ensureColumnExists(connection, "test_order", "panel_name TEXT NOT NULL DEFAULT ''");
-        ensureColumnExists(connection, "test_order", "commission_percent REAL NOT NULL DEFAULT 0");
-        ensureColumnExists(connection, "test_order", "commission_amount REAL NOT NULL DEFAULT 0");
-        ensureColumnExists(connection, "test_order", "updated_at TEXT");
-    }
-
-    private static void ensureReferringDoctorColumns(Connection connection) {
-        ensureColumnExists(connection, "referring_doctors", "commission_percent REAL NOT NULL DEFAULT 0");
+    private static void ensureRequiredColumns(Connection connection) {
+        for (java.util.Map.Entry<String, String[]> entry : REQUIRED_COLUMNS.entrySet()) {
+            String tableName = entry.getKey();
+            for (String columnDefinition : entry.getValue()) {
+                ensureColumnExists(connection, tableName, columnDefinition);
+            }
+        }
     }
 
     private static void ensureColumnExists(Connection connection, String tableName, String columnDefinition) {

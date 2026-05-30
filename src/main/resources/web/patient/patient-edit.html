@@ -676,6 +676,7 @@
                     option.textContent = doctor.full_name || doctor.name || 'Unknown';
                     doctorSelect.appendChild(option);
                 });
+                if (window.sortSelectOptions) window.sortSelectOptions(doctorSelect);
                 //doctorSelect.appendChild(document.createElement('option')).value = 'Self'; // Add empty option at the end for better UX
             }
 
@@ -718,6 +719,7 @@
                     option.textContent = panelName;
                     dropdown.appendChild(option);
                 });
+                if (window.sortSelectOptions) window.sortSelectOptions(dropdown);
             }
 
 
@@ -1097,6 +1099,7 @@
 
         </script>
 
+<script src="/js/sort-selects.js"></script>
 </body>
 
 </html>

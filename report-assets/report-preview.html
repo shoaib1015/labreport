@@ -100,6 +100,10 @@
     table.tests tbody tr:nth-child(even) td { background:#fff; }
     .component-name { font-weight:600; }
     .normal-range { color:var(--muted); white-space:nowrap; }
+    .result-value { }
+    .result-value.abnormal { font-weight:700; color:#c41e3a; }
+    .flag-column { font-weight:600; text-align:center; }
+    .flag-column.abnormal { font-weight:700; color:#c41e3a; }
 
     .footer-line { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
     .footer-line span { flex:1 1 auto; }
@@ -258,16 +262,22 @@
             const panelInfo = `Status: ${escapeHtml(order.status || '-')}` + (order.sampleCollectedAt ? ` • Sample: ${escapeHtml(formatDate(order.sampleCollectedAt))}` : '');
             const components = order.components || [];
             const componentRows = components.length > 0
-              ? components.map(comp => `
+              ? components.map(comp => {
+                  const isAbnormal = comp.flag === 'High' || comp.flag === 'Low';
+                  const resultClass = isAbnormal ? 'result-value abnormal' : 'result-value';
+                  const flagClass = isAbnormal ? 'flag-column abnormal' : 'flag-column';
+                  return `
                     <tr>
                       <td class="component-name">${escapeHtml(comp.component_name || '-')}</td>
-                      <td>${escapeHtml(comp.result_value || '-')}</td>
+                      <td class="${resultClass}">${escapeHtml(comp.result_value || '-')}</td>
                       <td class="normal-range">${escapeHtml(comp.reference_range || '-')}</td>
+                      <td class="${flagClass}">${escapeHtml(comp.flag || 'Normal')}</td>
                     </tr>
-                `).join('')
+                  `;
+                }).join('')
               : `
                     <tr>
-                      <td colspan="3" class="muted">No component results available for this panel.</td>
+                      <td colspan="4" class="muted">No component results available for this panel.</td>
                     </tr>
                 `;
             return `
@@ -282,6 +292,7 @@
                       <th>TEST NAME</th>
                       <th>RESULT</th>
                       <th>NORMAL RANGE</th>
+                      <th>FLAG</th>
                     </tr>
                   </thead>
                   <tbody>

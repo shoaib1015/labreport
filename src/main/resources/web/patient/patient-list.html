@@ -543,7 +543,9 @@
                     option.textContent = doctor.full_name || doctor.name || 'Unknown';
                     doctorSelect.appendChild(option);
                 });
+                if (window.sortSelectOptions) window.sortSelectOptions(doctorSelect);
             }
     </script>
+<script src="/js/sort-selects.js"></script>
 </body>
 </html>

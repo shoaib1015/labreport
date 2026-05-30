@@ -8,6 +8,7 @@
 <body>
 
 <!-- App Root -->
+
 <div id="app-root" style="height:100vh; width:100%;">
 
     <!-- Dashboard Header (hidden until login) -->
@@ -24,7 +25,7 @@
         <div class="menu-item">
             Patients
             <div class="dropdown">
-                <div onclick="loadPage('/patient/patient-dashboard.html')" style="font-size: medium;width:max-content;">Patient Management Dashboard</div>
+                <div onclick="loadPage('/patient/patient-dashboard.html')" style="font-size: medium;width:max-content;">Dashboard</div>
             </div>
         </div>
 
@@ -60,14 +61,35 @@ function loadPage(page) {
 function showDashboard() {
     document.getElementById("dashboard-header").classList.remove("hidden");
     document.getElementById("appFrame").style.height = "calc(100vh - 50px)";
+    enableRefreshLock();
 }
 
 
-/* Shutdown safety */
-window.addEventListener("beforeunload", function () {
+/* Shutdown safety + refresh lock */
+let lockRefresh = false;
+
+function enableRefreshLock() { lockRefresh = true; }
+function disableRefreshLock() { lockRefresh = false; }
+
+window.addEventListener("beforeunload", function (e) {
     navigator.sendBeacon("/shutdown");
+    if (lockRefresh) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});
+
+window.addEventListener('keydown', function (e) {
+    if (!lockRefresh) return;
+    const isRefresh = e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r');
+    if (isRefresh) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 });
 </script>
+<script src="/js/sort-selects.js"></script>
 
 </body>
 </html>

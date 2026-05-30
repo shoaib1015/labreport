@@ -116,15 +116,17 @@
             right: 10px;
         }
         .category-row-content {
-            display: grid;
-            grid-template-columns: 1fr 2fr 1fr;
-            gap: 15px;
-            padding-right: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 0;
         }
-        @media (max-width: 768px) {
-            .category-row-content {
-                grid-template-columns: 1fr;
-                padding-right: 10px;
+        @media (min-width: 769px) {
+            /* On wider screens keep a compact stacked look but allow two-column layout if desired */
+            .category-row-content.split {
+                display: grid;
+                grid-template-columns: 1fr 2fr 1fr;
+                gap: 15px;
             }
         }
         .table-container {
@@ -419,5 +421,6 @@
     });
 </script>
 
+<script src="/js/sort-selects.js"></script>
 </body>
 </html>

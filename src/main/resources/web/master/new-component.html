@@ -357,6 +357,8 @@
                 panelNameSelect.appendChild(option);
             });
 
+            if (window.sortSelectOptions) window.sortSelectOptions(panelNameSelect);
+
             // After panels are loaded, set panel name from URL parameter if provided
             const params = new URLSearchParams(window.location.search);
             const panelNameParam = params.get('panel_name');
@@ -558,5 +560,6 @@
     }
 </script>
 
+<script src="/js/sort-selects.js"></script>
 </body>
 </html>

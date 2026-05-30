@@ -167,9 +167,19 @@
         }
 
         .out-of-range {
-            background-color: #fff1f0;
-            color: #e6b400;
+            background-color: #ffe6e6;
+            color: #c41e3a;
             font-weight: 700;
+            border: 2px solid #dc3545 !important;
+        }
+
+        .flag-abnormal {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .flag-abnormal option {
+            background-color: white;
         }
 
         .input-field {
@@ -512,6 +522,9 @@
                         panelSelect.appendChild(option);
                     });
 
+                        // Sort panel dropdown options after populating
+                        if (window.sortSelectOptions) window.sortSelectOptions(panelSelect);
+
                     // Auto-select first panel if available
                     if (orderIds.length > 0) {
                         panelSelect.value = orderIds[0];
@@ -704,21 +717,46 @@
                             var numeric = parseFloat(val.replace(/,/g, '.'));
                             var bounds = parseRange(range);
                             if (bounds) {
-                                if (bounds.min !== null && numeric < bounds.min) flagSelect.value = 'Low';
-                                else if (bounds.max !== null && numeric > bounds.max) flagSelect.value = 'High';
-                                else flagSelect.value = 'Normal';
+                                if (bounds.min !== null && numeric < bounds.min) {
+                                    flagSelect.value = 'Low';
+                                    flagSelect.classList.add('flag-abnormal');
+                                } else if (bounds.max !== null && numeric > bounds.max) {
+                                    flagSelect.value = 'High';
+                                    flagSelect.classList.add('flag-abnormal');
+                                } else {
+                                    flagSelect.value = 'Normal';
+                                    flagSelect.classList.remove('flag-abnormal');
+                                }
                             } else {
                                 flagSelect.value = 'High';
+                                flagSelect.classList.add('flag-abnormal');
                             }
                         } catch (e) {
                             flagSelect.value = 'High';
+                            flagSelect.classList.add('flag-abnormal');
                         }
                     } else {
                         resultInput.classList.remove('out-of-range');
                         flagSelect.value = 'Normal';
+                        flagSelect.classList.remove('flag-abnormal');
                     }
                 });
 
+                // Also apply flag styling if the flag is already set to High or Low
+                flagSelect.addEventListener('change', function() {
+                    if (flagSelect.value === 'High' || flagSelect.value === 'Low') {
+                        flagSelect.classList.add('flag-abnormal');
+                    } else {
+                        flagSelect.classList.remove('flag-abnormal');
+                    }
+                });
+
+                // Check flag dropdown on load
+                if (flagSelect.value === 'High' || flagSelect.value === 'Low') {
+                    flagSelect.classList.add('flag-abnormal');
+                }
+
+                // Trigger input event on load to apply highlighting to existing results
                 if (resultInput.value && resultInput.value.trim() !== '') {
                     resultInput.dispatchEvent(new Event('input'));
                 }
@@ -747,7 +785,11 @@
         function parseRange(rangeStr) {
             if (!rangeStr) return null;
             // Normalize: replace en dash (–) or em dash (—) with hyphen (-)
-            rangeStr = rangeStr.trim().replace(/\s+/g, '').replace(/[–—]/g, '-');
+            // Remove square brackets, parentheses, and other special characters
+            rangeStr = rangeStr.trim()
+                .replace(/[\[\(\)\]]/g, '')  // Remove brackets and parentheses
+                .replace(/\s+/g, '')  // Remove spaces
+                .replace(/[–—]/g, '-');  // Replace dashes
 
             // Case 1: min-max (e.g., "10-12")
             let minMaxMatch = rangeStr.match(/^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/);
@@ -891,6 +933,7 @@
             return age;
         }
     </script>
+    <script src="/js/sort-selects.js"></script>
 </body>
 
 </html>
