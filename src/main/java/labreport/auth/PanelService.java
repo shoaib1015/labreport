@@ -23,7 +23,7 @@ public class PanelService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT panel_id, panel_name, category_name, description, price, status " +
+                    "SELECT panel_id, panel_name, category_name, description, price, status, total_value " +
                     "FROM panels");
 
             ResultSet rs = stmt.executeQuery();
@@ -37,6 +37,7 @@ public class PanelService {
                 panel.put("description", rs.getString("description"));
                 panel.put("price", rs.getString("price"));
                 panel.put("status", rs.getString("status"));
+                panel.put("total_value", String.valueOf(rs.getInt("total_value")));
                 panels.add(panel);
             }
 
@@ -54,7 +55,7 @@ public class PanelService {
             Connection conn = DatabaseManager.getConnection();
 
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT p.panel_id, p.panel_name, p.category_id, p.description, p.price, p.status, c.category_name " +
+                    "SELECT p.panel_id, p.panel_name, p.category_id, p.description, p.price, p.status, p.total_value, c.category_name " +
                     "FROM panels p " +
                     "LEFT JOIN categories c ON p.category_id = c.category_id " +
                     "WHERE p.panel_id = ?");
@@ -71,6 +72,7 @@ public class PanelService {
                 panel.put("description", rs.getString("description"));
                 panel.put("price", rs.getString("price"));
                 panel.put("status", rs.getString("status"));
+                panel.put("total_value", String.valueOf(rs.getInt("total_value")));
             }
 
             return panel;

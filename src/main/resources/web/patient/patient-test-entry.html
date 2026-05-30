@@ -293,18 +293,22 @@
                     </div>
                 </div>
 
-                <!-- Referring Doctor & Panel -->
+                <!-- Referring Doctor & Panel & Total Value -->
                 <div class="form-section">
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Referring Doctor:</label>
                             <div id="doctorNameDisplay" class="form-control-readonly">-</div>
                         </div>
-                        <div class="form-group" style="grid-column: span 3;">
+                        <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Select Test Panel *</label>
                             <select id="panelSelect" class="form-control" onchange="onPanelChange()" required>
                                 <option value="">Select panel</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Total Value:</label>
+                            <input type="text" id="totalValueDisplay" class="form-control-readonly" disabled value="-" />
                         </div>
                     </div>
                 </div>
@@ -377,7 +381,7 @@
     <script>
         let currentPatientId = null;
         // Stores all test order data grouped by orderId
-        // { orderId: { panelName, sampleCollectedAt, status, notes, components: [...] } }
+        // { orderId: { panelName, panelId, sampleCollectedAt, status, notes, totalValue, components: [...] } }
         let testOrdersMap = {};
         // IDs of components removed by user during this session
         let removedComponentIds = [];
@@ -470,6 +474,7 @@
                             sampleCollectedAt: order.sampleCollectedAt,
                             status: order.status,
                             notes: notes,
+                            totalValue: order.totalValue || 0,
                             components: []
                         };
 
@@ -548,6 +553,7 @@
 
             if (!orderId || !testOrdersMap[orderId]) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Select a test panel to view components</td></tr>';
+                document.getElementById('totalValueDisplay').value = '-';
                 return;
             }
 
@@ -561,16 +567,38 @@
                 document.getElementById('sampleDate').value = '';
             }
 
-            // if (order.status) {
-            //     document.getElementById('reportStatus').value = order.status;
-            // }
-
             // Ensure notes is never 'null' string
             var notesValue = order.notes || '';
             if (notesValue === 'null' || notesValue === null || notesValue === undefined) {
                 notesValue = '';
             }
             document.getElementById('notes').value = notesValue;
+
+            // Fetch panel details including total_value
+            if (order.panelId) {
+                fetch('/api/panels/' + order.panelId)
+                    .then(function(resp) { return resp.json(); })
+                    .then(function(panelData) {
+                        if (panelData) {
+                            var totalValue = 0;
+                            if (panelData.total_value !== undefined && panelData.total_value !== null) {
+                                totalValue = parseFloat(String(panelData.total_value).replace(/,/g, '.')) || 0;
+                            } else if (panelData.price !== undefined && panelData.price !== null) {
+                                totalValue = parseFloat(String(panelData.price).replace(/,/g, '.')) || 0;
+                            }
+                            testOrdersMap[orderId].totalValue = totalValue;
+                            document.getElementById('totalValueDisplay').value = totalValue > 0 ? totalValue : '-';
+                        } else {
+                            document.getElementById('totalValueDisplay').value = '-';
+                        }
+                    })
+                    .catch(function(err) {
+                        console.warn('Failed to fetch panel details:', err);
+                        document.getElementById('totalValueDisplay').value = '-';
+                    });
+            } else {
+                document.getElementById('totalValueDisplay').value = '-';
+            }
 
             getPanelComponentsForOrder(order)
                 .then(function (components) {
@@ -839,6 +867,7 @@
          * Save test entry:
          * - Updates test_order: sample_collected_at, status, notes, updated_at
          * - Updates test_order_component: result_value, flag, updated_at
+         * - Validates that sum of component results equals total_value (if total_value > 0)
          */
         function saveTestEntry() {
             var panelSelect = document.getElementById('panelSelect');
@@ -854,8 +883,12 @@
                 return;
             }
 
+            var order = testOrdersMap[testOrderId];
+            var totalValue = order.totalValue || 0;
+
             // Collect component results from the table
             var components = [];
+            var componentSum = 0;
             var rows = document.querySelectorAll('#componentsTable tr');
             rows.forEach(function(row) {
                 var resultInput = row.querySelector('input[data-component-id]');
@@ -863,17 +896,37 @@
                 if (resultInput && flagSelect) {
                     var componentId = resultInput.getAttribute('data-component-id');
                     var componentMasterId = resultInput.getAttribute('data-component-master-id');
+                    var resultValue = resultInput.value || '';
+                    
+                    // Try to parse result value as number for sum calculation
+                    var numValue = parseFloat(resultValue.replace(/,/g, '.'));
+                    if (!isNaN(numValue)) {
+                        componentSum += numValue;
+                    }
+                    
                     components.push({
                         id: isNaN(parseInt(componentId)) ? 0 : parseInt(componentId),
                         componentId: isNaN(parseInt(componentMasterId)) ? 0 : parseInt(componentMasterId),
                         componentName: resultInput.getAttribute('data-component-name') || '',
                         unit: resultInput.getAttribute('data-unit') || '',
                         referenceRange: resultInput.getAttribute('data-reference-range') || '',
-                        resultValue: resultInput.value || '',
+                        resultValue: resultValue,
                         flag: flagSelect.value
                     });
                 }
             });
+
+            // Validate: if total_value > 0, sum of components must equal total_value
+            if (totalValue > 0) {
+                // Round to 2 decimal places for comparison
+                var roundedSum = Math.round(componentSum * 100) / 100;
+                var roundedTotal = Math.round(totalValue * 100) / 100;
+                
+                if (roundedSum !== roundedTotal) {
+                    alert('Mismatch detected: The sum of component results does not match the expected Total Value of the test. Please verify the input values.');
+                    return;
+                }
+            }
 
             // Ensure notes is never 'null' string
             var notes = document.getElementById('notes').value || '';
