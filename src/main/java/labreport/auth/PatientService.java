@@ -750,13 +750,13 @@ public class PatientService {
     public static String getDashboardStatsJson() throws SQLException {
         try {
             Connection conn = DatabaseManager.getConnection();
-            PreparedStatement stmt = conn.prepareStatement("SELECT " +
-                    "  (SELECT COUNT(*) FROM patients) AS total_patients, " +
-                    "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ordered','SampleCollected','InLab')) AS active_tests, "
-                    +
-                    "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ordered','SampleCollected','InLab')) AS pending_results, "
-                    +
-                    "  (SELECT COUNT(*) FROM test_order WHERE status IN ('ReportReady','Delivered')) AS completed_reports;");
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT " +
+                "  (SELECT COUNT(*) FROM patients) AS total_patients, " +
+                "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Pending','Ordered','SampleCollected','InLab')) AS active_tests, " +
+                "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Pending','Ordered','SampleCollected')) AS pending_results, " +
+                "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ready','Delivered')) AS completed_reports"
+            );
             ResultSet rs = stmt.executeQuery();
 
             if (!rs.next()) {
@@ -774,9 +774,10 @@ public class PatientService {
                     "{\"totalPatients\":%d,\"activeTests\":%d,\"pendingResults\":%d,\"completedReports\":%d}",
                     totalPatients, activeTests, pendingResults, completedReports);
 
+            log.info("Dashboard stats: totalPatients=" + totalPatients + ", activeTests=" + activeTests + ", pendingResults=" + pendingResults + ", completedReports=" + completedReports);
             return json;
         } catch (SQLException e) {
-            log.severe("Failed to fetch patient: " + e.getMessage());
+            log.severe("Failed to fetch dashboard stats: " + e.getMessage());
         }
         return "{\"totalPatients\":0,\"activeTests\":0,\"pendingResults\":0,\"completedReports\":0}";
     }
