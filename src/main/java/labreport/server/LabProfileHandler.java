@@ -41,7 +41,7 @@ public class LabProfileHandler implements HttpHandler {
     private void handleGet(HttpExchange exchange) throws IOException {
         try {
             Map<String, String> profile = LabProfileService.getLabProfile(1);
-
+            log.info("Lab Profile: " + profile);
             String response = toJson(profile);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
@@ -64,15 +64,23 @@ public class LabProfileHandler implements HttpHandler {
             Map<String, String> params = FormParser.parse(body);
 
             String labName = params.get("lab_name");
+            String registrationNumber = params.get("registration_number");
             String address = params.get("address");
             String contactNumber = params.get("contact_number");
+            String email = params.get("email");
+            String website = params.get("website");
+            String directorName = params.get("director_name");
+            String licenseNumber = params.get("license_number");
+            String accreditation = params.get("accreditation");
+            String status = params.get("status");
 
             if (labName == null || labName.trim().isEmpty()) {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, -1);
                 return;
             }
 
-            boolean success = LabProfileService.updateLabProfile(1, labName, address, contactNumber);
+            boolean success = LabProfileService.updateLabProfile(1, labName, registrationNumber, address,
+                    contactNumber, email, website, directorName, licenseNumber, accreditation, status);
 
             if (success) {
                 String response = "{\"status\": \"success\", \"message\": \"Lab profile updated\"}";
@@ -100,18 +108,19 @@ public class LabProfileHandler implements HttpHandler {
     }
 
     private String toJson(Map<String, String> map) {
-    StringBuilder sb = new StringBuilder("{");
-    for (Map.Entry<String, String> entry : map.entrySet()) {
-        String key = entry.getKey();
-        String value = entry.getValue();
-        // Escape quotes and control characters
-        value = value.replace("\\", "\\\\")
-                     .replace("\"", "\\\"")
-                     .replace("\n", "\\n")
-                     .replace("\r", "\\r")
-                     .replace("\t", "\\t");
-        sb.append("\"").append(key).append("\":\"").append(value).append("\",");
-    }
+        StringBuilder sb = new StringBuilder("{");
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            if (value == null) {
+                sb.append("\"").append(key).append("\":null,");
+            } else {
+                sb.append("\"").append(key).append("\":\"")
+                .append(escapeJson(value))
+                .append("\",");
+            }
+        }
         if (sb.length() > 1) sb.setLength(sb.length() - 1); // remove last comma
         sb.append("}");
         return sb.toString();
@@ -122,6 +131,8 @@ public class LabProfileHandler implements HttpHandler {
         return str.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
-                .replace("\r", "\\r");
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
+
 }

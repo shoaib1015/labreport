@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpContext;
 
 import labreport.auth.AuthHandler;
 import labreport.auth.LogoutHandler;
+import labreport.auth.UserInfoHandler;
 import labreport.auth.UserService;
 import labreport.config.AppConfig;
 import labreport.db.DatabaseManager;
@@ -86,6 +87,10 @@ public class Main {
             HttpContext logoutContext = server.createContext("/logout", new LogoutHandler());
             logoutContext.getFilters().add(new CorsFilter());
             logoutContext.getFilters().add(new AuthFilter());
+
+            HttpContext userInfoContext = server.createContext("/api/user-info", new UserInfoHandler());
+            userInfoContext.getFilters().add(new CorsFilter());
+            userInfoContext.getFilters().add(new AuthFilter());
 
             HttpContext labProfileContext = server.createContext("/api/lab-profile", new LabProfileHandler());
             labProfileContext.getFilters().add(new CorsFilter());

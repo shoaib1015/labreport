@@ -16,35 +16,62 @@ public class UserService {
         try {
             Connection conn = DatabaseManager.getConnection();
 
-            // 1. Check if any user exists
-            PreparedStatement checkStmt =
-                    conn.prepareStatement("SELECT COUNT(*) FROM users");
-            ResultSet rs = checkStmt.executeQuery();
+            // 1. Check if admin user exists
+            PreparedStatement checkAdminStmt =
+                    conn.prepareStatement("SELECT COUNT(*) FROM users WHERE username = ?");
+            checkAdminStmt.setString(1, "admin");
+            ResultSet adminRs = checkAdminStmt.executeQuery();
 
-            int userCount = rs.next() ? rs.getInt(1) : 0;
+            int adminCount = adminRs.next() ? adminRs.getInt(1) : 0;
 
-            if (userCount > 0) {
-                log.info("Users already exist. Default admin setup skipped.");
-                return;
+            if (adminCount == 0) {
+                // 2. Insert default admin if it doesn't exist
+                String hashedPassword = PasswordHasher.hash("admin786");
+
+                PreparedStatement insertStmt =
+                        conn.prepareStatement(
+                                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)");
+
+                insertStmt.setString(1, "admin");
+                insertStmt.setString(2, hashedPassword);
+                insertStmt.setString(3, "ADMIN");
+
+                insertStmt.executeUpdate();
+
+                log.info("Default admin user created (username=admin)");
+            } else {
+                log.info("Admin user already exists. Setup skipped.");
             }
 
-            // 2. Insert default admin
-            String hashedPassword = PasswordHasher.hash("admin786");
+            // 3. Check if staff user exists
+            PreparedStatement checkStaffStmt =
+                    conn.prepareStatement("SELECT COUNT(*) FROM users WHERE username = ?");
+            checkStaffStmt.setString(1, "staff");
+            ResultSet staffRs = checkStaffStmt.executeQuery();
 
-            PreparedStatement insertStmt =
-                    conn.prepareStatement(
-                            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)");
+            int staffCount = staffRs.next() ? staffRs.getInt(1) : 0;
 
-            insertStmt.setString(1, "admin");
-            insertStmt.setString(2, hashedPassword);
-            insertStmt.setString(3, "ADMIN");
+            if (staffCount == 0) {
+                // 4. Insert default staff user if it doesn't exist
+                String staffHashedPassword = PasswordHasher.hash("staff786");
 
-            insertStmt.executeUpdate();
+                PreparedStatement staffInsertStmt =
+                        conn.prepareStatement(
+                                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)");
 
-            log.info("Default admin user created (username=admin)");
+                staffInsertStmt.setString(1, "staff");
+                staffInsertStmt.setString(2, staffHashedPassword);
+                staffInsertStmt.setString(3, "STAFF");
+
+                staffInsertStmt.executeUpdate();
+
+                log.info("Default staff user created (username=staff)");
+            } else {
+                log.info("Staff user already exists. Setup skipped.");
+            }
 
         } catch (Exception e) {
-            log.severe("Failed to setup default admin user");
+            log.severe("Failed to setup default users");
             log.severe(e.getMessage());
             throw new RuntimeException(e);
         }
@@ -69,13 +96,20 @@ public class UserService {
             // Insert default lab profile
             PreparedStatement insertStmt =
                     conn.prepareStatement(
-                            "INSERT INTO lab_profile (lab_id, lab_name, address, contact_number, updated_at) VALUES (?, ?, ?, ?, ?)");
+                            "INSERT INTO lab_profile (lab_id, lab_name, registration_number, address, contact_number, email, website, director_name, license_number, accreditation, status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             insertStmt.setInt(1, 1);
             insertStmt.setString(2, "Bharat Pathology Laboratory");
-            insertStmt.setString(3, "123 Medical Street, Health City");
-            insertStmt.setString(4, "+91-1234567890");
-            insertStmt.setString(5, java.time.LocalDateTime.now().toString());
+            insertStmt.setString(3, "REG-00123");
+            insertStmt.setString(4, "123 Medical Street, Health City");
+            insertStmt.setString(5, "+91-1234567890");
+            insertStmt.setString(6, "info@bharatpathology.com");
+            insertStmt.setString(7, "www.bharatpathology.com");
+            insertStmt.setString(8, "Dr. A. Sharma");
+            insertStmt.setString(9, "LIC-987654");
+            insertStmt.setString(10, "NABL Accredited");
+            insertStmt.setString(11, "Active");
+            insertStmt.setString(12, java.time.LocalDateTime.now().toString());
 
             insertStmt.executeUpdate();
 
@@ -112,5 +146,28 @@ public class UserService {
         throw new RuntimeException("Credential validation failed", e);
     }
 }
+
+    public static String getUserRole(String username) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+
+            PreparedStatement stmt =
+                    conn.prepareStatement(
+                            "SELECT role FROM users WHERE username = ?");
+
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()) {
+                return null;
+            }
+
+            return rs.getString("role");
+
+        } catch (Exception e) {
+            log.severe("Error retrieving user role: " + e.getMessage());
+            throw new RuntimeException("Role retrieval failed", e);
+        }
+    }
 
 }

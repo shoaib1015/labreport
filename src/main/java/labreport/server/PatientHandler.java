@@ -559,7 +559,18 @@ public class PatientHandler implements HttpHandler {
 
     private void handleGetAllPatients(HttpExchange exchange) throws IOException {
         try {
-            String json = PatientService.getAllPatientsJson();
+            String dateFrom = null;
+            String dateTo = null;
+
+            // Parse query parameters for date range
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null) {
+                Map<String, String> params = parseQueryParams(query);
+                dateFrom = params.get("dateFrom");
+                dateTo = params.get("dateTo");
+            }
+
+            String json = PatientService.getAllPatientsJson(dateFrom, dateTo);
             log.info("All patients fetched successfully");
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, json.getBytes(StandardCharsets.UTF_8).length);

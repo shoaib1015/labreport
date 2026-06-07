@@ -13,10 +13,10 @@
 
     <form id="loginForm">
         <label>Username *</label>
-        <input type="text" name="username" required>
+        <input type="text" name="username" id="usernameInput" required placeholder="Enter your username">
 
         <label>Password *</label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" id="passwordInput" required placeholder="Enter password">
 
         <button type="submit">Login</button>
     </form>
@@ -25,25 +25,25 @@
 </div>
 
 <script>
-document.getElementById("loginForm").addEventListener("submit", function(e) {
-    e.preventDefault();
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+        e.preventDefault();
 
-    const formData = new URLSearchParams(new FormData(this));
+        const formData = new URLSearchParams(new FormData(this));
 
-    fetch("/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: formData
-    })
-    .then(res => {
-        if (res.status === 200) {
-                window.parent.showDashboard();
-                window.parent.document.getElementById("appFrame").src = "/master/lab.html";
-        } else {
-            document.getElementById("error").innerText = "Invalid credentials";
-        }
+        fetch("/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: formData
+        })
+        .then(res => {
+            if (res.status === 200) {
+                    window.parent.showDashboard();
+                    window.parent.document.getElementById("appFrame").src = "/master/lab.html";
+            } else {
+                document.getElementById("error").innerText = "Invalid credentials";
+            }
+        });
     });
-});
 </script>
 <script src="/js/sort-selects.js"></script>
 

@@ -86,7 +86,7 @@
 
         .search-form {
             display: grid;
-            grid-template-columns: 1fr 1fr 150px 150px 100px;
+            grid-template-columns: 1fr 140px 140px 120px 150px 100px;
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -232,9 +232,55 @@
         .header-back:hover {
             color: #1e3f5a;
         }
+
+        /* Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .loader-overlay.active {
+            display: flex;
+        }
+
+        .loader-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
+    <!-- Loader Overlay -->
+    <div id="loaderOverlay" class="loader-overlay">
+        <div style="text-align: center;">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Processing data...</div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -251,7 +297,8 @@
             <!-- Search/Filter Form -->
             <div class="search-form">
                 <input type="text" id="filterName" placeholder="Name / ID" />
-                <input type="date" id="filterDOB" placeholder="Date of Birth" />
+                <input type="date" id="filterDateFrom" placeholder="From Date" />
+                <input type="date" id="filterDateTo" placeholder="To Date" />
                 <select id="filterGender">
                     <option value="">All</option>
                     <option value="Male">Male</option>
@@ -279,7 +326,7 @@
                 </thead>
                 <tbody id="patientsTable">
                     <tr>
-                        <td colspan="6" class="no-data">Loading patients...</td>
+                        <td colspan="7" class="no-data">Loading patients...</td>
                     </tr>
                 </tbody>
             </table>
@@ -302,15 +349,51 @@
         let allPatients = [];
         let filteredPatients = [];
         let totalPages = 1;
+        let userRole = 'ADMIN'; // Default to ADMIN
 
         document.addEventListener('DOMContentLoaded', function() {
+            loadUserRole();
             loadDoctors();
             loadAllPatients();
         });
 
-        function loadAllPatients() {
+        function loadUserRole() {
+            fetch('/api/user-info', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    userRole = data.role || 'ADMIN';
+                    console.log('User role loaded:', userRole);
+                })
+                .catch(error => {
+                    console.error('Error loading user role:', error);
+                    userRole = 'ADMIN';
+                });
+        }
+
+        function loadAllPatients(dateFrom = null, dateTo = null) {
+            // Build URL with date range parameters if provided
+            let url = '/api/patients/all';
+            const params = new URLSearchParams();
+            
+            if (dateFrom) {
+                params.append('dateFrom', dateFrom);
+            }
+            if (dateTo) {
+                params.append('dateTo', dateTo);
+            }
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+
             // Fetch all patients without limit
-            fetch('/api/patients/all')
+            fetch(url)
                 .then(response => {
                     if (!response.ok) {
                         // Fallback to loading with a high limit if /all endpoint doesn't exist
@@ -330,7 +413,7 @@
                 .catch(error => {
                     console.error('Error loading patients:', error);
                     document.querySelector('#patientsTable').innerHTML = 
-                        '<tr><td colspan="6" class="no-data">Error loading patients</td></tr>';
+                        '<tr><td colspan="7" class="no-data">Error loading patients</td></tr>';
                 });
         }
 
@@ -403,25 +486,39 @@
 
         function applyFilters() {
             const name = document.getElementById('filterName').value.toLowerCase();
-            const dob = document.getElementById('filterDOB').value;
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
             const gender = document.getElementById('filterGender').value;
             const referringDoctorId = document.getElementById('referringDoctorSelect').value;
+            const loaderOverlay = document.getElementById('loaderOverlay');
 
-            filteredPatients = allPatients.filter(patient => {
-                const matchName = !name || 
-                    patient.name.toLowerCase().includes(name) || 
-                    patient.id.toString().includes(name);
-                const matchDOB = !dob || (patient.dob && patient.dob.startsWith(dob));
-                const matchGender = !gender || patient.gender === gender;
-                const matchReferringDoctor = !referringDoctorId || patient.referring_doctor_id === parseInt(referringDoctorId);
+            // Show loader
+            loaderOverlay.classList.add('active');
 
-                return matchName && matchDOB && matchGender && matchReferringDoctor;
-            });
+            // Load patients with date range filter from server
+            loadAllPatients(dateFrom, dateTo);
+            
+            // After loading, apply client-side filters for name, gender, and doctor
+            setTimeout(() => {
+                filteredPatients = allPatients.filter(patient => {
+                    const matchName = !name || 
+                        patient.name.toLowerCase().includes(name) || 
+                        patient.id.toString().toLowerCase().includes(name);
+                    
+                    const matchGender = !gender || patient.gender === gender;
+                    const matchReferringDoctor = !referringDoctorId || patient.referring_doctor_id === parseInt(referringDoctorId);
 
-            totalPages = Math.ceil(filteredPatients.length / itemsPerPage) || 1;
-            currentPage = 1;
-            displayPage(1);
-            updatePaginationButtons();
+                    return matchName && matchGender && matchReferringDoctor;
+                });
+
+                totalPages = Math.ceil(filteredPatients.length / itemsPerPage) || 1;
+                currentPage = 1;
+                displayPage(1);
+                updatePaginationButtons();
+                
+                // Hide loader
+                loaderOverlay.classList.remove('active');
+            }, 300); // Wait for API response
         }
 
         function viewPatientDetails(patientId) {
@@ -433,18 +530,26 @@
         }
 
         function printPatientList() {
-            const data = filteredPatients.map(patient => ({
-                Patient_ID: patient.id,
-                Patient_Name: patient.name,
-                Date_Of_Birth: formatDate(patient.dob),
-                Age: calculateAge(patient.dob),
-                Gender: patient.gender,
-                Created_On: formatDate(patient.created_at),
-                Referred_By: patient.referring_doctor_name || '-',
-                Test_Price: Number(patient.test_price) || 0,
-                Commission: patient.commission_percent ? patient.commission_percent + '%' : '0%',
-                Commission_Amount: Number(patient.commission_amount) || 0
-            }));
+            const data = filteredPatients.map(patient => {
+                const rowData = {
+                    Patient_ID: patient.id,
+                    Patient_Name: patient.name,
+                    Date_Of_Birth: formatDate(patient.dob),
+                    Age: calculateAge(patient.dob),
+                    Gender: patient.gender,
+                    Created_On: formatDate(patient.created_at),
+                    Referred_By: patient.referring_doctor_name || '-',
+                    Test_Price: Number(patient.test_price) || 0
+                };
+
+                // Only include Commission fields if user is ADMIN
+                if (userRole === 'ADMIN') {
+                    rowData.Commission = patient.commission_percent ? patient.commission_percent + '%' : '0%';
+                    rowData.Commission_Amount = Number(patient.commission_amount) || 0;
+                }
+
+                return rowData;
+            });
 
             const worksheet = XLSX.utils.json_to_sheet(data);
 
@@ -456,8 +561,7 @@
 
             // Totals row
             const totalTestPrice = data.reduce((sum, row) => sum + row.Test_Price, 0);
-            const totalCommissionAmount = data.reduce((sum, row) => sum + row.Commission_Amount, 0);
-
+            
             const totalsRow = {
                 Patient_ID: 'TOTAL',
                 Patient_Name: '',
@@ -466,17 +570,25 @@
                 Gender: '',
                 Created_On: '',
                 Referred_By: '',
-                Test_Price: "₹" + totalTestPrice,
-                Commission: '',
-                Commission_Amount: "₹" + totalCommissionAmount
+                Test_Price: "₹" + totalTestPrice
             };
+
+            // Only add Commission totals if user is ADMIN
+            if (userRole === 'ADMIN') {
+                const totalCommissionAmount = data.reduce((sum, row) => sum + row.Commission_Amount, 0);
+                totalsRow.Commission = '';
+                totalsRow.Commission_Amount = "₹" + totalCommissionAmount;
+            }
 
             XLSX.utils.sheet_add_json(worksheet, [totalsRow], { skipHeader: true, origin: -1 });
 
             // ✅ Right-align numeric columns
             const range = XLSX.utils.decode_range(worksheet['!ref']);
             
-            const numericCols = ["Test_Price", "Commission", "Commission_Amount"];
+            const numericCols = userRole === 'ADMIN' 
+                ? ["Test_Price", "Commission", "Commission_Amount"]
+                : ["Test_Price"];
+            
             numericCols.forEach(colName => {
                 const colIndex = Object.keys(data[0]).indexOf(colName);
                 if (colIndex === -1) return;

@@ -783,6 +783,10 @@ public class PatientService {
     }
 
     public static String getAllPatientsJson() throws SQLException {
+        return getAllPatientsJson(null, null);
+    }
+
+    public static String getAllPatientsJson(String dateFrom, String dateTo) throws SQLException {
         StringBuilder json = new StringBuilder();
         json.append("{\"patients\":[");
 
@@ -796,15 +800,30 @@ public class PatientService {
                     "LEFT JOIN test_order t "+
                         "ON p.id = t.patient_id "+
                     "LEFT JOIN panels pnl "+
-                        "ON t.panel_id = pnl.panel_id "+
-                    "ORDER BY p.created_at DESC, t.created_at DESC";
+                        "ON t.panel_id = pnl.panel_id ";
+        
+        // Add WHERE clause for date range filtering
+        if ((dateFrom != null && !dateFrom.isEmpty()) || (dateTo != null && !dateTo.isEmpty())) {
+            sql += "WHERE 1=1 ";
+            if (dateFrom != null && !dateFrom.isEmpty()) {
+                sql += "AND DATE(p.created_at) >= DATE('" + dateFrom + "') ";
+            }
+            if (dateTo != null && !dateTo.isEmpty()) {
+                sql += "AND DATE(p.created_at) <= DATE('" + dateTo + "') ";
+            }
+        }
+        
+        sql += "ORDER BY p.created_at DESC, t.created_at DESC";
         
         log.info(sql);
 
+        Connection conn = DatabaseManager.getConnection();
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
         try {
-            Connection conn = DatabaseManager.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
+            stmt = conn.prepareStatement(sql);
+            rs = stmt.executeQuery();
 
             boolean first = true;
             while (rs.next()) {
@@ -845,6 +864,22 @@ public class PatientService {
         } catch (SQLException e) {
             log.severe("Failed to fetch all patients: " + e.getMessage());
             return "{\"patients\":[]}";
+        } finally {
+            // Properly close resources
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    log.severe("Error closing ResultSet: " + e.getMessage());
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    log.severe("Error closing PreparedStatement: " + e.getMessage());
+                }
+            }
         }
     }
 

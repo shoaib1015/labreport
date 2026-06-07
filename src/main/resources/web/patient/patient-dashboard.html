@@ -320,9 +320,55 @@
             padding: 40px;
             color: #999;
         }
+
+        /* Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .loader-overlay.active {
+            display: flex;
+        }
+
+        .loader-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2c5282;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
+    <!-- Loader Overlay -->
+    <div id="loaderOverlay" class="loader-overlay">
+        <div style="text-align: center;">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Processing data...</div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -477,6 +523,9 @@
         }
 
         function loadRecentPatients() {
+            const loaderOverlay = document.getElementById('loaderOverlay');
+            loaderOverlay.classList.add('active');
+            
             fetch('/api/patients/recent?limit=5&sort=created_at&order=desc')
                 .then(response => response.json())
                 .then(data => {
@@ -498,11 +547,13 @@
                     } else {
                         tbody.innerHTML = '<tr><td colspan="6" class="no-data">No patients found</td></tr>';
                     }
+                    loaderOverlay.classList.remove('active');
                 })
                 .catch(error => {
                     console.error('Error loading patients:', error);
                     document.querySelector('#recentPatientsTable tbody').innerHTML = 
                         '<tr><td colspan="6" class="no-data">Error loading patients</td></tr>';
+                    loaderOverlay.classList.remove('active');
                 });
         }
 
@@ -510,6 +561,8 @@
             const name = document.getElementById('searchName').value;
             const createdAt = document.getElementById('searchCreatedAt').value;
             const gender = document.getElementById('searchGender').value;
+            const loaderOverlay = document.getElementById('loaderOverlay');
+            
             console.log('Searching patients with:', { name, createdAt, gender });
             let query = '/api/patients?';
             const params = [];
@@ -524,6 +577,9 @@
             }
 
             query += params.join('&');
+
+            // Show loader
+            loaderOverlay.classList.add('active');
 
             fetch(query)
                 .then(response => response.json())
@@ -545,11 +601,17 @@
                     } else {
                         tbody.innerHTML = '<tr><td colspan="6" class="no-data">No patients found</td></tr>';
                     }
+                    
+                    // Hide loader
+                    loaderOverlay.classList.remove('active');
                 })
                 .catch(error => {
                     console.error('Error searching patients:', error);
                     document.querySelector('#searchResultsTable').innerHTML = 
                         '<tr><td colspan="5" class="no-data">Error during search</td></tr>';
+                    
+                    // Hide loader
+                    loaderOverlay.classList.remove('active');
                 });
         }
 
