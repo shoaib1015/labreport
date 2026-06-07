@@ -31,7 +31,8 @@ public class AuthHandler implements HttpHandler {
             String password = params.get("password");
 
             if (UserService.validateCredentials(username, password)) {
-                String sessionId = SessionManager.createSession(username);
+                String role = UserService.getUserRole(username);
+                String sessionId = SessionManager.createSession(username, role);
 
                 exchange.getResponseHeaders().add(
                         "Set-Cookie",
@@ -44,7 +45,7 @@ public class AuthHandler implements HttpHandler {
                     os.write(response);
                 }
 
-                log.info("User logged in: " + username);
+                log.info("User logged in: " + username + " with role: " + role);
 
             } else {
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_UNAUTHORIZED, -1);

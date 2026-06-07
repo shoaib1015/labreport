@@ -107,6 +107,45 @@
             color: #666;
             font-size: 13px;
         }
+
+        /* Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .loader-overlay.active {
+            display: flex;
+        }
+
+        .loader-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
         .modal {
             position: fixed;
             top: 0;
@@ -200,8 +239,16 @@
     </div>
 
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Search tests by name, category, or description..." onkeyup="filterPanels()">
+        <input type="text" id="searchInput" placeholder="Search tests by name, category, or description..." onkeypress="handleSearchKeypress(event)">
         <span class="search-info" id="searchInfo"></span>
+    </div>
+
+    <!-- Loader Overlay -->
+    <div id="loaderOverlay" class="loader-overlay">
+        <div style="text-align: center;">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Processing data...</div>
+        </div>
     </div>
 
     <div id="loading" class="loading">Loading panels...</div>
@@ -366,29 +413,45 @@
         return text.replace(/[&<>"']/g, m => map[m]);
     }
 
+    function handleSearchKeypress(event) {
+        // Only trigger search when Enter key is pressed
+        if (event.key === 'Enter') {
+            filterPanels();
+        }
+    }
+
     function filterPanels() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        const loaderOverlay = document.getElementById('loaderOverlay');
         
-        if (!searchTerm) {
-            displayPanels(allPanels);
-            updateSearchInfo(allPanels.length);
-            return;
-        }
+        // Show loader
+        loaderOverlay.classList.add('active');
         
-        const filteredPanels = allPanels.filter(panel => {
-            const panelName = (panel.panel_name || '').toLowerCase();
-            const category = (panel.category_name || '').toLowerCase();
-            const description = (panel.description || '').toLowerCase();
-            const price = (panel.price || '').toLowerCase();
+        // Simulate processing with setTimeout
+        setTimeout(() => {
+            if (!searchTerm) {
+                displayPanels(allPanels);
+                updateSearchInfo(allPanels.length);
+            } else {
+                const filteredPanels = allPanels.filter(panel => {
+                    const panelName = (panel.panel_name || '').toLowerCase();
+                    const category = (panel.category_name || '').toLowerCase();
+                    const description = (panel.description || '').toLowerCase();
+                    const price = (panel.price || '').toLowerCase();
+                    
+                    return panelName.includes(searchTerm) || 
+                           category.includes(searchTerm) || 
+                           description.includes(searchTerm) ||
+                           price.includes(searchTerm);
+                });
+                
+                displayPanels(filteredPanels);
+                updateSearchInfo(filteredPanels.length, allPanels.length);
+            }
             
-            return panelName.includes(searchTerm) || 
-                   category.includes(searchTerm) || 
-                   description.includes(searchTerm) ||
-                   price.includes(searchTerm);
-        });
-        
-        displayPanels(filteredPanels);
-        updateSearchInfo(filteredPanels.length, allPanels.length);
+            // Hide loader
+            loaderOverlay.classList.remove('active');
+        }, 300);
     }
 
     function updateSearchInfo(displayedCount, totalCount) {

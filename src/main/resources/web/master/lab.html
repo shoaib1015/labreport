@@ -5,28 +5,150 @@
     <title>Lab Profile</title>
     <link rel="stylesheet" href="/styles.css">
     <style>
+        .page-content {
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px;
+            min-height: calc(100vh - 40px);
+            background: #f2f6fb;
+        }
+        .profile-card {
+            width: 100%;
+            max-width: 760px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 18px 40px rgba(32, 56, 101, 0.12);
+            overflow: hidden;
+            border: 1px solid #d6e3f2;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #1f4d91 0%, #3167c3 100%);
+            color: #ffffff;
+            padding: 26px 32px;
+            text-align: center;
+        }
+
+        .profile-header h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+            letter-spacing: 0.03em;
+            display: block;   /* force block layout */
+        }
+
+        .subtitle {
+            display: block;   /* ensure it sits below h1 */
+            font-size: 14px;
+            opacity: 0.9;
+            letter-spacing: 0.08em;
+            font-weight: bold;
+            color: white;
+            margin: 0;        /* remove any default spacing issues */
+        }
+
         .form-container {
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 24px 28px 32px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
         }
         .form-group {
-            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group-full {
+            grid-column: 1 / -1;
         }
         label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #222f4a;
+            font-size: 13px;
         }
-        input[type="text"], textarea {
+        input[type="text"], textarea, select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+            padding: 10px 12px;
+            border: 1px solid #d7dde7;
+            border-radius: 10px;
+            background: #fbfdff;
+            color: #172a46;
             font-family: Arial, sans-serif;
             box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+        input[type="text"]:disabled, textarea:disabled, select:disabled,
+        input[type="text"][readonly], textarea[readonly], select[readonly] {
+            background: #f6f8fc;
+            color: #66798d;
+            cursor: not-allowed;
+        }
+        textarea {
+            min-height: 84px;
+            resize: vertical;
+        }
+        button {
+            min-width: 120px;
+            background-color: #1f4d91;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #153870;
+        }
+        button.secondary {
+            background: #ecf2fb;
+            color: #1f4d91;
+            border: 1px solid #d3e0f4;
+        }
+        button.secondary:hover {
+            background: #dbe7f8;
+        }
+        .button-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .message {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            display: none;
+            font-size: 14px;
+        }
+        .message.success {
+            background-color: #e6f4ea;
+            color: #195a33;
+            border: 1px solid #c5e6ce;
+        }
+        .message.error {
+            background-color: #fbe8e8;
+            color: #8a1e1e;
+            border: 1px solid #f1c6c8;
+        }
+        .loading {
+            text-align: center;
+            color: #5c718d;
+            margin: 24px 0;
+        }
+        @media (max-width: 720px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .profile-header {
+                text-align: center;
+            }
+            .button-row {
+                justify-content: center;
+            }
         }
         textarea {
             min-height: 80px;
@@ -67,37 +189,106 @@
             color: #666;
             margin: 20px 0;
         }
+        .secondary {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 6px 12px;
+            width:fit-content;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: left;
+            gap: 6px; /* space between icon and text */
+        }
+
+        .icon-pencil {
+            width: 14px;
+            height: 14px;
+            display: inline-block;
+            background: url('data:image/svg+xml;utf8,<svg fill="blue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l9.5-9.5z"/></svg>') no-repeat center;
+            background-size: contain;
+            color:#3167c3;
+        }
+
     </style>
 </head>
 <body class="full-page">
 
-<div class="page-content" style="text-align: center; height: initial;">
-    <h2>Bharat Pathology - Lab Profile</h2>
-    <div class="subtitle">FAST | ACCURATE | AFFORDABLE</div>
-
-    <div id="loading" class="loading">Loading lab profile...</div>
-
-    <div class="form-container" id="formContainer" style="display: none;">
-        <form id="labForm">
-            <div class="form-group">
-                <label for="labName">Lab Name *:</label>
-                <input type="text" id="labName" name="lab_name" required>
+<div class="page-content">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div>
+                    <h1>Bharat Pathology</h1>
+                    <div class="subtitle">FAST | ACCURATE | AFFORDABLE</div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="address">Address:</label>
-                <textarea id="address" name="address"></textarea>
+            <div id="loading" class="loading">Loading lab profile...</div>
+
+            <div class="form-container" id="formContainer" style="display: none;">  
+                <button type="button" id="editButton" class="secondary">
+                    <span class="icon-pencil"></span> Edit
+                </button>
+                <form id="labForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="labName">Lab Name</label>
+                            <input type="text" id="labName" name="lab_name" required readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="registrationNumber">Registration Number</label>
+                            <input type="text" id="registrationNumber" name="registration_number" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactNumber">Contact Number</label>
+                            <input type="text" id="contactNumber" name="contact_number" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="text" id="email" name="email" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="website">Website</label>
+                            <input type="text" id="website" name="website" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="directorName">Director</label>
+                            <input type="text" id="directorName" name="director_name" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="licenseNumber">License Number</label>
+                            <input type="text" id="licenseNumber" name="license_number" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="accreditation">Accreditation</label>
+                            <input type="text" id="accreditation" name="accreditation" readonly>
+                        </div>
+                        <div class="form-group form-group-full">
+                            <label for="address">Address</label>
+                            <textarea id="address" name="address" readonly></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            <select id="status" name="status" readonly disabled>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="button-row">
+                        <!-- <button type="button" id="editButton" class="secondary">Edit</button> -->
+                        <!-- <button type="button" id="editButton" class="secondary">
+                            <span class="icon-pencil"></span> Edit
+                        </button> -->
+                        <button type="submit" id="saveButton" style="display: none;">Save</button>
+                    </div>
+                </form>
+
+                <div id="message" class="message"></div>
             </div>
-
-            <div class="form-group">
-                <label for="contactNumber">Contact Number:</label>
-                <input type="text" id="contactNumber" name="contact_number">
-            </div>
-
-            <button type="submit">Save Details</button>
-        </form>
-
-        <div id="message" class="message"></div>
+        </div>
     </div>
 </div>
 
@@ -108,6 +299,10 @@
         document.getElementById('labForm').addEventListener('submit', function(e) {
             e.preventDefault();
             saveLabProfile();
+        });
+
+        document.getElementById('editButton').addEventListener('click', function() {
+            setFormEnabled(true);
         });
     });
 
@@ -127,11 +322,19 @@
         })
         .then(data => {
             document.getElementById('labName').value = data.lab_name || '';
-            document.getElementById('address').value = data.address || '';
+            document.getElementById('registrationNumber').value = data.registration_number || '';
             document.getElementById('contactNumber').value = data.contact_number || '';
+            document.getElementById('address').value = data.address || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('website').value = data.website || '';
+            document.getElementById('directorName').value = data.director_name || '';
+            document.getElementById('licenseNumber').value = data.license_number || '';
+            document.getElementById('accreditation').value = data.accreditation || '';
+            document.getElementById('status').value = data.status || 'Active';
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('formContainer').style.display = 'block';
+            setFormEnabled(false);
         })
         .catch(error => {
             console.error('Error loading lab profile:', error);
@@ -139,10 +342,42 @@
         });
     }
 
+    function setFormEnabled(enabled) {
+        const fields = [
+            'labName',
+            'registrationNumber',
+            'contactNumber',
+            'address',
+            'email',
+            'website',
+            'directorName',
+            'licenseNumber',
+            'accreditation',
+            'status'
+        ];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.readOnly = !enabled;
+                el.disabled = !enabled && el.tagName.toLowerCase() === 'select';
+            }
+        });
+
+        document.getElementById('saveButton').style.display = enabled ? 'inline-flex' : 'none';
+        document.getElementById('editButton').style.display = enabled ? 'none' : 'inline-flex';
+    }
+
     function saveLabProfile() {
         const labName = document.getElementById('labName').value.trim();
-        const address = document.getElementById('address').value.trim();
+        const registrationNumber = document.getElementById('registrationNumber').value.trim();
         const contactNumber = document.getElementById('contactNumber').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const website = document.getElementById('website').value.trim();
+        const directorName = document.getElementById('directorName').value.trim();
+        const licenseNumber = document.getElementById('licenseNumber').value.trim();
+        const accreditation = document.getElementById('accreditation').value.trim();
+        const status = document.getElementById('status').value;
 
         if (!labName) {
             showMessage('Lab Name is required', 'error');
@@ -151,8 +386,15 @@
 
         const formData = new URLSearchParams();
         formData.append('lab_name', labName);
-        formData.append('address', address);
+        formData.append('registration_number', registrationNumber);
         formData.append('contact_number', contactNumber);
+        formData.append('address', address);
+        formData.append('email', email);
+        formData.append('website', website);
+        formData.append('director_name', directorName);
+        formData.append('license_number', licenseNumber);
+        formData.append('accreditation', accreditation);
+        formData.append('status', status);
 
         fetch('/api/lab-profile', {
             method: 'POST',
@@ -170,6 +412,7 @@
         })
         .then(data => {
             showMessage('Lab profile saved successfully!', 'success');
+            setFormEnabled(false);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -181,6 +424,7 @@
         const messageDiv = document.getElementById('message');
         messageDiv.textContent = text;
         messageDiv.className = 'message ' + type;
+        messageDiv.style.display = 'block';
 
         setTimeout(() => {
             messageDiv.style.display = 'none';
