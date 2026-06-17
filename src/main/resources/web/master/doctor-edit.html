@@ -201,11 +201,21 @@
             },
             body: params.toString()
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to save doctor');
+        .then(async response => {
+            const responseText = await response.text();
+            let responseBody = null;
+            try {
+                responseBody = responseText ? JSON.parse(responseText) : null;
+            } catch (e) {
+                // ignore parse errors and fallback to generic message
             }
-            return response.json();
+
+            if (!response.ok) {
+                const message = responseBody?.message || 'Failed to save doctor';
+                throw new Error(message);
+            }
+
+            return responseBody;
         })
         .then(data => {
             showSuccess(successMessage);
@@ -215,7 +225,7 @@
         })
         .catch(error => {
             console.error('Error saving doctor:', error);
-            showError('Error saving doctor. Please try again.');
+            showError(error.message || 'Error saving doctor. Please try again.');
         });
     }
 

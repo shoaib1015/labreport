@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -123,7 +124,7 @@ public class DoctorHandler implements HttpHandler {
 
         } catch (Exception e) {
             log.severe("Failed to add doctor: " + e.getMessage());
-            exchange.sendResponseHeaders(500, -1);
+            handleDoctorSaveException(exchange, e, "Failed to add doctor");
         }
     }
 
@@ -161,7 +162,7 @@ public class DoctorHandler implements HttpHandler {
 
         } catch (Exception e) {
             log.severe("Failed to update doctor: " + e.getMessage());
-            exchange.sendResponseHeaders(500, -1);
+            handleDoctorSaveException(exchange, e, "Failed to update doctor");
         }
     }
 
@@ -231,6 +232,36 @@ public class DoctorHandler implements HttpHandler {
         }
         sb.append("}");
         return sb.toString();
+    }
+
+    private void handleDoctorSaveException(HttpExchange exchange, Exception e, String defaultMessage) throws IOException {
+        String errorMessage = defaultMessage;
+        int statusCode = HttpURLConnection.HTTP_INTERNAL_ERROR;
+
+        if (isDuplicateLicenseException(e)) {
+            errorMessage = "License number already exists. Please use a different license number.";
+            statusCode = HttpURLConnection.HTTP_CONFLICT;
+        }
+
+        String errorResponse = "{\"error\": \"duplicate_license\", \"message\": \"" + escapeJson(errorMessage) + "\"}";
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(statusCode, errorResponse.getBytes(StandardCharsets.UTF_8).length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(errorResponse.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    private boolean isDuplicateLicenseException(Throwable e) {
+        if (e == null) {
+            return false;
+        }
+        if (e instanceof SQLException) {
+            String message = e.getMessage();
+            if (message != null && message.contains("UNIQUE constraint failed") && message.contains("license_number")) {
+                return true;
+            }
+        }
+        return isDuplicateLicenseException(e.getCause());
     }
 
     private String escapeJson(String str) {

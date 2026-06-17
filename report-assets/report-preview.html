@@ -6,116 +6,109 @@
   <style>
     :root { --accent:#0b5ca5; --muted:#666; --border:#ddd; --bg:#fff; font-family: Arial, Helvetica, sans-serif; color:#111; }
     html, body { min-height:100%; margin:0; padding:0; background:#f4f6f8; }
-    body { padding-top:280px; padding-bottom:150px; }
+    body { padding-top:240px; padding-bottom:100px; }
 
-    .fixed-header { display:block; width:100%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); position:fixed; top:0; left:0; right:0; z-index:9999; }
-    .fixed-footer { display:block; width:100%; background:#fff; border-top:1px solid rgba(0,0,0,.08); position:fixed; bottom:0; left:0; right:0; z-index:9999; }
+    .fixed-header { display:block; width:100%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.06); position:fixed; top:0; left:0; right:0; z-index:9999; }
+    .fixed-footer { display:block; width:100%; background:#fff; border-top:1px solid rgba(0,0,0,.06); position:fixed; bottom:0; left:0; right:0; z-index:9999; }
     .header-inner, .footer-inner, .report-container { max-width:900px; margin:0 auto; }
-    .header-inner { padding:18px; display:block; }
-    .footer-inner { padding:14px 18px; font-size:12px; color:#fff; background:#0b5ca5; }
-    .report-container { padding:0 18px; }
+    .header-inner { padding:8px 10px; display:block; }
+    .footer-inner { padding:7px 10px; font-size:10px; color:#fff; background:#0b5ca5; }
+    .report-container { padding:0 10px; }
 
     .lab-header {
       display: flex;
       align-items: flex-start;
-      gap: 16px;
+      gap: 10px;
       background: #0b5ca5;
       color: #fff;
-      padding: 22px 18px;
-      border-radius: 4px 4px 0 0;
+      padding: 12px;
+      border-radius: 3px 3px 0 0;
     }
     .logo {
-      width: 92px;
-      height: 72px;
-      border: 2px solid rgba(255,255,255,0.6);
+      width: 60px;
+      height: 50px;
+      border: 1px solid rgba(255,255,255,0.5);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 12px;
+      font-size: 10px;
+      flex-shrink: 0;
     }
-    .lab-meta h1 { margin:0; font-size:18px; color:#fff; }
-    .lab-meta p { margin:2px 0; color:rgba(255,255,255,0.85); font-size:13px; }
-    /* .lab-team { margin:6px 0 0; font-size:12px; color:rgba(255,255,255,0.85); line-height:1.3; }
-    .lab-team strong { font-weight:700; } */
-    /* .report-meta { margin-left:auto; text-align:right; min-width:220px; display:flex; flex-direction:column; justify-content:space-between; height:70px; }
-    .report-meta .meta-row { display:flex; justify-content:space-between; font-size:12px; color:#fff; }
-    .report-meta .meta-label { font-weight:700; color:rgba(255,255,255,0.85); }
-    .report-meta .meta-value { color:#fff; } */
-    .lab-meta h1 {
-      margin: 0;
-      font-size: 18px;
-      color: #fff;
-    }
-
-    .lab-meta p {
-      margin: 2px 0;
-      color: rgba(255,255,255,0.85);
-      font-size: 13px;
-    }
+    .lab-meta h1 { margin:0; font-size:15px; color:#fff; line-height:1.2; }
+    .lab-meta p { margin:1px 0; color:rgba(255,255,255,0.85); font-size:11px; line-height:1.2; }
 
     .report-meta {
       margin-left: auto;
       text-align: right;
-      min-width: 220px;
+      min-width: 160px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 70px;
+      font-size: 10px;
+      flex-shrink: 0;
     }
 
     .report-meta .meta-row {
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
+      font-size: 10px;
       color: #fff;
+      gap: 4px;
     }
 
     .report-meta .meta-label {
       font-weight: 700;
-      color: rgba(255,255,255,0.85);
+      color: rgba(255,255,255,0.9);
     }
 
     .report-meta .meta-value {
       color: #fff;
     }
 
-    .patient-summary { display:grid; grid-template-columns:repeat(4, minmax(160px,1fr)); gap:10px; margin-top:18px; }
-    .summary-card { background:#fafafa; border:1px solid var(--border); border-radius:4px; padding:12px 14px; }
-    .summary-label { display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:700; }
-    .summary-value { font-size:14px; font-weight:700; color:#222; }
+    .patient-summary { display:grid; grid-template-columns:repeat(4, minmax(120px,1fr)); gap:2px; margin-top:4px; border:none; background:transparent; overflow:hidden; }
+    .patient-summary-row { display:contents; }
+    .summary-card { background:#fff; border:1px solid #d7e4f2; padding:5px 6px; }
+    .summary-card:nth-child(4n) { border-right:none; }
+    .summary-card + .summary-card { border-left:none; }
+    .summary-label { display:block; font-size:9px; color:#234; margin-bottom:1px; font-weight:700; }
+    .summary-value { font-size:12px; font-weight:400; color:#111; }
 
-    .report-content { background:var(--bg); padding-bottom:12px; }
-    .no-data { padding:120px 18px; text-align:center; color:#444; font-size:15px; }
+    .report-content { background:var(--bg); padding-bottom:4px; }
+    .no-data { padding:45px 8px; text-align:center; color:#444; font-size:13px; }
 
-    .category-block { margin-bottom:18px; padding:0; border:1px solid var(--border); border-radius:4px; background:#fff; page-break-inside:avoid; break-inside:avoid; }
-    .category-block h2 { margin:0; padding:14px 18px; background:#e9f2ff; color:var(--accent); font-size:15px; border-bottom:1px solid #d7e4f2; }
-    .panel-header { padding:12px 18px; border-bottom:1px solid #f0f4f8; font-size:14px; background:#fafafa; }
-    .panel-meta { font-size:12px; color:#555; display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
-    .panel-meta span { font-weight:600; }
+    .print-header { display:block; }
+    .fixed-header { border-bottom:1px solid #d7e4f2; }
+    .report-table-header { margin:10px 0 0; padding-top:10px; border-top:1px solid #d7e4f2; }
+    .report-table-header table,
+    .category-block table.tests { border-collapse:collapse; width:100%; table-layout: fixed; }
+    .report-table-header th,
+    .tests tbody td { padding:5px 6px; border:1px solid var(--border); }
+    .report-table-header th { background:#f7fbff; text-align:left; font-weight:700; color:#0b3f66; font-size:11px; }
+    .report-table-header td { padding:0; border:none; }
 
-    table.tests { width:100%; border-collapse:collapse; font-size:13px; }
-    table.tests thead th { background:#f7fbff; text-align:left; padding:10px; border:1px solid var(--border); font-weight:700; color:#0b3f66; }
-    table.tests tbody td { padding:10px; border:1px solid var(--border); vertical-align:top; }
-    table.tests tbody tr:nth-child(even) td { background:#fff; }
-    .component-name { font-weight:600; }
-    .normal-range { color:var(--muted); white-space:nowrap; }
-    .result-value { }
-    .result-value.abnormal { font-weight:700; color:#c41e3a; }
-    .flag-column { font-weight:600; text-align:center; }
-    .flag-column.abnormal { font-weight:700; color:#c41e3a; }
+    .category-block { margin-bottom:6px; padding:0; border:1px solid var(--border); border-radius:2px; background:#fff; }
+    .tests { width:100%; font-size:12px; }
+    .tests tbody td { padding:6px 8px; border:1px solid var(--border); vertical-align:top; }
+    .tests tbody tr:nth-child(even) td { background:#fafafa; }
+    .category-row td { background:#e9f2ff; color:var(--accent); text-align:center; font-weight:700; padding:8px 10px; }
+    .test-row td { background:#f5f5f5; text-align:left; font-weight:400; padding:6px 10px; }
+    .component-name { font-weight:400; }
+    .normal-range { color:var(--muted); white-space:nowrap; font-size:11px; }
+    .result-value { font-weight:400; }
+    .result-value.abnormal { font-weight:700; color:#c41e3a; background-color:#ffebee; padding:3px 4px; border-radius:2px; }
 
-    .footer-line { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-    .footer-line span { flex:1 1 auto; }
-    .footer-line span:first-child { flex:2 1 auto; }
+    .footer-line { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+    .footer-line span { flex:1 1 auto; font-size:10px; }
 
     @media print {
       html, body { margin:0; padding:0; background:transparent; }
-      .fixed-header { position:static; background:#fff; page-break-after:avoid; break-after:avoid; }
-      .fixed-footer { position:fixed; background:#fff; page-break-before:avoid; break-before:avoid; margin-top:30px; }
-      .report-container { padding-top:0; padding-bottom:0; }
-      .category-block { page-break-inside:avoid; break-inside:avoid; }
-      table.tests { width:100%; page-break-inside:avoid; break-inside:avoid; }
+      body { padding-top:0; }
+      .fixed-header { position:static; width:100%; background:#fff; }
+      .fixed-footer { position:static; background:#fff; margin-top:0; }
+      .report-container { padding-top:0; padding-bottom:0; margin-top:0; }
+      .category-block { page-break-inside: avoid; }
+      table.tests { width:100%; }
       table.tests thead { display:table-header-group; }
       .footer-inner { background:#0b5ca5 !important; color:#fff !important; }
       * { color-adjust:exact; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -124,7 +117,7 @@
     @media (max-width:700px) {
       .patient-summary { grid-template-columns:1fr; }
       .lab-header { flex-direction:column; align-items:flex-start; }
-      .logo { width:72px; height:56px; }
+      .logo { width:50px; height:40px; }
       .report-meta { min-width:auto; width:100%; text-align:left; }
     }
   </style>
@@ -148,14 +141,34 @@
         </div>
       </div>
       <div class="patient-summary" id="patientSummary">
-        <div class="summary-card"><span class="summary-label">Patient ID</span><span class="summary-value" id="patientId">-</span></div>
-        <div class="summary-card"><span class="summary-label">Patient Name</span><span class="summary-value" id="patientName">-</span></div>
-        <div class="summary-card"><span class="summary-label">Age / Gender</span><span class="summary-value" id="patientAgeGender">-</span></div>
-        <div class="summary-card"><span class="summary-label">Referring Doctor</span><span class="summary-value" id="patientReferrer">-</span></div>
-        <div class="summary-card"><span class="summary-label">Contact</span><span class="summary-value" id="patientContact">-</span></div>
-        <div class="summary-card"><span class="summary-label">Address</span><span class="summary-value" id="patientAddress">-</span></div>
-        <div class="summary-card"><span class="summary-label">Total Tests</span><span class="summary-value" id="totalTests">0</span></div>
-        <div class="summary-card"><span class="summary-label">Report Generated</span><span class="summary-value" id="reportGenerated">-</span></div>
+        <div class="patient-summary-row">
+          <div class="summary-card"><span class="summary-label">Patient ID</span><span class="summary-value" id="patientId">-</span></div>
+          <div class="summary-card"><span class="summary-label">Patient Name</span><span class="summary-value" id="patientName">-</span></div>
+          <div class="summary-card"><span class="summary-label">Age / Gender</span><span class="summary-value" id="patientAgeGender">-</span></div>
+          <div class="summary-card"><span class="summary-label">Referring Doctor</span><span class="summary-value" id="patientReferrer">-</span></div>
+        </div>
+        <div class="patient-summary-row">
+          <div class="summary-card"><span class="summary-label">Contact</span><span class="summary-value" id="patientContact">-</span></div>
+          <div class="summary-card"><span class="summary-label">Address</span><span class="summary-value" id="patientAddress">-</span></div>
+          <div class="summary-card"><span class="summary-label">Total Tests</span><span class="summary-value" id="totalTests">0</span></div>
+          <div class="summary-card"><span class="summary-label">Report Generated</span><span class="summary-value" id="reportGenerated">-</span></div>
+        </div>
+      </div>
+      <div class="report-table-header">
+        <table class="tests report-header-table">
+          <colgroup>
+            <col style="width:50%">
+            <col style="width:25%">
+            <col style="width:25%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>TEST NAME</th>
+              <th>RESULT</th>
+              <th>NORMAL RANGE</th>
+            </tr>
+          </thead>
+        </table>
       </div>
     </div>
   </div>
@@ -257,64 +270,49 @@
         }
 
         reportContent.innerHTML = categories.map(group => {
-          const rows = group.entries.map(order => {
+          const categoryRows = group.entries.map(order => {
             const panelTitle = escapeHtml(order.panelName || 'Panel');
-            const panelInfo = `Status: ${escapeHtml(order.status || '-')}` + (order.sampleCollectedAt ? ` • Sample: ${escapeHtml(formatDate(order.sampleCollectedAt))}` : '');
             const components = order.components || [];
             const componentRows = components.length > 0
               ? components.map(comp => {
-                  const isAbnormal = comp.flag === 'High' || comp.flag === 'Low';
+                  const flag = comp.flag === 'High' ? 'H' : comp.flag === 'Low' ? 'L' : '';
+                  const unitPart = comp.unit ? ' ' + comp.unit : '';
+                  const resultWithFlag = (comp.result_value || '-') + unitPart + (flag ? ' ' + flag : '');
+                  const isAbnormal = flag !== '';
                   const resultClass = isAbnormal ? 'result-value abnormal' : 'result-value';
-                  const flagClass = isAbnormal ? 'flag-column abnormal' : 'flag-column';
                   return `
                     <tr>
-                      <td class="component-name">${escapeHtml(comp.component_name || '-')}</td>
-                      <td class="${resultClass}">${escapeHtml(comp.result_value || '-')}</td>
+                      <td>${escapeHtml(comp.component_name || '-')}</td>
+                      <td class="${resultClass}">${escapeHtml(resultWithFlag)}</td>
                       <td class="normal-range">${escapeHtml(comp.reference_range || '-')}</td>
-                      <td class="${flagClass}">${escapeHtml(comp.flag || 'Normal')}</td>
                     </tr>
                   `;
                 }).join('')
               : `
                     <tr>
-                      <td colspan="4" class="muted">No component results available for this panel.</td>
+                      <td colspan="3" style="color:#999; text-align:center;">No component results available</td>
                     </tr>
                 `;
-            const notes = order.notes || order.note || '';
-            const notesRow = notes ? `
-                    <tr class="notes-row">
-                      <td colspan="3">${escapeHtml(notes)}</td>
-                    </tr>
-                ` : '';
             return `
-              <div class="panel-block">
-                <div class="panel-header">
-                  <div>${panelTitle}</div>
-                  <div class="panel-meta">${panelInfo}</div>
-                </div>
-                <table class="tests">
-                  <thead>
-                    <tr>
-                      <th>TEST NAME</th>
-                      <th>RESULT</th>
-                      <th>NORMAL RANGE</th>
-                      <th>FLAG</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${componentRows}
-                    ${notesRow}
-                  </tbody>
-                </table>
-              </div>
+              <tr class="test-row"><td colspan="3">${panelTitle}</td></tr>
+              ${componentRows}
             `;
           }).join('');
 
           return `
-            <section class="category-block">
-              <h2>${escapeHtml(group.categoryName)}</h2>
-              ${rows}
-            </section>
+            <div class="category-block">
+              <table class="tests">
+                <colgroup>
+                  <col style="width:50%">
+                  <col style="width:25%">
+                  <col style="width:25%">
+                </colgroup>
+                <tbody>
+                  <tr class="category-row"><td colspan="3">${escapeHtml(group.categoryName)}</td></tr>
+                  ${categoryRows}
+                </tbody>
+              </table>
+            </div>
           `;
         }).join('');
 

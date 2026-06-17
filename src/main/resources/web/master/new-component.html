@@ -311,8 +311,8 @@
             </div>
 
             <div class="button-group">
-                <button type="button" class="btn-cancel" onclick="closeDialog()">Cancel</button>
-                <button type="button" class="btn-save" onclick="saveAllComponents()">Save All</button>
+                <button type="button" id="cancelButton" class="btn-cancel" onclick="closeDialog()">Cancel</button>
+                <button type="button" id="saveButton" class="btn-save" onclick="saveAllComponents()">Save All</button>
             </div>
         </form>
     </div>
@@ -323,6 +323,7 @@
     let componentsArray = [];
     let rowCounter = 0;
     let selectedPanelName = ''; // Store panel name from URL parameter
+    let isSavingComponents = false;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadPanels();
@@ -475,10 +476,18 @@
     }
 
     function saveAllComponents() {
+        if (isSavingComponents) {
+            return;
+        }
+
         if (componentsArray.length === 0) {
             showError('Please add at least one subtest');
             return;
         }
+
+        isSavingComponents = true;
+        toggleSavingState(true);
+        showSuccess('Saving subtests...');
 
         // Save all components
         let savedCount = 0;
@@ -488,9 +497,7 @@
             if (index >= componentsArray.length) {
                 if (!errorOccurred) {
                     showSuccess(`${savedCount} component(s) saved successfully!`);
-                    setTimeout(() => {
-                        window.parent.loadPage('/master/test-list.html');
-                    }, 1500);
+                    window.parent.loadPage('/master/test-list.html');
                 }
                 return;
             }
@@ -529,11 +536,22 @@
             .catch(error => {
                 console.error('Error saving component:', error);
                 errorOccurred = true;
+                isSavingComponents = false;
+                toggleSavingState(false);
                 showError(`Error saving component: ${component.component_name}`);
             });
         };
 
         saveNext(0);
+    }
+
+    function toggleSavingState(isSaving) {
+        document.getElementById('saveButton').disabled = isSaving;
+        document.getElementById('cancelButton').disabled = isSaving;
+        const controls = document.querySelectorAll('#componentForm input, #componentForm select, #componentForm textarea, #componentForm button');
+        controls.forEach(control => {
+            control.disabled = isSaving;
+        });
     }
 
     function closeDialog() {
