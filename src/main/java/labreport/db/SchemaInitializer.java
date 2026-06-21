@@ -31,7 +31,10 @@ public class SchemaInitializer {
                         "referring_doctor_id INTEGER," +
                         "created_by INTEGER NOT NULL," +
                         "created_at TEXT DEFAULT CURRENT_TIMESTAMP," +
-                        "updated_at TEXT" +
+                        "updated_at TEXT," +
+                        "total_amount NUMERIC DEFAULT 0," +
+                        "amount_paid NUMERIC DEFAULT 0," +
+                        "amount_due NUMERIC DEFAULT 0" +
                         ")" },
                 { "test_order", "CREATE TABLE IF NOT EXISTS test_order (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -48,6 +51,7 @@ public class SchemaInitializer {
                         "total_value INTEGER NOT NULL DEFAULT 0," +
                         "commission_percent REAL NOT NULL CHECK (commission_percent >= 0)," +
                         "commission_amount REAL NOT NULL CHECK (commission_amount >= 0)," +
+                        "discount_applied NUMERIC DEFAULT 0," +
                         "FOREIGN KEY(patient_id) REFERENCES patients(id)," +
                         "FOREIGN KEY(panel_id) REFERENCES panels(panel_id)" +
                         ")" },
@@ -140,7 +144,7 @@ public class SchemaInitializer {
                         "updated_at TEXT," +
                         "FOREIGN KEY(test_order_id) REFERENCES test_order(id)," +
                         "FOREIGN KEY(component_id) REFERENCES components(component_id)" +
-                        ")" 
+                        ")"
                 }
         };
 
@@ -156,7 +160,13 @@ public class SchemaInitializer {
                 "panel_name TEXT NOT NULL DEFAULT ''",
                 "commission_percent REAL NOT NULL DEFAULT 0",
                 "commission_amount REAL NOT NULL DEFAULT 0",
-                "updated_at TEXT"
+                "updated_at TEXT",
+                "discount_applied NUMERIC DEFAULT 0"
+        });
+        REQUIRED_COLUMNS.put("patients", new String[] {
+                "total_amount NUMERIC DEFAULT 0",
+                "amount_paid NUMERIC DEFAULT 0",
+                "amount_due NUMERIC DEFAULT 0"
         });
         REQUIRED_COLUMNS.put("referring_doctors", new String[] {
                 "commission_percent REAL NOT NULL DEFAULT 0"
@@ -175,7 +185,6 @@ public class SchemaInitializer {
         }
     }
 
-
     private static void ensureRequiredColumns(Connection connection) {
         for (java.util.Map.Entry<String, String[]> entry : REQUIRED_COLUMNS.entrySet()) {
             String tableName = entry.getKey();
@@ -192,13 +201,15 @@ public class SchemaInitializer {
                 stmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnDefinition);
                 log.info("Added missing column '" + columnName + "' to table '" + tableName + "'");
             } catch (Exception e) {
-                log.warning("Could not add column '" + columnName + "' to table '" + tableName + "': " + e.getMessage());
+                log.warning(
+                        "Could not add column '" + columnName + "' to table '" + tableName + "': " + e.getMessage());
             }
         }
     }
 
     private static boolean columnExists(Connection connection, String tableName, String columnName) {
-        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + tableName + ")")) {
+        try (Statement stmt = connection.createStatement();
+                ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + tableName + ")")) {
             while (rs.next()) {
                 if (columnName.equalsIgnoreCase(rs.getString("name"))) {
                     return true;

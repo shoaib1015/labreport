@@ -229,7 +229,7 @@
         button[type="button"] {
             background-color: #2c5282;
             color: white;
-            flex : 1;
+            flex: 1;
         }
 
         button[type="button"]:hover {
@@ -425,7 +425,8 @@
 
                         <div class="form-group">
                             <label>Phone *</label>
-                            <input type="tel" name="contact_phone" placeholder="10-digit number" pattern="\d{10}" required>
+                            <input type="tel" name="contact_phone" placeholder="10-digit number" pattern="\d{10}"
+                                required>
                             <div class="form-error" id="error-contact_phone"></div>
                         </div>
 
@@ -470,38 +471,78 @@
                         <div class="form-group" style="grid-column: 1 / -1;">
                             <label>Add Tests/Panels</label>
                             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
-                                
+
                                 <!-- Dropdown for panels -->
                                 <select id="panelDropdown" class="form-control" style="flex: 2;">
-                                <option value="">Select a test panel</option>
-                                <!-- Options will be appended dynamically -->
+                                    <option value="">Select a test panel</option>
+                                    <!-- Options will be appended dynamically -->
                                 </select>
-                                
+
                                 <!-- Commission input field -->
-                                <input type="number" id="commissionPercent" 
-                                    class="form-control" value="0" placeholder="Commission %" min="0" max="100" step="0.01" 
-                                    style="flex: 1; max-width: 120px;">
-                                
+                                <input type="number" id="commissionPercent" class="form-control" value="0"
+                                    placeholder="Commission %" min="0" max="100" step="0.01"
+                                    style="flex: 1; max-width: 120px; display: none;">
+
                                 <!-- Add button -->
-                                <button type="button" id="addTestBtn" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                <button type="button" id="addTestBtn"
+                                    style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
                                     Add Test
                                 </button>
                             </div>
-                            <small style="color: #666;">Select a panel, optionally set commission %, then click "Add Test" to add it to the list below.</small>
+                            <small style="color: #666;">Select a panel, optionally set commission %, then click "Add
+                                Test" to add it to the list below.</small>
 
                             <!-- List of added tests -->
-                            <div id="addedTestsList" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border: 1px solid #e8f0f8; border-radius: 4px; display: none;">
+                            <div id="addedTestsList"
+                                style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border: 1px solid #e8f0f8; border-radius: 4px; display: none;">
                                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                     <thead>
                                         <tr style="background-color: #e8f0f8; border-bottom: 1px solid #ddd;">
-                                            <th style="padding: 8px; text-align: left; font-weight: 600;">Test Panel</th>
-                                            <th style="padding: 8px; text-align: center; font-weight: 600; width: 120px;">Commission %</th>
-                                            <th style="padding: 8px; text-align: center; font-weight: 600; width: 60px;">Action</th>
+                                            <th style="padding: 8px; text-align: left; font-weight: 600;">Test Panel
+                                            </th>
+                                            <th
+                                                style="padding: 8px; text-align: right; font-weight: 600; width: 100px;">
+                                                Price (₹)</th>
+                                            <th
+                                                style="padding: 8px; text-align: center; font-weight: 600; width: 120px;">
+                                                Discount (%)</th>
+                                            <th
+                                                style="padding: 8px; text-align: right; font-weight: 600; width: 120px;">
+                                                Effective Price (₹)</th>
+                                            <th
+                                                style="padding: 8px; text-align: center; font-weight: 600; width: 60px;">
+                                                Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="testsTableBody">
                                     </tbody>
                                 </table>
+                            </div>
+
+                            <!-- Billing Summary -->
+                            <div id="billingSummary"
+                                style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border: 1px solid #e8f0f8; border-radius: 4px;">
+                                <h4
+                                    style="margin-bottom: 10px; color: #2c5282; font-size: 14px; border-bottom: 1px solid #e8f0f8; padding-bottom: 5px;">
+                                    Billing Summary</h4>
+                                <div class="form-grid"
+                                    style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 0;">
+                                    <div class="form-group">
+                                        <label>Total Amount (₹)</label>
+                                        <input type="number" id="totalAmount" name="total_amount" value="0.00" readonly
+                                            style="background-color: #e9ecef; font-weight: bold;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Amount Paid (₹)</label>
+                                        <input type="number" id="amountPaid" name="amount_paid" value="0.00" min="0"
+                                            step="0.01">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Amount Due (₹)</label>
+                                        <input type="number" id="amountDue" name="amount_due" value="0.00" readonly
+                                            style="background-color: #e9ecef; font-weight: bold; color: #dc3545;">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -511,7 +552,8 @@
                 <!-- Button Group -->
                 <div class="button-group">
                     <button type="submit">Save Patient</button>
-                    <button type="button" onclick="deletePatient()" style="display: none;" id="deletePatientBtn">Delete Patient</button>
+                    <button type="button" onclick="deletePatient()" style="display: none;" id="deletePatientBtn">Delete
+                        Patient</button>
                     <button type="reset">Reset</button>
                 </div>
             </form>
@@ -595,9 +637,29 @@
                         console.log('Loaded patient data:', data);
                         const patient = data.patient || data;
                         populateForm(patient);
+                        return fetch(`/api/patients/${currentPatientId}/test-orders`);
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Loaded patient test orders:', data);
+                        const orders = data.testOrders || [];
+                        addedTests = orders.map(order => ({
+                            panelId: String(order.panelId),
+                            panelName: order.panelName,
+                            price: parseFloat(order.panelPrice) || 0,
+                            discount: parseFloat(order.discountApplied) || 0,
+                            commission: parseFloat(order.commissionPercent) || 0
+                        }));
+                        renderAddedTests();
+                        recalculateBilling();
                     })
                     .catch(error => {
-                        console.error('Error loading patient:', error);
+                        console.error('Error loading patient details or test orders:', error);
                         showErrors(['Failed to load patient data']);
                     });
             }
@@ -614,7 +676,10 @@
                 }
                 if (patient.contact_email) document.querySelector('input[name="contact_email"]').value = patient.contact_email;
                 if (patient.address) document.querySelector('textarea[name="address"]').value = patient.address;
-                
+                if (patient.amount_paid) {
+                    document.getElementById('amountPaid').value = parseFloat(patient.amount_paid) || 0;
+                }
+
                 // Set referring doctor and update commission default
                 if (patient.referring_doctor_id && patient.referring_doctor_id !== '0' && patient.referring_doctor_id !== 0) {
                     document.querySelector('select[name="referring_doctor_id"]').value = patient.referring_doctor_id;
@@ -626,17 +691,17 @@
                             'Content-Type': 'application/json'
                         }
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        selectedDoctorCommission = data.commission_percent != null
-                            ? parseFloat(data.commission_percent)
-                            : 0;
-                        document.getElementById('commissionPercent').value = selectedDoctorCommission;
-                    })
-                    .catch(error => {
-                        console.warn('Could not fetch doctor commission:', error);
-                        selectedDoctorCommission = 0;
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            selectedDoctorCommission = data.commission_percent != null
+                                ? parseFloat(data.commission_percent)
+                                : 0;
+                            document.getElementById('commissionPercent').value = selectedDoctorCommission;
+                        })
+                        .catch(error => {
+                            console.warn('Could not fetch doctor commission:', error);
+                            selectedDoctorCommission = 0;
+                        });
                 } else {
                     document.querySelector('select[name="referring_doctor_id"]').value = '';
                     selectedDoctorCommission = 0;
@@ -710,13 +775,17 @@
                 panels.forEach(panel => {
                     const panelId = panel.panel_id || panel.id;
                     const panelName = panel.panel_name || 'Unknown';
-                    
+                    const price = parseFloat(panel.price) || 0;
+
                     // Store in map for later reference
-                    panelsMap[panelId] = panelName;
+                    panelsMap[panelId] = {
+                        name: panelName,
+                        price: price
+                    };
 
                     const option = document.createElement('option');
                     option.value = panelId;
-                    option.textContent = panelName;
+                    option.textContent = `${panelName} (₹${price.toFixed(2)})`;
                     dropdown.appendChild(option);
                 });
                 if (window.sortSelectOptions) window.sortSelectOptions(dropdown);
@@ -746,7 +815,9 @@
                     return;
                 }
 
-                const panelName = panelsMap[panelId] || 'Unknown';
+                const panelInfo = panelsMap[panelId] || { name: 'Unknown', price: 0 };
+                const panelName = panelInfo.name;
+                const price = panelInfo.price;
                 const commissionValue = commissionInput.value.trim();
                 const commission = commissionValue !== ''
                     ? parseFloat(commissionValue)
@@ -755,11 +826,14 @@
                 addedTests.push({
                     panelId: panelId,
                     panelName: panelName,
+                    price: price,
+                    discount: 0,
                     commission: isNaN(commission) ? 0 : commission
                 });
 
                 renderAddedTests();
-                
+                recalculateBilling();
+
                 // Reset fields
                 dropdown.value = '';
                 commissionInput.value = '';
@@ -768,6 +842,22 @@
             function removeTestOrder(panelId) {
                 addedTests = addedTests.filter(t => t.panelId !== panelId);
                 renderAddedTests();
+                recalculateBilling();
+            }
+
+            function updateTestDiscount(panelId, value) {
+                const discountValue = parseFloat(value);
+                addedTests = addedTests.map(test => {
+                    if (test.panelId === panelId) {
+                        return {
+                            ...test,
+                            discount: isNaN(discountValue) ? 0 : Math.max(0, Math.min(100, discountValue))
+                        };
+                    }
+                    return test;
+                });
+                renderAddedTests();
+                recalculateBilling();
             }
 
             function updateTestCommission(panelId, value) {
@@ -784,6 +874,33 @@
                 renderAddedTests();
             }
 
+            function recalculateBilling() {
+                let totalAmount = 0;
+                addedTests.forEach(test => {
+                    const discount = test.discount || 0;
+                    const effectivePrice = test.price * (1 - discount / 100);
+                    totalAmount += effectivePrice;
+                });
+
+                const totalAmountInput = document.getElementById('totalAmount');
+                const amountPaidInput = document.getElementById('amountPaid');
+                const amountDueInput = document.getElementById('amountDue');
+
+                if (totalAmountInput) totalAmountInput.value = totalAmount.toFixed(2);
+
+                const amountPaid = parseFloat(amountPaidInput.value) || 0;
+                const amountDue = totalAmount - amountPaid;
+
+                if (amountDueInput) {
+                    amountDueInput.value = amountDue.toFixed(2);
+                    if (amountDue > 0) {
+                        amountDueInput.style.color = '#dc3545';
+                    } else {
+                        amountDueInput.style.color = '#28a745';
+                    }
+                }
+            }
+
             function renderAddedTests() {
                 const tableBody = document.getElementById('testsTableBody');
                 const listContainer = document.getElementById('addedTestsList');
@@ -795,21 +912,27 @@
                 }
 
                 listContainer.style.display = 'block';
-                tableBody.innerHTML = addedTests.map((test, index) => `
-                    <tr style="border-bottom: 1px solid #e8f0f8;">
-                        <td style="padding: 8px;">${test.panelName}</td>
-                        <td style="padding: 8px; text-align: center;">
-                            <input type="number" value="${test.commission}" min="0" step="0.1" onchange="updateTestCommission('${test.panelId}', this.value)"
-                                style="width: 80px; padding: 4px; border: 1px solid #ced4da; border-radius: 3px; text-align: center;" />
-                        </td>
-                        <td style="padding: 8px; text-align: center;">
-                            <button type="button" onclick="removeTestOrder('${test.panelId}')" 
-                                style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
-                                Remove
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                tableBody.innerHTML = addedTests.map((test, index) => {
+                    const discount = test.discount || 0;
+                    const effectivePrice = test.price * (1 - discount / 100);
+                    return `
+                        <tr style="border-bottom: 1px solid #e8f0f8;">
+                            <td style="padding: 8px;">${test.panelName}</td>
+                            <td style="padding: 8px; text-align: right;">₹${test.price.toFixed(2)}</td>
+                            <td style="padding: 8px; text-align: center;">
+                                <input type="number" value="${discount}" min="0" max="100" step="0.01" oninput="updateTestDiscount('${test.panelId}', this.value)"
+                                    style="width: 80px; padding: 4px; border: 1px solid #ced4da; border-radius: 3px; text-align: center;" />
+                            </td>
+                            <td style="padding: 8px; text-align: right; font-weight: bold;">₹${effectivePrice.toFixed(2)}</td>
+                            <td style="padding: 8px; text-align: center;">
+                                <button type="button" onclick="removeTestOrder('${test.panelId}')" 
+                                    style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
 
             function submitPatient() {
@@ -831,9 +954,11 @@
                     priority: document.getElementById('orderPriority').value || 'Routine',
                     notes: document.getElementById('orderNotes').value || null,
                     commission_percent: selectedDoctorCommission,
+                    amount_paid: parseFloat(document.getElementById('amountPaid').value) || 0,
                     order_panels: addedTests.length > 0 ? addedTests.map(t => ({
                         panel_id: parseInt(t.panelId, 10),
-                        commission_percent: parseFloat(t.commission) || 0
+                        commission_percent: parseFloat(t.commission) || 0,
+                        discount_applied: parseFloat(t.discount) || 0
                     })) : []
                 };
 
@@ -1010,9 +1135,9 @@
             });
 
             document.querySelectorAll('input').forEach(input => {
-                input.addEventListener('keydown', function(event) {
+                input.addEventListener('keydown', function (event) {
                     if (event.key === 'Enter') {
-                    event.preventDefault(); // stops form submission
+                        event.preventDefault(); // stops form submission
                     }
                 });
             });
@@ -1031,18 +1156,18 @@
                             'Content-Type': 'application/json'
                         }
                     })
-                    .then(response => {
-                        if (response.ok) {
-                            alert('Patient deleted successfully');
-                            window.location.href = '/patient/patient-dashboard.html';
-                        } else {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error deleting patient:', error);
-                        alert('An error occurred while deleting the patient');
-                    });
+                        .then(response => {
+                            if (response.ok) {
+                                alert('Patient deleted successfully');
+                                window.location.href = '/patient/patient-dashboard.html';
+                            } else {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error deleting patient:', error);
+                            alert('An error occurred while deleting the patient');
+                        });
                 }
             }
 
@@ -1051,55 +1176,60 @@
                 const doctorDropdown = document.getElementById('referringDoctorSelect');
                 const commissionInput = document.getElementById('commissionPercent');
                 const addTestBtn = document.getElementById('addTestBtn');
-                
+
                 if (doctorDropdown) {
                     doctorDropdown.addEventListener('change', async (e) => {
-                    const doctorId = e.target.value;
-                    
-                    if (!doctorId) {
-                        selectedDoctorCommission = 0;
-                        commissionInput.value = '0';
-                        commissionInput.placeholder = 'Commission %';
-                        return;
-                    }
-                    
-                    try {
-                        // Call backend API to fetch commission
-                        const response = await fetch(`/api/commissions/${doctorId}`, {
-                            method: 'GET',
-                            credentials: 'include',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        const data = await response.json();
-                        selectedDoctorCommission = data.commission_percent != null
-                            ? parseFloat(data.commission_percent)
-                            : null;
+                        const doctorId = e.target.value;
 
-                        commissionInput.value = selectedDoctorCommission != null
-                            ? selectedDoctorCommission
-                            : '';
-                        commissionInput.placeholder = selectedDoctorCommission != null
-                            ? selectedDoctorCommission
-                            : 'Commission %';
-                    } catch (error) {
-                        console.error('Error fetching commission:', error);
-                        selectedDoctorCommission = null;
-                        commissionInput.value = '';
-                        commissionInput.placeholder = 'Commission %';
-                    }
+                        if (!doctorId) {
+                            selectedDoctorCommission = 0;
+                            commissionInput.value = '0';
+                            commissionInput.placeholder = 'Commission %';
+                            return;
+                        }
+
+                        try {
+                            // Call backend API to fetch commission
+                            const response = await fetch(`/api/commissions/${doctorId}`, {
+                                method: 'GET',
+                                credentials: 'include',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            const data = await response.json();
+                            selectedDoctorCommission = data.commission_percent != null
+                                ? parseFloat(data.commission_percent)
+                                : null;
+
+                            commissionInput.value = selectedDoctorCommission != null
+                                ? selectedDoctorCommission
+                                : '';
+                            commissionInput.placeholder = selectedDoctorCommission != null
+                                ? selectedDoctorCommission
+                                : 'Commission %';
+                        } catch (error) {
+                            console.error('Error fetching commission:', error);
+                            selectedDoctorCommission = null;
+                            commissionInput.value = '';
+                            commissionInput.placeholder = 'Commission %';
+                        }
                     });
                 }
-                
+
                 if (addTestBtn) {
                     addTestBtn.addEventListener('click', addTestOrder);
+                }
+
+                const amountPaidInput = document.getElementById('amountPaid');
+                if (amountPaidInput) {
+                    amountPaidInput.addEventListener('input', recalculateBilling);
                 }
             });
 
         </script>
 
-<script src="/js/sort-selects.js"></script>
+        <script src="/js/sort-selects.js"></script>
 </body>
 
 </html>
