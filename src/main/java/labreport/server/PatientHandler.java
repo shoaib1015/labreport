@@ -30,21 +30,22 @@ public class PatientHandler implements HttpHandler {
 
             if ("POST".equals(method) && path.endsWith("/api/patients")) {
                 handleCreatePatient(exchange);
-            } else if("GET".equals(method) && path.matches("/api/patients/dashboard/stats")) {
+            } else if ("GET".equals(method) && path.matches("/api/patients/dashboard/stats")) {
                 // Handle dashboard stats request
-                // This is a placeholder. You would implement the logic to fetch and return the dashboard stats here.
+                // This is a placeholder. You would implement the logic to fetch and return the
+                // dashboard stats here.
                 log.info("Received request for patient dashboard stats");
                 handleGetPatientDashboardStats(exchange);
-            } else if("GET".equals(method) && path.equals("/api/patients/all")) {
+            } else if ("GET".equals(method) && path.equals("/api/patients/all")) {
                 // Handle all patients request
                 handleGetAllPatients(exchange);
             } else if ("GET".equals(method) && path.equals("/api/patients")) {
                 handleSearchPatients(exchange);
-            } else if("GET".equals(method) && path.matches("/api/patients/recent")) {
+            } else if ("GET".equals(method) && path.matches("/api/patients/recent")) {
                 // Handle list patients request (not implemented in this snippet)
                 log.info("Received request to list patients");
                 // You would implement the logic to fetch and return the list of patients here.
-                handleListRecentPatients(exchange,path);
+                handleListRecentPatients(exchange, path);
 
             } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/test-orders")) {
                 String patientId = extractPatientIdFromPath(path);
@@ -57,9 +58,9 @@ public class PatientHandler implements HttpHandler {
                 handleUpdatePatient(exchange, patientId);
             } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+")) {
                 String patientId = extractId(path);
-                log.info("patient_id:"+patientId);
+                log.info("patient_id:" + patientId);
                 handleGetPatient(exchange, patientId);
-            }else if ("DELETE".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+")) {
+            } else if ("DELETE".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+")) {
                 String patientId = extractId(path);
                 handleDeletePatient(exchange, patientId);
             } else {
@@ -84,9 +85,10 @@ public class PatientHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "application/json");
 
             if (!response.validationResult.valid) {
-                int status = response.validationResult.errors.stream().anyMatch(err -> err.startsWith("Database error:"))
-                        ? HttpURLConnection.HTTP_INTERNAL_ERROR
-                        : HttpURLConnection.HTTP_BAD_REQUEST;
+                int status = response.validationResult.errors.stream()
+                        .anyMatch(err -> err.startsWith("Database error:"))
+                                ? HttpURLConnection.HTTP_INTERNAL_ERROR
+                                : HttpURLConnection.HTTP_BAD_REQUEST;
                 exchange.sendResponseHeaders(status, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
                 log.warning("Patient creation failed: " + response.validationResult.errors);
             } else {
@@ -121,7 +123,6 @@ public class PatientHandler implements HttpHandler {
             }
 
             log.info("Patient updated successfully: id=" + patientId);
-
         } catch (Exception e) {
             log.severe("Failed to update patient: " + e.getMessage());
             sendErrorResponse(exchange, 500, "Failed to update patient: " + e.getMessage());
@@ -162,9 +163,11 @@ public class PatientHandler implements HttpHandler {
             String gender = params.get("gender");
             String createdAt = params.get("created_at");
 
-            log.info("Search patients with parameters: search=" + search + ", gender=" + gender + ", created_at=" + createdAt);
+            log.info("Search patients with parameters: search=" + search + ", gender=" + gender + ", created_at="
+                    + createdAt);
 
-            if ((search == null || search.isEmpty()) && (gender == null || gender.isEmpty()) && (createdAt == null || createdAt.isEmpty())) {
+            if ((search == null || search.isEmpty()) && (gender == null || gender.isEmpty())
+                    && (createdAt == null || createdAt.isEmpty())) {
                 String jsonResponse = "{\"patients\":[]}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
@@ -188,7 +191,7 @@ public class PatientHandler implements HttpHandler {
 
     private CreatePatientRequest parseRequest(String json) {
         CreatePatientRequest request = new CreatePatientRequest();
-        
+
         // Manual JSON parsing
         request.name = extractJsonString(json, "name");
         request.dob = extractJsonString(json, "dob");
@@ -198,7 +201,7 @@ public class PatientHandler implements HttpHandler {
         request.address = extractJsonString(json, "address");
         request.priority = extractJsonString(json, "priority");
         request.notes = extractJsonString(json, "notes");
-        
+
         String refDocIdStr = extractJsonString(json, "referring_doctor_id");
         if (refDocIdStr != null && !refDocIdStr.isEmpty() && !refDocIdStr.equals("null")) {
             try {
@@ -207,7 +210,7 @@ public class PatientHandler implements HttpHandler {
                 // Leave as null
             }
         }
-        
+
         String createdByStr = extractJsonString(json, "created_by");
         if (createdByStr != null && !createdByStr.isEmpty()) {
             try {
@@ -216,7 +219,7 @@ public class PatientHandler implements HttpHandler {
                 request.created_by = 1; // Default
             }
         }
-        
+
         Double commissionPercent = null;
         String commissionPercentStr = extractJsonString(json, "commission_percent");
         if (commissionPercentStr != null && !commissionPercentStr.isEmpty()) {
@@ -228,9 +231,23 @@ public class PatientHandler implements HttpHandler {
         }
         request.commission_percent = commissionPercent;
         log.info("Parsed commission_percent: " + commissionPercent);
-        // Parse order_panels array (supports [1,2,3] or [{"panelId":1,"commission_percent":10}, ...])
+
+        Double amountPaid = 0.0;
+        String amountPaidStr = extractJsonString(json, "amount_paid");
+        if (amountPaidStr != null && !amountPaidStr.isEmpty() && !amountPaidStr.equals("null")) {
+            try {
+                amountPaid = Double.parseDouble(amountPaidStr);
+            } catch (NumberFormatException e) {
+                amountPaid = 0.0;
+            }
+        }
+        request.amount_paid = amountPaid;
+        log.info("Parsed amount_paid: " + amountPaid);
+
+        // Parse order_panels array (supports [1,2,3] or
+        // [{"panelId":1,"commission_percent":10}, ...])
         request.order_panels = extractOrderPanels(json, "order_panels");
-        
+
         return request;
     }
 
@@ -302,6 +319,20 @@ public class PatientHandler implements HttpHandler {
                         }
                     }
 
+                    String discountStr = extractJsonString(objectJson, "discountApplied");
+                    if (discountStr == null) {
+                        discountStr = extractJsonString(objectJson, "discount_applied");
+                    }
+                    if (discountStr != null && !discountStr.isEmpty()) {
+                        try {
+                            panelOrder.discount_applied = Double.parseDouble(discountStr);
+                        } catch (NumberFormatException ignored) {
+                            panelOrder.discount_applied = 0.0;
+                        }
+                    } else {
+                        panelOrder.discount_applied = 0.0;
+                    }
+
                     panelOrders.add(panelOrder);
                 } catch (NumberFormatException e) {
                     // Skip invalid panel IDs
@@ -320,16 +351,16 @@ public class PatientHandler implements HttpHandler {
         if (index == -1) {
             return null;
         }
-        
+
         int startIndex = index + searchKey.length();
         while (startIndex < json.length() && (json.charAt(startIndex) == ' ' || json.charAt(startIndex) == '\n')) {
             startIndex++;
         }
-        
+
         if (startIndex >= json.length()) {
             return null;
         }
-        
+
         char firstChar = json.charAt(startIndex);
         if (firstChar == '"') {
             // String value
@@ -358,18 +389,18 @@ public class PatientHandler implements HttpHandler {
         if (index == -1) {
             return list;
         }
-        
+
         int arrayStart = json.indexOf('[', index);
         int arrayEnd = json.indexOf(']', arrayStart);
         if (arrayStart == -1 || arrayEnd == -1) {
             return list;
         }
-        
+
         String arrayStr = json.substring(arrayStart + 1, arrayEnd);
         if (arrayStr.trim().isEmpty()) {
             return list;
         }
-        
+
         String[] items = arrayStr.split(",");
         for (String item : items) {
             try {
@@ -378,7 +409,7 @@ public class PatientHandler implements HttpHandler {
                 // Skip invalid items
             }
         }
-        
+
         return list;
     }
 
@@ -415,7 +446,8 @@ public class PatientHandler implements HttpHandler {
             return panelIds;
         }
 
-        // Otherwise attempt to parse objects in the array and extract panelId / panel_id.
+        // Otherwise attempt to parse objects in the array and extract panelId /
+        // panel_id.
         int cursor = arrayStart + 1;
         while (cursor < arrayEnd) {
             int objectStart = json.indexOf('{', cursor);
@@ -452,24 +484,25 @@ public class PatientHandler implements HttpHandler {
     private String objectToJson(CreatePatientResponse response) {
         StringBuilder json = new StringBuilder();
         json.append("{");
-        
+
         // validationResult
         json.append("\"validationResult\":{");
         json.append("\"valid\":").append(response.validationResult.valid).append(",");
         json.append("\"errors\":[");
         for (int i = 0; i < response.validationResult.errors.size(); i++) {
-            if (i > 0) json.append(",");
+            if (i > 0)
+                json.append(",");
             json.append("\"").append(escapeJson(response.validationResult.errors.get(i))).append("\"");
         }
         json.append("]");
         json.append("},");
-        
+
         // sqlTransaction
         json.append("\"sqlTransaction\":\"").append(escapeJson(response.sqlTransaction)).append("\",");
-        
+
         // createdObjects
         json.append("\"createdObjects\":").append(mapToJson(response.createdObjects));
-        
+
         json.append("}");
         return json.toString();
     }
@@ -478,7 +511,8 @@ public class PatientHandler implements HttpHandler {
         StringBuilder json = new StringBuilder("{");
         Object[] keys = map.keySet().toArray();
         for (int i = 0; i < keys.length; i++) {
-            if (i > 0) json.append(",");
+            if (i > 0)
+                json.append(",");
             Object key = keys[i];
             Object value = map.get(key);
             json.append("\"").append(key).append("\":");
@@ -501,7 +535,8 @@ public class PatientHandler implements HttpHandler {
             StringBuilder json = new StringBuilder("[");
             java.util.List<?> list = (java.util.List<?>) value;
             for (int i = 0; i < list.size(); i++) {
-                if (i > 0) json.append(",");
+                if (i > 0)
+                    json.append(",");
                 json.append(valueToJson(list.get(i)));
             }
             json.append("]");
@@ -523,12 +558,13 @@ public class PatientHandler implements HttpHandler {
     }
 
     private String escapeJson(String value) {
-        if (value == null) return "";
+        if (value == null)
+            return "";
         return value.replace("\\", "\\\\")
-                   .replace("\"", "\\\"")
-                   .replace("\n", "\\n")
-                   .replace("\r", "\\r")
-                   .replace("\t", "\\t");
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
     private String extractId(String path) {
@@ -554,7 +590,7 @@ public class PatientHandler implements HttpHandler {
         } catch (SQLException e) {
             log.severe("Failed to get patient: " + e.getMessage());
             sendErrorResponse(exchange, 500, "Failed to fetch patient: " + e.getMessage());
-        }    
+        }
     }
 
     private void handleGetAllPatients(HttpExchange exchange) throws IOException {
@@ -705,7 +741,8 @@ public class PatientHandler implements HttpHandler {
                     for (int i = 0; i < arrayContent.length(); i++) {
                         char c = arrayContent.charAt(i);
                         if (c == '{') {
-                            if (depth == 0) objStart = i;
+                            if (depth == 0)
+                                objStart = i;
                             depth++;
                         } else if (c == '}') {
                             depth--;
@@ -739,17 +776,20 @@ public class PatientHandler implements HttpHandler {
                                     TestOrderComponentService.updateComponentResult(
                                             testOrderComponentId,
                                             resultValue != null ? resultValue : "",
-                                            flag != null ? flag : "Normal"
-                                    );
+                                            flag != null ? flag : "Normal");
                                 } else if (componentName != null && !componentName.isEmpty()) {
-                                    // Insert the parent component if it has its own value or no nested subcomponents
+                                    // Insert the parent component if it has its own value or no nested
+                                    // subcomponents
                                     boolean insertedParent = false;
                                     int parentInsertedId = 0;
 
-                                    // Detect nested subcomponents (support keys: subcomponents, children, sub_components)
+                                    // Detect nested subcomponents (support keys: subcomponents, children,
+                                    // sub_components)
                                     int subStartIdx = obj.indexOf("\"subcomponents\"");
-                                    if (subStartIdx == -1) subStartIdx = obj.indexOf("\"children\"");
-                                    if (subStartIdx == -1) subStartIdx = obj.indexOf("\"sub_components\"");
+                                    if (subStartIdx == -1)
+                                        subStartIdx = obj.indexOf("\"children\"");
+                                    if (subStartIdx == -1)
+                                        subStartIdx = obj.indexOf("\"sub_components\"");
 
                                     if ((resultValue != null && !resultValue.isEmpty()) || subStartIdx == -1) {
                                         // Insert parent component row (will also be shown if it has a result)
@@ -760,8 +800,7 @@ public class PatientHandler implements HttpHandler {
                                                 unit != null ? unit : "",
                                                 referenceRange != null ? referenceRange : "",
                                                 resultValue != null ? resultValue : "",
-                                                flag != null ? flag : "Normal"
-                                        );
+                                                flag != null ? flag : "Normal");
                                         insertedParent = true;
                                     }
 
@@ -776,7 +815,8 @@ public class PatientHandler implements HttpHandler {
                                             for (int j = 0; j < subArray.length(); j++) {
                                                 char ch = subArray.charAt(j);
                                                 if (ch == '{') {
-                                                    if (depth2 == 0) subObjStart = j;
+                                                    if (depth2 == 0)
+                                                        subObjStart = j;
                                                     depth2++;
                                                 } else if (ch == '}') {
                                                     depth2--;
@@ -784,31 +824,40 @@ public class PatientHandler implements HttpHandler {
                                                         String subObj = subArray.substring(subObjStart, j + 1);
                                                         // Extract subcomponent fields
                                                         String subIdStr = extractJsonString(subObj, "id");
-                                                        String subComponentIdStr = extractJsonString(subObj, "componentId");
+                                                        String subComponentIdStr = extractJsonString(subObj,
+                                                                "componentId");
                                                         String subName = extractJsonString(subObj, "componentName");
-                                                        if (subName == null) subName = extractJsonString(subObj, "component_name");
-                                                        if (subName == null) subName = extractJsonString(subObj, "name");
+                                                        if (subName == null)
+                                                            subName = extractJsonString(subObj, "component_name");
+                                                        if (subName == null)
+                                                            subName = extractJsonString(subObj, "name");
                                                         String subUnit = extractJsonString(subObj, "unit");
                                                         String subRef = extractJsonString(subObj, "referenceRange");
-                                                        if (subRef == null) subRef = extractJsonString(subObj, "reference_range");
+                                                        if (subRef == null)
+                                                            subRef = extractJsonString(subObj, "reference_range");
                                                         String subResult = extractJsonString(subObj, "resultValue");
                                                         String subFlag = extractJsonString(subObj, "flag");
 
                                                         int subComponentId = 0;
                                                         if (subComponentIdStr != null && !subComponentIdStr.isEmpty()) {
-                                                            try { subComponentId = Integer.parseInt(subComponentIdStr); } catch (NumberFormatException ignored) { subComponentId = 0; }
+                                                            try {
+                                                                subComponentId = Integer.parseInt(subComponentIdStr);
+                                                            } catch (NumberFormatException ignored) {
+                                                                subComponentId = 0;
+                                                            }
                                                         }
 
-                                                        // Build display name combining parent and sub (keeps hierarchy visible)
-                                                        String displayName = componentName + " — " + (subName != null ? subName : "Subcomponent");
+                                                        // Build display name combining parent and sub (keeps hierarchy
+                                                        // visible)
+                                                        String displayName = componentName + " — "
+                                                                + (subName != null ? subName : "Subcomponent");
 
                                                         if (subIdStr != null && !subIdStr.isEmpty()) {
                                                             int subRowId = Integer.parseInt(subIdStr);
                                                             TestOrderComponentService.updateComponentResult(
                                                                     subRowId,
                                                                     subResult != null ? subResult : "",
-                                                                    subFlag != null ? subFlag : "Normal"
-                                                            );
+                                                                    subFlag != null ? subFlag : "Normal");
                                                         } else {
                                                             TestOrderComponentService.insertComponentResult(
                                                                     testOrderId,
@@ -817,8 +866,7 @@ public class PatientHandler implements HttpHandler {
                                                                     subUnit != null ? subUnit : "",
                                                                     subRef != null ? subRef : "",
                                                                     subResult != null ? subResult : "",
-                                                                    subFlag != null ? subFlag : "Normal"
-                                                            );
+                                                                    subFlag != null ? subFlag : "Normal");
                                                         }
 
                                                         subObjStart = -1;
@@ -846,7 +894,8 @@ public class PatientHandler implements HttpHandler {
                     for (String item : items) {
                         try {
                             String trimmed = item.trim();
-                            if (trimmed.length() == 0) continue;
+                            if (trimmed.length() == 0)
+                                continue;
                             int compId = Integer.parseInt(trimmed);
                             TestOrderComponentService.deleteComponentById(compId);
                         } catch (NumberFormatException nfe) {
@@ -888,5 +937,3 @@ public class PatientHandler implements HttpHandler {
         }
     }
 }
-
-

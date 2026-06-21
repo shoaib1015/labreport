@@ -51,6 +51,7 @@ public class PatientService {
         public String notes;
         public Double commission_percent;
         public Double commission_amount;
+        public Double amount_paid; // New field
         public String id; // Custom patient ID to be generated
     }
 
@@ -58,6 +59,7 @@ public class PatientService {
         public Integer panelId;
         public Double commissionPercent;
         public Integer totalValue;
+        public Double discount_applied; // New field
     }
 
     public static class CreatePatientResponse {
@@ -83,7 +85,6 @@ public class PatientService {
         // Generate SQL transaction and created objects
         response.sqlTransaction = generateSQLTransaction(request);
         log.info("Generated SQL transaction:\n" + response.sqlTransaction);
-        
 
         // Execute the transaction
         try {
@@ -155,7 +156,7 @@ public class PatientService {
 
             // Update patient record
             log.info("Preparing patient UPDATE statement");
-            String patientSql = "UPDATE patients SET name = ?, dob = ?, gender = ?, contact_phone = ?, contact_email = ?, address = ?, referring_doctor_id = ?, updated_at = ? "
+            String patientSql = "UPDATE patients SET name = ?, dob = ?, gender = ?, contact_phone = ?, contact_email = ?, address = ?, referring_doctor_id = ?,amount_paid = ?, updated_at = ? "
                     +
                     "WHERE id = ?";
 
@@ -189,6 +190,9 @@ public class PatientService {
                 log.info("  [9] patient id: " + patientId);
                 pstmt.setString(9, patientId);
 
+                log.info("  [10] amount_paid: " + request.amount_paid);
+                pstmt.setDouble(10, request.amount_paid);
+
                 log.info("Executing patient UPDATE...");
                 int rowsAffected = pstmt.executeUpdate();
                 log.info("Patient UPDATE rows affected: " + rowsAffected);
@@ -197,28 +201,35 @@ public class PatientService {
             // If the request includes panel information, update existing test_order rows
             if (request.order_panels != null && !request.order_panels.isEmpty()) {
                 log.info("Updating related test_order records for patient id=" + patientId);
-                String updateOrderSql = "UPDATE test_order SET priority = ?, notes = ?, commission_percent = ?, commission_amount = (SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?), updated_at = ? WHERE patient_id = ? AND panel_id = ?";
+                String updateOrderSql = "UPDATE test_order SET priority = ?, notes = ?, commission_percent = ?, commission_amount = (SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?), discount_applied = ?, updated_at = ? WHERE patient_id = ? AND panel_id = ?";
                 try (PreparedStatement updateOrderStmt = conn.prepareStatement(updateOrderSql)) {
                     String priority = request.priority != null ? request.priority : "Routine";
                     for (PanelOrder panelOrder : request.order_panels) {
                         int panelId = panelOrder.panelId != null ? panelOrder.panelId : 0;
-                        double commissionPercent = panelOrder.commissionPercent != null ? panelOrder.commissionPercent : (request.commission_percent != null ? request.commission_percent : 0.0);
+                        double commissionPercent = panelOrder.commissionPercent != null ? panelOrder.commissionPercent
+                                : (request.commission_percent != null ? request.commission_percent : 0.0);
 
-                        log.info("Updating test_order for panel_id=" + panelId + " commission_percent=" + commissionPercent);
+                        log.info("Updating test_order for panel_id=" + panelId + " commission_percent="
+                                + commissionPercent);
                         updateOrderStmt.setString(1, priority);
                         updateOrderStmt.setString(2, request.notes);
                         updateOrderStmt.setDouble(3, commissionPercent);
                         updateOrderStmt.setDouble(4, commissionPercent);
                         updateOrderStmt.setInt(5, panelId);
-                        updateOrderStmt.setString(6, utcNow);
-                        updateOrderStmt.setString(7, patientId);
-                        updateOrderStmt.setInt(8, panelId);
-                        
+                        updateOrderStmt.setDouble(6,
+                                panelOrder.discount_applied != null ? panelOrder.discount_applied : 0.0);
+                        updateOrderStmt.setString(7, utcNow);
+                        updateOrderStmt.setString(8, patientId);
+                        updateOrderStmt.setInt(9, panelId);
+
                         int updated = updateOrderStmt.executeUpdate();
                         log.info("test_order UPDATE rows affected for panel_id=" + panelId + ": " + updated);
                     }
                 }
             }
+
+            // Recalculate billing
+            recalculatePatientBilling(conn, patientId, request.amount_paid != null ? request.amount_paid : 0.0);
 
             log.info("Committing transaction...");
             conn.commit();
@@ -320,7 +331,8 @@ public class PatientService {
     /**
      * Calculate patient age from date of birth (YYYY-MM-DD)
      * Returns the actual age in years as a string (e.g., "26")
-     * This age is compared against age ranges in components table (e.g., "0-100", "0-18", "19-65")
+     * This age is compared against age ranges in components table (e.g., "0-100",
+     * "0-18", "19-65")
      */
     private static String calculateAgeGroup(String dob) {
         try {
@@ -351,19 +363,19 @@ public class PatientService {
         sql.append(
                 "-- Placeholders: (1:name, 2:dob, 3:gender, 4:contact_phone, 5:contact_email, 6:address, 7:referring_doctor_id, 8:created_by, 9:created_at)\n");
 
-                
         if (request.order_panels != null && !request.order_panels.isEmpty()) {
             log.info("Generating SQL for test order insertion with " + request.order_panels.size() + " panels");
             sql.append("\n-- Insert test order for the created patient\n");
             sql.append(
-                    "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount, total_value)\n" +
-                    "VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?, ?, ?, ?);\n");
+                    "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount, total_value)\n"
+                            +
+                            "VALUES ((SELECT last_insert_rowid()), ?, ?, ?, ?, ?, ?, ?, ?, ?);\n");
             sql.append(
                     "-- Placeholders: (10:priority, 11:notes, 12:created_by, 13:created_at, 14:panel_id, 15:panel_name, 16:commission_percent, 17:commission_amount, 18:total_value)\n");
         }
         log.info(sql.toString());
         sql.append("COMMIT;");
-        log.info("Generated sql"+sql.toString());
+        log.info("Generated sql" + sql.toString());
         return sql.toString();
     }
 
@@ -401,7 +413,8 @@ public class PatientService {
             for (PanelOrder panelOrder : request.order_panels) {
                 Map<String, Object> panel = new HashMap<>();
                 panel.put("panel_id", panelOrder.panelId);
-                panel.put("commission_percent", panelOrder.commissionPercent != null ? panelOrder.commissionPercent : request.commission_percent);
+                panel.put("commission_percent", panelOrder.commissionPercent != null ? panelOrder.commissionPercent
+                        : request.commission_percent);
                 panel.put("total_value", panelOrder.totalValue != null ? panelOrder.totalValue : 0);
                 panel.put("created_at", utcNow);
                 panels.add(panel);
@@ -448,13 +461,13 @@ public class PatientService {
             int year = today.getYear() % 100; // e.g. 26
             char monthLetter = (char) ('A' + today.getMonthValue() - 1); // May = E
             int day = today.getDayOfMonth();
-            
+
             // Build ID prefix for today and find max counter
             String idPrefix = String.format("%02d%c%02d-", year, monthLetter, day);
             int nextCounter = 1;
-            
+
             try (PreparedStatement counterStmt = conn.prepareStatement(
-                "SELECT id FROM patients WHERE id LIKE ? ORDER BY id DESC LIMIT 1")) {
+                    "SELECT id FROM patients WHERE id LIKE ? ORDER BY id DESC LIMIT 1")) {
                 counterStmt.setString(1, idPrefix + "%");
                 ResultSet rs = counterStmt.executeQuery();
                 if (rs.next()) {
@@ -472,8 +485,9 @@ public class PatientService {
             }
 
             String customId = String.format("%02d%c%02d-%d", year, monthLetter, day, nextCounter);
-            request.id=customId;
-            log.info("Generated custom patient ID: " + customId + " (idPrefix=" + idPrefix + ", nextCounter=" + nextCounter + ")");
+            request.id = customId;
+            log.info("Generated custom patient ID: " + customId + " (idPrefix=" + idPrefix + ", nextCounter="
+                    + nextCounter + ")");
 
             String patientSql = "INSERT INTO patients (id, name, dob, gender, contact_phone, contact_email, address, referring_doctor_id, created_by, created_at) "
                     +
@@ -559,7 +573,8 @@ public class PatientService {
                         // Set all panel IDs in the WHERE IN clause
                         for (int i = 0; i < request.order_panels.size(); i++) {
                             panelFetchStmt.setInt(i + 1, request.order_panels.get(i).panelId);
-                            log.info("Panel fetch query parameter [" + (i + 1) + "]: " + request.order_panels.get(i).panelId);
+                            log.info("Panel fetch query parameter [" + (i + 1) + "]: "
+                                    + request.order_panels.get(i).panelId);
                         }
 
                         ResultSet rs = panelFetchStmt.executeQuery();
@@ -573,9 +588,9 @@ public class PatientService {
                     // Create ONE test_order for EACH selected panel and INSERT COMPONENTS
                     log.info("Preparing test order INSERT statement - will create " + request.order_panels.size()
                             + " orders (one per panel)");
-                    String orderSql = "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount) "
+                    String orderSql = "INSERT INTO test_order (patient_id, priority, notes, created_by, created_at, panel_id, panel_name, commission_percent, commission_amount, discount_applied) "
                             +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?,(SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?))";
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?,(SELECT price * ? / 100.0 FROM panels WHERE panel_id = ?), ?)";
 
                     try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
                         String priority = request.priority != null ? request.priority : "Routine";
@@ -587,9 +602,12 @@ public class PatientService {
                         int panelCount = 0;
                         for (PanelOrder panelOrder : request.order_panels) {
                             int panelId = panelOrder.panelId != null ? panelOrder.panelId : 0;
-                            double commissionPercent = panelOrder.commissionPercent != null ? panelOrder.commissionPercent : (request.commission_percent != null ? request.commission_percent : 0.0);
+                            double commissionPercent = panelOrder.commissionPercent != null
+                                    ? panelOrder.commissionPercent
+                                    : (request.commission_percent != null ? request.commission_percent : 0.0);
                             panelCount++;
-                            log.info("Creating test order " + panelCount + " for panel_id=" + panelId + " commission_percent=" + commissionPercent);
+                            log.info("Creating test order " + panelCount + " for panel_id=" + panelId
+                                    + " commission_percent=" + commissionPercent);
 
                             log.info("Setting test order parameters:");
                             log.info("  [1] patient_id: " + patientId);
@@ -617,6 +635,8 @@ public class PatientService {
                             orderStmt.setDouble(8, commissionPercent);
                             orderStmt.setDouble(9, commissionPercent);
                             orderStmt.setInt(10, panelId);
+                            orderStmt.setDouble(11,
+                                    panelOrder.discount_applied != null ? panelOrder.discount_applied : 0.0);
                             // Execute individual insert
                             log.info(orderStmt.toString());
                             int rowsInserted = orderStmt.executeUpdate();
@@ -670,6 +690,9 @@ public class PatientService {
                 log.info("No panels provided. Test order creation skipped.");
             }
 
+            // Recalculate billing
+            recalculatePatientBilling(conn, customId, request.amount_paid != null ? request.amount_paid : 0.0);
+
             log.info("Committing transaction...");
             conn.commit();
             log.info("Transaction committed successfully");
@@ -705,7 +728,7 @@ public class PatientService {
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT p.id, p.name, p.dob, p.gender, p.contact_phone, p.contact_email, p.address, p.referring_doctor_id, p.created_by, p.created_at, "
+                    "SELECT p.id, p.name, p.dob, p.gender, p.contact_phone, p.contact_email, p.address, p.referring_doctor_id, p.created_by, p.created_at, p.total_amount, p.amount_paid, p.amount_due, "
                             +
                             "rd.full_name AS referring_doctor_name, " +
                             "(SELECT COUNT(*) FROM test_order WHERE patient_id = p.id and status IN ('Ordered', 'Sample Collected', 'In Lab','Pending')) AS active_tests, "
@@ -731,6 +754,9 @@ public class PatientService {
                 patient.put("referring_doctor_id", String.valueOf(rs.getInt("referring_doctor_id")));
                 patient.put("created_by", String.valueOf(rs.getInt("created_by")));
                 patient.put("created_at", rs.getString("created_at"));
+                patient.put("total_amount", String.valueOf(rs.getDouble("total_amount")));
+                patient.put("amount_paid", String.valueOf(rs.getDouble("amount_paid")));
+                patient.put("amount_due", String.valueOf(rs.getDouble("amount_due")));
                 // Joined field from ReferringDoctors
                 String referringDoctorName = rs.getString("referring_doctor_name");
                 patient.put("referring_doctor_name", referringDoctorName != null ? referringDoctorName : "-");
@@ -751,12 +777,13 @@ public class PatientService {
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT " +
-                "  (SELECT COUNT(*) FROM patients) AS total_patients, " +
-                "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Pending','Ordered','SampleCollected','InLab')) AS active_tests, " +
-                "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Pending','Ordered','SampleCollected')) AS pending_results, " +
-                "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ready','Delivered')) AS completed_reports"
-            );
+                    "SELECT " +
+                            "  (SELECT COUNT(*) FROM patients) AS total_patients, " +
+                            "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Pending','Ordered','SampleCollected','InLab')) AS active_tests, "
+                            +
+                            "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Pending','Ordered','SampleCollected')) AS pending_results, "
+                            +
+                            "  (SELECT COUNT(*) FROM test_order WHERE status IN ('Ready','Delivered')) AS completed_reports");
             ResultSet rs = stmt.executeQuery();
 
             if (!rs.next()) {
@@ -774,7 +801,8 @@ public class PatientService {
                     "{\"totalPatients\":%d,\"activeTests\":%d,\"pendingResults\":%d,\"completedReports\":%d}",
                     totalPatients, activeTests, pendingResults, completedReports);
 
-            log.info("Dashboard stats: totalPatients=" + totalPatients + ", activeTests=" + activeTests + ", pendingResults=" + pendingResults + ", completedReports=" + completedReports);
+            log.info("Dashboard stats: totalPatients=" + totalPatients + ", activeTests=" + activeTests
+                    + ", pendingResults=" + pendingResults + ", completedReports=" + completedReports);
             return json;
         } catch (SQLException e) {
             log.severe("Failed to fetch dashboard stats: " + e.getMessage());
@@ -791,17 +819,17 @@ public class PatientService {
         json.append("{\"patients\":[");
 
         String sql = "SELECT p.id,p.name,p.dob,p.gender,p.created_at,p.referring_doctor_id," +
-                        "d.full_name AS referring_doctor_name,t.id AS order_id, "+
-                        "t.panel_name,t.status,t.created_at AS order_created_at,"+
-                        "t.commission_percent,t.commission_amount,pnl.price AS panel_price "+
-                    "FROM patients p "+
-                    "LEFT JOIN referring_doctors d "+ 
-                    "ON p.referring_doctor_id = d.doctor_id "+
-                    "LEFT JOIN test_order t "+
-                        "ON p.id = t.patient_id "+
-                    "LEFT JOIN panels pnl "+
-                        "ON t.panel_id = pnl.panel_id ";
-        
+                "d.full_name AS referring_doctor_name,t.id AS order_id, " +
+                "t.panel_name,t.status,t.created_at AS order_created_at," +
+                "t.commission_percent,t.commission_amount,pnl.price AS panel_price " +
+                "FROM patients p " +
+                "LEFT JOIN referring_doctors d " +
+                "ON p.referring_doctor_id = d.doctor_id " +
+                "LEFT JOIN test_order t " +
+                "ON p.id = t.patient_id " +
+                "LEFT JOIN panels pnl " +
+                "ON t.panel_id = pnl.panel_id ";
+
         // Add WHERE clause for date range filtering
         if ((dateFrom != null && !dateFrom.isEmpty()) || (dateTo != null && !dateTo.isEmpty())) {
             sql += "WHERE 1=1 ";
@@ -812,15 +840,15 @@ public class PatientService {
                 sql += "AND DATE(p.created_at) <= DATE('" + dateTo + "') ";
             }
         }
-        
+
         sql += "ORDER BY p.created_at DESC, t.created_at DESC";
-        
+
         log.info(sql);
 
         Connection conn = DatabaseManager.getConnection();
         PreparedStatement stmt = null;
         ResultSet rs = null;
-        
+
         try {
             stmt = conn.prepareStatement(sql);
             rs = stmt.executeQuery();
@@ -843,7 +871,7 @@ public class PatientService {
                 Double test_price = rs.getDouble("panel_price");
                 String commission_percent = rs.getString("commission_percent");
                 String commission_amount = rs.getString("commission_amount");
-                log.info("referringDoctorName"+referringDoctorName);
+                log.info("referringDoctorName" + referringDoctorName);
                 json.append("{")
                         .append("\"id\":\"").append(id).append("\"")
                         .append(",\"name\":\"").append(escapeJson(name)).append("\"")
@@ -852,10 +880,13 @@ public class PatientService {
                         .append(",\"created_at\":")
                         .append(createdAt != null ? ("\"" + escapeJson(createdAt) + "\"") : "null")
                         .append(",\"referring_doctor_id\":").append(referringDoctorId)
-                        .append(",\"referring_doctor_name\":").append(referringDoctorName != null ? ("\"" + escapeJson(referringDoctorName) + "\"") : "null")
+                        .append(",\"referring_doctor_name\":")
+                        .append(referringDoctorName != null ? ("\"" + escapeJson(referringDoctorName) + "\"") : "null")
                         .append(",\"test_price\":").append(test_price != null ? test_price : 0)
-                        .append(",\"commission_percent\":").append(commission_percent != null ? ("\"" + escapeJson(commission_percent) + "\"") : "null")
-                        .append(",\"commission_amount\":").append(commission_amount != null ? ("\"" + escapeJson(commission_amount) + "\"") : "null")
+                        .append(",\"commission_percent\":")
+                        .append(commission_percent != null ? ("\"" + escapeJson(commission_percent) + "\"") : "null")
+                        .append(",\"commission_amount\":")
+                        .append(commission_amount != null ? ("\"" + escapeJson(commission_amount) + "\"") : "null")
                         .append("}");
             }
 
@@ -940,12 +971,12 @@ public class PatientService {
 
         StringBuilder sql = new StringBuilder("SELECT id, name, dob, gender, created_at FROM patients");
         java.util.List<String> filters = new java.util.ArrayList<>();
-        log.info("Received search parameters: search='" + search );
+        log.info("Received search parameters: search='" + search);
         if (search != null && !search.isEmpty()) {
             if (search.matches("[A-Za-z0-9]+")) {
                 log.info("Search term looks like an ID or alphanumeric string, adding id and name filters");
                 filters.add("(id = ? OR LOWER(name) LIKE ?)");
-        } else {
+            } else {
                 filters.add("LOWER(name) LIKE ?");
             }
         }
@@ -973,11 +1004,11 @@ public class PatientService {
                 stmt.setString(index++, search);
                 stmt.setString(index++, "%" + search.toLowerCase() + "%");
                 // if (search.matches("[A-Za-z0-9]+")) {
-                //     stmt.setInt(index++, Integer.parseInt(search));
-                //     stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                // stmt.setInt(index++, Integer.parseInt(search));
+                // stmt.setString(index++, "%" + search.toLowerCase() + "%");
                 // } else {
-                //     stmt.setString(index++, search);
-                //     stmt.setString(index++, "%" + search.toLowerCase() + "%");
+                // stmt.setString(index++, search);
+                // stmt.setString(index++, "%" + search.toLowerCase() + "%");
                 // }
             }
             if (gender != null && !gender.isEmpty()) {
@@ -988,7 +1019,7 @@ public class PatientService {
             }
             log.info("Prepared statement parameters set. Executing query...");
             ResultSet rs = stmt.executeQuery();
-            
+
             boolean first = true;
             while (rs.next()) {
                 log.info("Found patient match: id=" + rs.getString("id") + ", name=" + rs.getString("name"));
@@ -1002,8 +1033,9 @@ public class PatientService {
                 String dob = rs.getString("dob");
                 String genderValue = rs.getString("gender");
                 String createdAtValue = rs.getString("created_at");
-                log.info("Patient data: id=" + id + ", name=" + name + ", dob=" + dob + ", gender=" + genderValue + ", created_at=" + createdAtValue);   
-                
+                log.info("Patient data: id=" + id + ", name=" + name + ", dob=" + dob + ", gender=" + genderValue
+                        + ", created_at=" + createdAtValue);
+
                 json.append("{")
                         .append("\"id\":\"").append(id).append("\"")
                         .append(",\"name\":\"").append(escapeJson(name)).append("\"")
@@ -1034,7 +1066,8 @@ public class PatientService {
             try (PreparedStatement delCompStmt = conn.prepareStatement(deleteComponentsSql)) {
                 delCompStmt.setString(1, patientId);
                 int compRows = delCompStmt.executeUpdate();
-                log.info("Deleted test_order_component rows for patient id=" + patientId + ", rows affected: " + compRows);
+                log.info("Deleted test_order_component rows for patient id=" + patientId + ", rows affected: "
+                        + compRows);
             }
 
             // Delete test orders for this patient
@@ -1094,16 +1127,19 @@ public class PatientService {
         StringBuilder json = new StringBuilder();
         json.append("{\"testOrders\":[");
 
-        String sql = "SELECT t.id as order_id, t.panel_id, t.panel_name, t.sample_collected_at, t.notes, t.status, t.created_at, " +
-                "p.category_name, " +
-                "c.id as component_row_id, c.component_id, c.component_name, c.result_value, c.unit, c.reference_range, c.flag " +
+        String sql = "SELECT t.id as order_id, t.panel_id, t.panel_name, t.sample_collected_at, t.notes, t.status, t.created_at, "
+                +
+                "t.commission_percent, t.discount_applied, " +
+                "p.category_name, p.price AS panel_price, " +
+                "c.id as component_row_id, c.component_id, c.component_name, c.result_value, c.unit, c.reference_range, c.flag "
+                +
                 "FROM test_order t " +
                 "LEFT JOIN panels p ON t.panel_id = p.panel_id " +
                 "LEFT JOIN test_order_component c ON t.id = c.test_order_id " +
                 "WHERE t.patient_id = ? " +
                 "ORDER BY t.id, c.id";
 
-        log.info("Executing SQL to fetch test orders and components: " + sql);        
+        log.info("Executing SQL to fetch test orders and components: " + sql);
 
         Map<Integer, Map<String, Object>> orders = new java.util.LinkedHashMap<>();
 
@@ -1127,6 +1163,9 @@ public class PatientService {
                     order.put("notes", rs.getString("notes"));
                     String categoryName = rs.getString("category_name");
                     order.put("categoryName", categoryName != null ? categoryName : "Uncategorized");
+                    order.put("commissionPercent", rs.getDouble("commission_percent"));
+                    order.put("discountApplied", rs.getDouble("discount_applied"));
+                    order.put("panelPrice", rs.getDouble("panel_price"));
                     order.put("components", new java.util.ArrayList<Map<String, String>>());
                     orders.put(orderId, order);
                 }
@@ -1142,7 +1181,8 @@ public class PatientService {
                     component.put("result_value", rs.getString("result_value"));
                     component.put("flag", rs.getString("flag"));
                     @SuppressWarnings("unchecked")
-                    java.util.List<Map<String, String>> components = (java.util.List<Map<String, String>>) order.get("components");
+                    java.util.List<Map<String, String>> components = (java.util.List<Map<String, String>>) order
+                            .get("components");
                     components.add(component);
                 }
             }
@@ -1161,19 +1201,33 @@ public class PatientService {
                 json.append("{");
                 json.append("\"id\":").append(order.get("id"));
                 json.append(",\"panelId\":").append(order.get("panelId"));
-                json.append(",\"panelName\":\"").append(escapeJson(String.valueOf(order.get("panelName")))).append("\"");
+                json.append(",\"panelName\":\"").append(escapeJson(String.valueOf(order.get("panelName"))))
+                        .append("\"");
                 json.append(",\"status\":\"").append(escapeJson(String.valueOf(order.get("status")))).append("\"");
-                json.append(",\"created_at\":").append(order.get("created_at") != null ? ("\"" + escapeJson(String.valueOf(order.get("created_at"))) + "\"") : "null");
-                json.append(",\"sampleCollectedAt\":").append(order.get("sampleCollectedAt") != null ? ("\"" + escapeJson(String.valueOf(order.get("sampleCollectedAt"))) + "\"") : "null");
+                json.append(",\"created_at\":")
+                        .append(order.get("created_at") != null
+                                ? ("\"" + escapeJson(String.valueOf(order.get("created_at"))) + "\"")
+                                : "null");
+                json.append(",\"sampleCollectedAt\":")
+                        .append(order.get("sampleCollectedAt") != null
+                                ? ("\"" + escapeJson(String.valueOf(order.get("sampleCollectedAt"))) + "\"")
+                                : "null");
                 json.append(",\"notes\":\"").append(escapeJson(String.valueOf(order.get("notes")))).append("\"");
-                json.append(",\"categoryName\":\"").append(escapeJson(String.valueOf(order.get("categoryName")))).append("\"");
+                json.append(",\"categoryName\":\"").append(escapeJson(String.valueOf(order.get("categoryName"))))
+                        .append("\"");
+                json.append(",\"commissionPercent\":")
+                        .append(order.get("commissionPercent") != null ? order.get("commissionPercent") : "0");
+                json.append(",\"discountApplied\":")
+                        .append(order.get("discountApplied") != null ? order.get("discountApplied") : "0");
+                json.append(",\"panelPrice\":").append(order.get("panelPrice") != null ? order.get("panelPrice") : "0");
 
                 json.append(",\"components\":[");
 
                 log.info("JSON String " + json.toString());
                 @SuppressWarnings("unchecked")
-                java.util.List<Map<String, String>> components = (java.util.List<Map<String, String>>) order.get("components");
-                log.info("Processing " + components.size() + " components for order ID: " +components);
+                java.util.List<Map<String, String>> components = (java.util.List<Map<String, String>>) order
+                        .get("components");
+                log.info("Processing " + components.size() + " components for order ID: " + components);
                 boolean firstComponent = true;
                 for (Map<String, String> component : components) {
                     if (!firstComponent) {
@@ -1182,10 +1236,13 @@ public class PatientService {
                     firstComponent = false;
                     json.append("{");
                     json.append("\"component_row_id\":").append(component.get("component_row_id"));
-                    json.append(",\"component_id\":").append(component.get("component_id") != null ? component.get("component_id") : "0");
-                    json.append(",\"component_name\":\"").append(escapeJson(component.get("component_name"))).append("\"");
+                    json.append(",\"component_id\":")
+                            .append(component.get("component_id") != null ? component.get("component_id") : "0");
+                    json.append(",\"component_name\":\"").append(escapeJson(component.get("component_name")))
+                            .append("\"");
                     json.append(",\"unit\":\"").append(escapeJson(component.get("unit"))).append("\"");
-                    json.append(",\"reference_range\":\"").append(escapeJson(component.get("reference_range"))).append("\"");
+                    json.append(",\"reference_range\":\"").append(escapeJson(component.get("reference_range")))
+                            .append("\"");
                     json.append(",\"result_value\":\"").append(escapeJson(component.get("result_value"))).append("\"");
                     json.append(",\"flag\":\"").append(escapeJson(component.get("flag"))).append("\"");
                     json.append("}");
@@ -1231,6 +1288,36 @@ public class PatientService {
             return normalized;
         }
         return "DESC";
+    }
+
+    public static void recalculatePatientBilling(Connection conn, String patientId, double amountPaid)
+            throws SQLException {
+        double totalAmount = 0.0;
+        String calculateSql = "SELECT SUM(p.price * (1.0 - COALESCE(t.discount_applied, 0) / 100.0)) AS total " +
+                "FROM test_order t " +
+                "JOIN panels p ON t.panel_id = p.panel_id " +
+                "WHERE t.patient_id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(calculateSql)) {
+            stmt.setString(1, patientId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    totalAmount = rs.getDouble("total");
+                }
+            }
+        }
+
+        double amountDue = totalAmount - amountPaid;
+
+        String updateSql = "UPDATE patients SET total_amount = ?, amount_paid = ?, amount_due = ? WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
+            stmt.setDouble(1, totalAmount);
+            stmt.setDouble(2, amountPaid);
+            stmt.setDouble(3, amountDue);
+            stmt.setString(4, patientId);
+            stmt.executeUpdate();
+            log.info("Recalculated billing for patient " + patientId + ": total_amount=" + totalAmount
+                    + ", amount_paid=" + amountPaid + ", amount_due=" + amountDue);
+        }
     }
 
     private static String escapeJson(String value) {

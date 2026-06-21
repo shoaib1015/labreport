@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
             background-color: white;
             padding: 20px 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
         }
 
@@ -105,7 +106,7 @@
         .sidebar {
             background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
@@ -212,7 +213,7 @@
         .main-content {
             background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
@@ -319,106 +320,146 @@
         }
     </style>
 </head>
+
 <body>
-        <div class="header">
-            <div class="header-left">
-                <a href="javascript:history.back()" class="header-back">&larr; Back</a>
-                <span class="header-meta" id="patientMeta"></span>
+    <div class="header">
+        <div class="header-left">
+            <a href="javascript:history.back()" class="header-back">&larr; Back</a>
+            <span class="header-meta" id="patientMeta"></span>
+        </div>
+        <div class="header-buttons">
+            <button class="btn btn-primary" onclick="editPatient()">Edit Patient</button>
+            <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
+            <button class="btn btn-secondary" onclick="saveTestEntry()">Save Test Results</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="patient-avatar-section">
+                <div class="patient-avatar" id="patientAvatar"></div>
+                <div class="patient-name" id="patientName"></div>
             </div>
-            <div class="header-buttons">
-                <button class="btn btn-primary" onclick="editPatient()">Edit Patient</button>
-                <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
-                <button class="btn btn-secondary" onclick="saveTestEntry()">Save Test Results</button>
+
+            <div class="contact-section">
+                <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <span class="contact-value" id="patientPhone"></span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">✉</span>
+                    <span class="contact-value" id="patientEmail"></span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">📍</span>
+                    <span class="contact-value" id="patientAddress"></span>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stat-box">
+                    <div class="stat-label">Last Visit</div>
+                    <div class="stat-value" id="lastVisit"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Total Tests</div>
+                    <div class="stat-value" id="totalTests"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Active Orders</div>
+                    <div class="stat-value" id="activeOrders"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Pending Results</div>
+                    <div class="stat-value" id="pendingResults"></div>
+                </div>
+            </div>
+
+            <div class="referring-doctor-section">
+                <div class="referring-doctor-label">Referring Doctor</div>
+                <div class="referring-doctor-name" id="referringDoctor"></div>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="content-wrapper">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <div class="patient-avatar-section">
-                    <div class="patient-avatar" id="patientAvatar"></div>
-                    <div class="patient-name" id="patientName"></div>
-                </div>
-
-                <div class="contact-section">
-                    <div class="contact-item">
-                        <span class="contact-icon">📞</span>
-                        <span class="contact-value" id="patientPhone"></span>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-icon">✉</span>
-                        <span class="contact-value" id="patientEmail"></span>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-icon">📍</span>
-                        <span class="contact-value" id="patientAddress"></span>
-                    </div>
-                </div>
-
-                <div class="stats-section">
-                    <div class="stat-box">
-                        <div class="stat-label">Last Visit</div>
-                        <div class="stat-value" id="lastVisit"></div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Total Tests</div>
-                        <div class="stat-value" id="totalTests"></div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Active Orders</div>
-                        <div class="stat-value" id="activeOrders"></div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Pending Results</div>
-                        <div class="stat-value" id="pendingResults"></div>
-                    </div>
-                </div>
-
-                <div class="referring-doctor-section">
-                    <div class="referring-doctor-label">Referring Doctor</div>
-                    <div class="referring-doctor-name" id="referringDoctor"></div>
-                </div>
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(event, 'testorders')">Test Details</button>
+                <button class="tab" onclick="switchTab(event, 'billing')">Billing Summary</button>
             </div>
 
-            <!-- Main Content Area -->
-            <div class="main-content">
-                <!-- Tabs -->
-                <div class="tabs">
-                    <button class="tab active" onclick="switchTab(event, 'testorders')">Test Details</button>
-                </div>
+            <!-- Test Orders Tab -->
+            <div id="testorders" class="tab-content active">
+                <h3 style="margin-bottom: 20px; color: #2c5282;">Test Details</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Panel</th>
+                            <th>Component</th>
+                            <th>Normal Range</th>
+                            <th>Result</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testOrdersTable">
+                        <tr>
+                            <td colspan="7" class="no-data">No test orders found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-                <!-- Test Orders Tab -->
-                <div id="testorders" class="tab-content active">
-                    <h3 style="margin-bottom: 20px; color: #2c5282;">Test Details</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Panel</th>
-                                <th>Component</th>
-                                <th>Normal Range</th>
-                                <th>Result</th>
-                                <th>Status</th>
-                                <th>Created Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="testOrdersTable">
-                            <tr><td colspan="7" class="no-data">No test orders found</td></tr>
-                        </tbody>
-                    </table>
+            <!-- Billing Summary Tab -->
+            <div id="billing" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #2c5282; margin: 0;">Billing Summary</h3>
+                    <button onclick="downloadInvoice()"
+                        style="background-color:#2c5282; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
+                        Download Invoice
+                    </button>
                 </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Total Amount</th>
+                            <th>Paid</th>
+                            <th>Due</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billingTable">
+                        <tr>
+                            <td id="totalAmount">0</td>
+                            <td>
+                                <input type="number" id="amountPaid" value="0" style="width:80px;">
+                            </td>
+                            <td id="amountDue">0</td>
+                            <td>
+                                <button onclick="updatePaymentStatus()"
+                                    style="background-color: #2c5282; color: #fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Update
+                                    Payment Status</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+
+    </div>
     </div>
 
     <script>
         let currentPatientId = null;
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
             currentPatientId = urlParams.get('patientId');
-            
+
             if (currentPatientId) {
                 loadPatientDetails();
             }
@@ -448,35 +489,40 @@
         function displayPatientInfo(patient) {
             const initials = patient.name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
             console.log('Patient Data:', patient);
-            
+
             // Set avatar and basic info
             document.getElementById('patientAvatar').textContent = initials;
             document.getElementById('patientName').textContent = patient.name || 'N/A';
             document.getElementById('patientMeta').textContent = `${patient.name || 'Unknown'} • ID #${patient.id} • Age ${calculateAge(patient.dob)} • ${patient.gender || 'N/A'}`;
-            
+
             // Set contact info
             document.getElementById('patientPhone').textContent = patient.contact_phone || '+91 -';
             document.getElementById('patientEmail').textContent = patient.contact_email || '-';
             document.getElementById('patientAddress').textContent = patient.address || '-';
             document.getElementById('lastVisit').textContent = formatDate(patient.created_at) || '-';
-            
+
             // Set stats
             const activeTests = parseInt(patient.active_tests) || 0;
             const activeOrders = parseInt(patient.active_tests) || 0;
             const pendingResults = parseInt(patient.pending_results) || 0;
             const referringDoctor = patient.referring_doctor_name || '-';
-            
+
             console.log('Setting stats:');
             console.log('  activeTests:', activeTests);
             console.log('  activeOrders:', activeOrders);
             console.log('  pendingResults:', pendingResults);
             console.log('  referringDoctor:', referringDoctor);
-            
+
             document.getElementById('totalTests').textContent = activeTests;
             document.getElementById('activeOrders').textContent = activeOrders;
             document.getElementById('pendingResults').textContent = pendingResults;
             document.getElementById('referringDoctor').textContent = referringDoctor;
-            
+
+            //display Billing Details
+            document.getElementById('totalAmount').textContent = patient.total_amount || '0';
+            document.getElementById('amountPaid').value = patient.amount_paid || '0';
+            document.getElementById('amountDue').textContent = patient.amount_due || '0';
+
             console.log('Stats display updated');
         }
 
@@ -524,8 +570,8 @@
                                     // If component has nested subcomponents, render them
                                     const subComps = Array.isArray(component.subcomponents) ? component.subcomponents
                                         : Array.isArray(component.children) ? component.children
-                                        : Array.isArray(component.sub_components) ? component.sub_components
-                                        : [];
+                                            : Array.isArray(component.sub_components) ? component.sub_components
+                                                : [];
 
                                     if (subComps.length > 0) {
                                         subComps.forEach(sub => {
@@ -586,11 +632,11 @@
             // Hide all tabs
             const tabs = document.querySelectorAll('.tab-content');
             tabs.forEach(tab => tab.classList.remove('active'));
-            
+
             // Deactivate all buttons
             const buttons = document.querySelectorAll('.tab');
             buttons.forEach(btn => btn.classList.remove('active'));
-            
+
             // Activate selected tab and button
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
@@ -609,7 +655,7 @@
         }
 
         function printReport() {
-             if (!currentPatientId) {
+            if (!currentPatientId) {
                 alert('Please select a patient before printing the report.');
                 return;
             }
@@ -640,7 +686,38 @@
             const date = new Date(dateStr);
             return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
         }
+
+        // Update dues when "updatePaymentStatus" is clicked
+        async function updatePaymentStatus() {
+            const patientId = 0; // replace with dynamic patientId
+            const newPaid = parseFloat(document.getElementById('amountPaid').value);
+
+            try {
+                const response = await fetch(`/api/patients/${patientId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount_paid: newPaid })
+                });
+
+                // const updated = await response.json();
+                // document.getElementById('totalAmount').textContent = updated.total_amount;
+                // document.getElementById('amountPaid').value = updated.amount_paid;
+                // document.getElementById('amountDue').textContent = updated.amount_due;
+                loadPatientDetails();
+            } catch (err) {
+                console.error("Error updating billing:", err);
+            }
+        }
+
+        function downloadInvoice() {
+            const patientId = 0; // replace with dynamic patientId
+            window.location.href = `/api/patients/${patientId}/invoice`;
+            // You can implement this endpoint to generate and return a PDF/Excel invoice
+        }
+
+
     </script>
     <script src="/js/sort-selects.js"></script>
 </body>
+
 </html>
