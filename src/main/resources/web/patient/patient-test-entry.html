@@ -371,9 +371,23 @@
             </div>
 
             <div class="modal-footer">
-                <!-- <button class="btn btn-secondary" onclick="printReport()">Print Report</button> -->
                 <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveTestEntry()">Save Test Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="saveSuccessModal" style="display: none;">
+        <div class="modal" style="max-width: 460px;">
+            <div class="modal-header">
+                <div class="modal-title">Details Saved Successfully!</div>
+                <button class="close-btn" type="button" onclick="closeSaveSuccessModal()">&times;</button>
+            </div>
+            <div class="modal-content">
+                <p>The test details have been saved successfully.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" onclick="printReport()">Print Report</button>
             </div>
         </div>
     </div>
@@ -953,9 +967,7 @@
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
                     if (data.success) {
-                        alert('Test entry saved successfully!');
-                        // Reload test orders to reflect updated data
-                        loadTestOrders(currentPatientId);
+                        showSaveSuccessModal();
                     } else {
                         alert('Failed to save: ' + (data.error || 'Unknown error'));
                     }
@@ -966,13 +978,22 @@
                 });
         }
 
-        // function printReport() {
-        //      if (!currentPatientId) {
-        //         alert('Please select a patient before printing the report.');
-        //         return;
-        //     }
-        //     window.open(`/report/print.html?patientId=${encodeURIComponent(currentPatientId)}`, '_blank');
-        // }
+        function showSaveSuccessModal() {
+            document.getElementById('saveSuccessModal').style.display = 'flex';
+        }
+
+        function closeSaveSuccessModal() {
+            document.getElementById('saveSuccessModal').style.display = 'none';
+            loadTestOrders(currentPatientId);
+        }
+
+        function printReport() {
+            if (!currentPatientId) {
+                alert('Please select a patient before printing the report.');
+                return;
+            }
+            window.open(`/report/print.html?patientId=${encodeURIComponent(currentPatientId)}`, '_blank');
+        }
 
         function calculateAge(dob) {
             if (!dob) return '-';
