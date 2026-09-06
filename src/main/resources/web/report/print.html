@@ -40,9 +40,6 @@
             reportFrame.src = '/report-preview.html' + (patientId ? '?patientId=' + encodeURIComponent(patientId) : '');
         }
 
-        window.addEventListener('load', function () {
-            setTimeout(doPrint, 200);
-        });
     </script>
 <script src="/js/sort-selects.js"></script>
 </body>
