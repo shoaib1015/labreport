@@ -3,7 +3,14 @@ package labreport.auth;
 import labreport.auth.TestOrderComponentService;
 import labreport.db.DatabaseManager;
 import labreport.logging.AppLogger;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -1318,6 +1325,142 @@ public class PatientService {
             log.info("Recalculated billing for patient " + patientId + ": total_amount=" + totalAmount
                     + ", amount_paid=" + amountPaid + ", amount_due=" + amountDue);
         }
+    }
+
+    public static void updatePatientPayment(String patientId, double amountPaid) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        recalculatePatientBilling(conn, patientId, amountPaid);
+    }
+
+    public static byte[] generateInvoicePdf(String patientId) throws SQLException, IOException {
+        Map<String, String> patient = getPatientById(patientId);
+        if (patient.isEmpty()) {
+            throw new IllegalArgumentException("Patient not found");
+        }
+
+        List<Map<String, String>> items = new ArrayList<>();
+        double subtotal = 0.0;
+        String sql = "SELECT t.panel_name, p.price, COALESCE(t.discount_applied, 0) AS discount "
+                + "FROM test_order t LEFT JOIN panels p ON t.panel_id = p.panel_id "
+                + "WHERE t.patient_id = ? ORDER BY t.id";
+        Connection conn = DatabaseManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, patientId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    double price = rs.getDouble("price");
+                    double discount = rs.getDouble("discount");
+                    double amount = price * (1.0 - discount / 100.0);
+                    subtotal += amount;
+                    Map<String, String> item = new HashMap<>();
+                    item.put("name", rs.getString("panel_name"));
+                    item.put("amount", String.format(Locale.US, "%.2f", amount));
+                    items.add(item);
+                }
+            }
+        }
+
+        double paid = parseAmount(patient.get("amount_paid"));
+        double due = parseAmount(patient.get("amount_due"));
+        String receiptDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yy"));
+
+        try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            PDPage page = new PDPage(new PDRectangle(360, 540));
+            document.addPage(page);
+            try (PDPageContentStream stream = new PDPageContentStream(document, page)) {
+                float left = 28;
+                float right = 332;
+                float y = 510;
+
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 14, 125, y, "BHARAT PATHOLOGY");
+                y -= 16;
+                writePdfText(stream, PDType1Font.HELVETICA, 9, 137, y, "RAGHAVNAGAR DEORIA");
+                y -= 12;
+                writePdfText(stream, PDType1Font.HELVETICA, 8, 151, y, "PHONE: 9839715692");
+                y -= 18;
+                stream.moveTo(left, y);
+                stream.lineTo(right, y);
+                stream.stroke();
+                y -= 15;
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 9, left + 4, y, "NO: " + patientId);
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 9, 235, y, "DATE: " + receiptDate);
+                y -= 15;
+                writePdfText(stream, PDType1Font.HELVETICA, 9, left + 4, y, "TO: " + safePdfText(patient.get("name")));
+                y -= 14;
+                writePdfText(stream, PDType1Font.HELVETICA, 9, left + 4, y,
+                        "REF BY: " + safePdfText(patient.get("referring_doctor_name")));
+                y -= 16;
+                stream.moveTo(left, y);
+                stream.lineTo(right, y);
+                stream.stroke();
+                y -= 15;
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 8, left + 5, y, "Sr. No.");
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 8, left + 45, y, "DESCRIPTION");
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 8, 278, y, "AMOUNT");
+                y -= 12;
+
+                int itemNumber = 1;
+                for (Map<String, String> item : items) {
+                    writePdfText(stream, PDType1Font.HELVETICA, 8, left + 8, y, String.valueOf(itemNumber++));
+                    writePdfText(stream, PDType1Font.HELVETICA, 8, left + 45, y,
+                            truncatePdfText(item.get("name"), 31));
+                    writePdfText(stream, PDType1Font.HELVETICA, 8, 278, y, item.get("amount"));
+                    y -= 13;
+                }
+
+                stream.moveTo(left, y + 5);
+                stream.lineTo(right, y + 5);
+                stream.stroke();
+                y -= 10;
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 9, 206, y, "SUB TOTAL");
+                writePdfText(stream, PDType1Font.HELVETICA, 9, 278, y, formatAmount(subtotal));
+                y -= 15;
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 9, 206, y, "PAID");
+                writePdfText(stream, PDType1Font.HELVETICA, 9, 278, y, formatAmount(paid));
+                y -= 15;
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 9, 206, y, "DUE");
+                writePdfText(stream, PDType1Font.HELVETICA, 9, 278, y, formatAmount(due));
+                y -= 20;
+                stream.moveTo(left, y);
+                stream.lineTo(right, y);
+                stream.stroke();
+                y -= 22;
+                writePdfText(stream, PDType1Font.HELVETICA, 8, 46, y, "(E & O.E)");
+                writePdfText(stream, PDType1Font.HELVETICA_BOLD, 9, 211, y, "For - BHARAT PATHOLOGY");
+            }
+            document.save(output);
+            return output.toByteArray();
+        }
+    }
+
+    private static double parseAmount(String value) {
+        try {
+            return value == null ? 0.0 : Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private static String formatAmount(double amount) {
+        return String.format(Locale.US, "%.2f", amount);
+    }
+
+    private static String safePdfText(String value) {
+        return value == null || value.trim().isEmpty() ? "-" : value.replaceAll("[^\\x20-\\x7E]", "?");
+    }
+
+    private static String truncatePdfText(String value, int maxLength) {
+        String text = safePdfText(value);
+        return text.length() <= maxLength ? text : text.substring(0, maxLength - 3) + "...";
+    }
+
+    private static void writePdfText(PDPageContentStream stream, PDType1Font font, int size, float x, float y,
+            String text) throws IOException {
+        stream.beginText();
+        stream.setFont(font, size);
+        stream.newLineAtOffset(x, y);
+        stream.showText(safePdfText(text));
+        stream.endText();
     }
 
     private static String escapeJson(String value) {

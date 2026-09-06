@@ -983,8 +983,7 @@
         }
 
         function closeSaveSuccessModal() {
-            document.getElementById('saveSuccessModal').style.display = 'none';
-            loadTestOrders(currentPatientId);
+            window.location.href = '/patient/patient-edit.html';
         }
 
         function printReport() {
