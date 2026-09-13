@@ -219,15 +219,16 @@ public class PatientHandler implements HttpHandler {
             String query = exchange.getRequestURI().getQuery();
             Map<String, String> params = query != null ? parseQueryParams(query) : java.util.Collections.emptyMap();
 
-            String search = params.get("search");
-            String gender = params.get("gender");
-            String createdAt = params.get("created_at");
+                String search = params.get("search");
+                String gender = params.get("gender");
+                String createdFrom = params.get("created_from");
+                String createdTo = params.get("created_to");
 
-            log.info("Search patients with parameters: search=" + search + ", gender=" + gender + ", created_at="
-                    + createdAt);
+                log.info("Search patients with parameters: search=" + search + ", gender=" + gender + ", created_from="
+                    + createdFrom + ", created_to=" + createdTo);
 
-            if ((search == null || search.isEmpty()) && (gender == null || gender.isEmpty())
-                    && (createdAt == null || createdAt.isEmpty())) {
+                if ((search == null || search.isEmpty()) && (gender == null || gender.isEmpty())
+                    && (createdFrom == null || createdFrom.isEmpty()) && (createdTo == null || createdTo.isEmpty())) {
                 String jsonResponse = "{\"patients\":[]}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
@@ -237,7 +238,7 @@ public class PatientHandler implements HttpHandler {
                 return;
             }
 
-            String jsonResponse = PatientService.searchPatientsJson(search, gender, createdAt);
+                String jsonResponse = PatientService.searchPatientsJson(search, gender, createdFrom, createdTo);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, jsonResponse.getBytes(StandardCharsets.UTF_8).length);
             try (OutputStream os = exchange.getResponseBody()) {

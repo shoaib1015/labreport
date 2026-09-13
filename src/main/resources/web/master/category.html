@@ -224,6 +224,19 @@
 
 <script>
     let rowCount = 0;
+    let isSavingCategories = false;
+
+    function setCategorySaveState(isSaving) {
+        const saveButton = document.querySelector('.save-btn');
+        if (saveButton) {
+            saveButton.disabled = isSaving;
+            saveButton.textContent = isSaving ? 'Saving...' : 'Save All Categories';
+        }
+        const cancelButton = document.querySelector('.cancel-btn');
+        if (cancelButton) {
+            cancelButton.disabled = isSaving;
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         rowCount = 0;
@@ -305,6 +318,10 @@
     }
 
     function saveAllCategories() {
+        if (isSavingCategories) {
+            return;
+        }
+
         const rows = document.querySelectorAll('.category-row');
         let categories = [];
 
@@ -330,6 +347,9 @@
             return;
         }
 
+        isSavingCategories = true;
+        setCategorySaveState(true);
+
         // Save all categories
         saveCategoriesBatch(categories);
     }
@@ -341,6 +361,9 @@
 
         function saveNext(index) {
             if (index >= categories.length) {
+                isSavingCategories = false;
+                setCategorySaveState(false);
+
                 if (errorCount === 0) {
                     showSuccess(`${savedCount} category(ies) added successfully!`);
                     setTimeout(() => {

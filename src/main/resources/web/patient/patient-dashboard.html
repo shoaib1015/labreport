@@ -218,7 +218,7 @@
 
         .search-form {
             display: grid;
-            grid-template-columns: 1fr 1fr 150px 100px;
+            grid-template-columns: 1fr 1fr 1fr 150px 100px;
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -444,7 +444,8 @@
             <h2 class="section-title">Patient Search</h2>
             <div class="search-form">
                 <input type="text" id="searchName" placeholder="Name / ID:" />
-                <input type="date" id="searchCreatedAt" placeholder="Created At:" />
+                <input type="date" id="searchCreatedFrom" placeholder="Created From:" />
+                <input type="date" id="searchCreatedTo" placeholder="Created To:" />
                 <select id="searchGender">
                     <option value="">All</option>
                     <option value="Male">Male</option>
@@ -559,16 +560,18 @@
 
         function searchPatients() {
             const name = document.getElementById('searchName').value;
-            const createdAt = document.getElementById('searchCreatedAt').value;
+            const createdFrom = document.getElementById('searchCreatedFrom').value;
+            const createdTo = document.getElementById('searchCreatedTo').value;
             const gender = document.getElementById('searchGender').value;
             const loaderOverlay = document.getElementById('loaderOverlay');
-            
-            console.log('Searching patients with:', { name, createdAt, gender });
+
+            console.log('Searching patients with:', { name, createdFrom, createdTo, gender });
             let query = '/api/patients?';
             const params = [];
-            
+
             if (name) params.push('search=' + encodeURIComponent(name));
-            if (createdAt) params.push('created_at=' + encodeURIComponent(createdAt));
+            if (createdFrom) params.push('created_from=' + encodeURIComponent(createdFrom));
+            if (createdTo) params.push('created_to=' + encodeURIComponent(createdTo));
             if (gender) params.push('gender=' + encodeURIComponent(gender));
 
             if (params.length === 0) {
