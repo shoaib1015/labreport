@@ -965,7 +965,7 @@ public class PatientService {
         }
     }
 
-    public static String searchPatientsJson(String search, String gender, String createdAt) throws SQLException {
+    public static String searchPatientsJson(String search, String gender, String createdFrom, String createdTo) throws SQLException {
         StringBuilder json = new StringBuilder();
         json.append("{\"patients\":[");
 
@@ -973,7 +973,8 @@ public class PatientService {
         java.util.List<String> filters = new java.util.ArrayList<>();
         log.info("Received search parameters: search='" + search);
         if (search != null && !search.isEmpty()) {
-            if (search.matches("[A-Za-z0-9]+")) {
+            // allow IDs that may contain hyphens (e.g. 26E30-1) as well as alphanumerics
+            if (search.matches("[A-Za-z0-9-]+")) {
                 log.info("Search term looks like an ID or alphanumeric string, adding id and name filters");
                 filters.add("(id = ? OR LOWER(name) LIKE ?)");
             } else {
@@ -983,8 +984,13 @@ public class PatientService {
         if (gender != null && !gender.isEmpty()) {
             filters.add("gender = ?");
         }
-        if (createdAt != null && !createdAt.isEmpty()) {
-            filters.add("created_at LIKE ?");
+        // Use date() on created_at to support ISO timestamps with T/Z and make comparisons by date
+        if (createdFrom != null && !createdFrom.isEmpty() && createdTo != null && !createdTo.isEmpty()) {
+            filters.add("(date(created_at) >= ? AND date(created_at) <= ?)");
+        } else if (createdFrom != null && !createdFrom.isEmpty()) {
+            filters.add("date(created_at) >= ?");
+        } else if (createdTo != null && !createdTo.isEmpty()) {
+            filters.add("date(created_at) <= ?");
         }
 
         if (!filters.isEmpty()) {
@@ -1014,8 +1020,15 @@ public class PatientService {
             if (gender != null && !gender.isEmpty()) {
                 stmt.setString(index++, gender);
             }
-            if (createdAt != null && !createdAt.isEmpty()) {
-                stmt.setString(index++, createdAt.length() == 10 ? createdAt + "%" : createdAt + "%");
+
+            if (createdFrom != null && !createdFrom.isEmpty() && createdTo != null && !createdTo.isEmpty()) {
+                // Bind date strings (YYYY-MM-DD) — date(created_at) will be compared against these
+                stmt.setString(index++, createdFrom);
+                stmt.setString(index++, createdTo);
+            } else if (createdFrom != null && !createdFrom.isEmpty()) {
+                stmt.setString(index++, createdFrom);
+            } else if (createdTo != null && !createdTo.isEmpty()) {
+                stmt.setString(index++, createdTo);
             }
             log.info("Prepared statement parameters set. Executing query...");
             ResultSet rs = stmt.executeQuery();

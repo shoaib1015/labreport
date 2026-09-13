@@ -136,6 +136,15 @@
 
 <script>
     let currentPanelId = null;
+    let isSavingPanel = false;
+
+    function setPanelSaveState(isSaving) {
+        const saveButton = document.querySelector('.save-btn');
+        if (saveButton) {
+            saveButton.disabled = isSaving;
+            saveButton.textContent = isSaving ? 'Saving...' : 'Save Test';
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         loadCategories();
@@ -211,6 +220,10 @@
     }
 
     function savePanel() {
+        if (isSavingPanel) {
+            return;
+        }
+
         const panelName = document.getElementById('panelName').value.trim();
         const categoryId = document.getElementById('categoryId').value;
         const description = document.getElementById('description').value.trim();
@@ -240,6 +253,9 @@
             showError('Price is required');
             return;
         }
+
+        isSavingPanel = true;
+        setPanelSaveState(true);
 
         // Get the category name from the dropdown
         const categorySelect = document.getElementById('categoryId');
@@ -277,6 +293,8 @@
             return response.json();
         })
         .then(data => {
+            isSavingPanel = false;
+            setPanelSaveState(false);
             showSuccess(successMessage);
             setTimeout(() => {
                 cancelForm();
@@ -284,6 +302,8 @@
         })
         .catch(error => {
             console.error('Error saving panel:', error);
+            isSavingPanel = false;
+            setPanelSaveState(false);
             showError('Error saving panel. Please try again.');
         });
     }

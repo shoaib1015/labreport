@@ -293,6 +293,16 @@
 </div>
 
 <script>
+    let isSavingLabProfile = false;
+
+    function setLabProfileSaveState(isSaving) {
+        const saveButton = document.getElementById('saveButton');
+        if (saveButton) {
+            saveButton.disabled = isSaving;
+            saveButton.textContent = isSaving ? 'Saving...' : 'Save';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         loadLabProfile();
 
@@ -368,6 +378,10 @@
     }
 
     function saveLabProfile() {
+        if (isSavingLabProfile) {
+            return;
+        }
+
         const labName = document.getElementById('labName').value.trim();
         const registrationNumber = document.getElementById('registrationNumber').value.trim();
         const contactNumber = document.getElementById('contactNumber').value.trim();
@@ -383,6 +397,9 @@
             showMessage('Lab Name is required', 'error');
             return;
         }
+
+        isSavingLabProfile = true;
+        setLabProfileSaveState(true);
 
         const formData = new URLSearchParams();
         formData.append('lab_name', labName);
@@ -411,11 +428,15 @@
             return response.json();
         })
         .then(data => {
+            isSavingLabProfile = false;
+            setLabProfileSaveState(false);
             showMessage('Lab profile saved successfully!', 'success');
             setFormEnabled(false);
         })
         .catch(error => {
             console.error('Error:', error);
+            isSavingLabProfile = false;
+            setLabProfileSaveState(false);
             showMessage('Error saving lab profile. Please try again.', 'error');
         });
     }

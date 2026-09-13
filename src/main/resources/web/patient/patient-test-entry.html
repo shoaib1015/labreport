@@ -373,13 +373,23 @@
             <div class="modal-footer">
                 <!-- <button class="btn btn-secondary" onclick="printReport()">Print Report</button> -->
                 <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveTestEntry()">Save Test Entry</button>
+                <button id="saveTestEntryButton" class="btn btn-primary" onclick="saveTestEntry()">Save Test Entry</button>
             </div>
         </div>
     </div>
 
     <script>
         let currentPatientId = null;
+        let isSavingTestEntry = false;
+
+        function setTestEntrySaveState(isSaving) {
+            const saveButton = document.querySelector('#saveTestEntryButton');
+            if (saveButton) {
+                saveButton.disabled = isSaving;
+                saveButton.textContent = isSaving ? 'Saving...' : 'Save Test Entry';
+            }
+        }
+
         // Stores all test order data grouped by orderId
         // { orderId: { panelName, panelId, sampleCollectedAt, status, notes, totalValue, components: [...] } }
         let testOrdersMap = {};
@@ -870,6 +880,10 @@
          * - Validates that sum of component results equals total_value (if total_value > 0)
          */
         function saveTestEntry() {
+            if (isSavingTestEntry) {
+                return;
+            }
+
             var panelSelect = document.getElementById('panelSelect');
             var testOrderId = panelSelect.value;
 
@@ -882,6 +896,9 @@
                 alert('No patient selected');
                 return;
             }
+
+            isSavingTestEntry = true;
+            setTestEntrySaveState(true);
 
             var order = testOrdersMap[testOrderId];
             var totalValue = order.totalValue || 0;
@@ -952,6 +969,9 @@
             })
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
+                    isSavingTestEntry = false;
+                    setTestEntrySaveState(false);
+
                     if (data.success) {
                         alert('Test entry saved successfully!');
                         // Reload test orders to reflect updated data
@@ -962,6 +982,8 @@
                 })
                 .catch(function(error) {
                     console.error('Error saving test entry:', error);
+                    isSavingTestEntry = false;
+                    setTestEntrySaveState(false);
                     alert('Error saving test entry. Please try again.');
                 });
         }

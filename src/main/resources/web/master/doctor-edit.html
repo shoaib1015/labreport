@@ -95,8 +95,8 @@
         </div>
 
         <div class="form-group">
-            <label>Contact Number</label>
-            <input type="tel" name="contact_number" id="contactNumber">
+            <label>Contact Number *</label>
+            <input type="tel" name="contact_number" id="contactNumber" required>
         </div>
 
         <div class="form-group">
@@ -126,6 +126,15 @@
 
 <script>
     let currentDoctorId = null;
+    let isSavingDoctor = false;
+
+    function setDoctorSaveState(isSaving) {
+        const saveButton = document.querySelector('.save-btn');
+        if (saveButton) {
+            saveButton.disabled = isSaving;
+            saveButton.textContent = isSaving ? 'Saving...' : (currentDoctorId ? 'Update Doctor' : 'Save Doctor');
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         // Check if we're editing an existing doctor
@@ -166,6 +175,10 @@
     }
 
     function saveDoctor() {
+        if (isSavingDoctor) {
+            return;
+        }
+
         const fullName = document.getElementById('fullName').value.trim();
         const contactNumber = document.getElementById('contactNumber').value.trim();
         const licenseNumber = document.getElementById('licenseNumber').value.trim();
@@ -177,6 +190,13 @@
             showError('Full Name is required');
             return;
         }
+        if (!contactNumber) {
+            showError('Contact Number is required');
+            return;
+        }
+
+        isSavingDoctor = true;
+        setDoctorSaveState(true);
 
         // Prepare data as URL-encoded form data
         const params = new URLSearchParams();
@@ -218,6 +238,8 @@
             return responseBody;
         })
         .then(data => {
+            isSavingDoctor = false;
+            setDoctorSaveState(false);
             showSuccess(successMessage);
             setTimeout(() => {
                 cancelForm();
@@ -225,6 +247,8 @@
         })
         .catch(error => {
             console.error('Error saving doctor:', error);
+            isSavingDoctor = false;
+            setDoctorSaveState(false);
             showError(error.message || 'Error saving doctor. Please try again.');
         });
     }

@@ -596,6 +596,15 @@
             let panelsMap = {}; // Map of panel ID to panel name
             let addedTests = []; // Array of added test orders
             let selectedDoctorCommission = 0; // Default commission for Self
+            let isSubmittingPatient = false;
+
+            function setPatientSubmitState(isSaving) {
+                const submitButton = document.querySelector('#patientForm button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = isSaving;
+                    submitButton.textContent = isSaving ? 'Saving...' : (currentPatientId ? 'Update Patient' : 'Save Patient');
+                }
+            }
 
             document.addEventListener('DOMContentLoaded', function () {
                 // Check if editing existing patient
@@ -795,6 +804,9 @@
 
             document.getElementById('patientForm').addEventListener('submit', function (event) {
                 event.preventDefault();
+                if (isSubmittingPatient) {
+                    return;
+                }
                 submitPatient();
             });
 
@@ -936,8 +948,22 @@
             }
 
             function submitPatient() {
+                if (isSubmittingPatient) {
+                    return;
+                }
+
                 // Clear previous errors
                 clearErrors();
+
+                const formData = new FormData(document.getElementById('patientForm'));
+                const patientName = (formData.get('name') || '').toString().trim();
+                if (!patientName) {
+                    showErrors(['Name is required']);
+                    return;
+                }
+
+                isSubmittingPatient = true;
+                setPatientSubmitState(true);
 
                 // Collect form data
                 const formData = new FormData(document.getElementById('patientForm'));
@@ -979,6 +1005,9 @@
                     .then(response => response.json())
                     .then(response => {
                         console.log('Response:', response);
+
+                        isSubmittingPatient = false;
+                        setPatientSubmitState(false);
 
                         if (!response.validationResult.valid) {
                             showErrors(response.validationResult.errors);
@@ -1028,6 +1057,8 @@
                     })
                     .catch(error => {
                         console.error('Error submitting patient:', error);
+                        isSubmittingPatient = false;
+                        setPatientSubmitState(false);
                         showErrors(['An error occurred while ' + (currentPatientId ? 'updating' : 'creating') + ' the patient']);
                     });
             }
