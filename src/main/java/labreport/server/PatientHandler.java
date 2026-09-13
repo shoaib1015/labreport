@@ -7,6 +7,11 @@ import labreport.auth.TestOrderComponentService;
 import labreport.auth.PatientService.CreatePatientRequest;
 import labreport.auth.PatientService.CreatePatientResponse;
 import labreport.logging.AppLogger;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +55,12 @@ public class PatientHandler implements HttpHandler {
             } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/test-orders")) {
                 String patientId = extractPatientIdFromPath(path);
                 handleGetPatientTestOrders(exchange, patientId);
+            } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/payment")) {
+                String patientId = extractPatientIdFromPath(path);
+                handleUpdatePayment(exchange, patientId);
+            } else if ("GET".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/invoice")) {
+                String patientId = extractPatientIdFromPath(path);
+                handleDownloadInvoice(exchange, patientId);
             } else if ("PUT".equals(method) && path.matches(".*/api/patients/[A-Za-z0-9-]+/test-entry")) {
                 String patientId = extractPatientIdFromPath(path);
                 handleSaveTestEntry(exchange, patientId);
@@ -151,6 +162,55 @@ public class PatientHandler implements HttpHandler {
         } catch (Exception e) {
             log.severe("Failed to get patient: " + e.getMessage());
             sendErrorResponse(exchange, 500, "Failed to fetch patient: " + e.getMessage());
+        }
+    }
+
+    private void handleUpdatePayment(HttpExchange exchange, String patientId) throws IOException {
+        try {
+            String body = readBody(exchange.getRequestBody());
+            String amountPaidValue = extractJsonString(body, "amount_paid");
+            if (amountPaidValue == null || amountPaidValue.trim().isEmpty()) {
+                sendErrorResponse(exchange, 400, "amount_paid is required");
+                return;
+            }
+
+            double amountPaid = Double.parseDouble(amountPaidValue);
+            if (amountPaid < 0 || Double.isNaN(amountPaid) || Double.isInfinite(amountPaid)) {
+                sendErrorResponse(exchange, 400, "amount_paid must be a non-negative number");
+                return;
+            }
+
+            PatientService.updatePatientPayment(patientId, amountPaid);
+            Map<String, String> patient = PatientService.getPatientById(patientId);
+            String response = mapToJson(patient);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (NumberFormatException e) {
+            sendErrorResponse(exchange, 400, "amount_paid must be a number");
+        } catch (Exception e) {
+            log.severe("Failed to update payment: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to update payment: " + e.getMessage());
+        }
+    }
+
+    private void handleDownloadInvoice(HttpExchange exchange, String patientId) throws IOException {
+        try {
+            byte[] pdf = PatientService.generateInvoicePdf(patientId);
+            exchange.getResponseHeaders().set("Content-Type", "application/pdf");
+            exchange.getResponseHeaders().set("Content-Disposition",
+                    "attachment; filename=\"" + patientId + "_Receipt.pdf\"");
+            exchange.sendResponseHeaders(200, pdf.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(pdf);
+            }
+        } catch (IllegalArgumentException e) {
+            sendErrorResponse(exchange, 404, e.getMessage());
+        } catch (Exception e) {
+            log.severe("Failed to generate invoice: " + e.getMessage());
+            sendErrorResponse(exchange, 500, "Failed to generate invoice: " + e.getMessage());
         }
     }
 

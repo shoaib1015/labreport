@@ -418,7 +418,7 @@
             <div id="billing" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 style="color: #2c5282; margin: 0;">Billing Summary</h3>
-                    <button onclick="downloadInvoice()"
+                    <button id="downloadInvoiceButton" type="button" onclick="downloadInvoice()"
                         style="background-color:#2c5282; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
                         Download Invoice
                     </button>
@@ -455,6 +455,7 @@
 
     <script>
         let currentPatientId = null;
+        let invoiceDownloadStarted = false;
 
         document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
@@ -689,30 +690,76 @@
 
         // Update dues when "updatePaymentStatus" is clicked
         async function updatePaymentStatus() {
-            const patientId = 0; // replace with dynamic patientId
-            const newPaid = parseFloat(document.getElementById('amountPaid').value);
+            if (!currentPatientId) {
+                alert('Patient ID is missing.');
+                return;
+            }
+
+            const amountInput = document.getElementById('amountPaid');
+            const newPaid = parseFloat(amountInput.value);
+            if (!Number.isFinite(newPaid) || newPaid < 0) {
+                alert('Please enter a valid non-negative paid amount.');
+                amountInput.focus();
+                return;
+            }
+
+            const updateButton = document.querySelector('#billing button[onclick="updatePaymentStatus()"]');
+            if (updateButton) updateButton.disabled = true;
 
             try {
-                const response = await fetch(`/api/patients/${patientId}`, {
+                const response = await fetch(`/api/patients/${encodeURIComponent(currentPatientId)}/payment`, {
                     method: 'PUT',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount_paid: newPaid })
                 });
 
-                // const updated = await response.json();
-                // document.getElementById('totalAmount').textContent = updated.total_amount;
-                // document.getElementById('amountPaid').value = updated.amount_paid;
-                // document.getElementById('amountDue').textContent = updated.amount_due;
-                loadPatientDetails();
+                const updated = await response.json();
+                if (!response.ok) throw new Error(updated.error || 'Unable to update payment');
+                displayPatientInfo(updated);
+                alert('Payment details updated successfully.');
             } catch (err) {
                 console.error("Error updating billing:", err);
+                alert(err.message || 'Error updating payment details.');
+            } finally {
+                if (updateButton) updateButton.disabled = false;
             }
         }
 
         function downloadInvoice() {
-            const patientId = 0; // replace with dynamic patientId
-            window.location.href = `/api/patients/${patientId}/invoice`;
-            // You can implement this endpoint to generate and return a PDF/Excel invoice
+            if (!currentPatientId) {
+                alert('Patient ID is missing.');
+                return;
+            }
+
+            if (invoiceDownloadStarted) return;
+
+            const button = document.getElementById('downloadInvoiceButton');
+            invoiceDownloadStarted = true;
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Preparing Invoice...';
+                button.style.cursor = 'wait';
+            }
+
+            // Start the same-origin download directly from the user click. The
+            // server supplies the PDF content and filename via Content-Disposition.
+            const link = document.createElement('a');
+            link.href = `/api/patients/${encodeURIComponent(currentPatientId)}/invoice`;
+            link.download = `${currentPatientId}_Receipt.pdf`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            window.setTimeout(() => {
+                invoiceDownloadStarted = false;
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Download Invoice';
+                    button.style.cursor = 'pointer';
+                }
+            }, 1500);
         }
 
 
